@@ -112,7 +112,7 @@ How to work through this list:
 
 ## P1-08 TinyTree storage and builder
 
-- [ ] Done
+- [x] Done
 
 **Scope.** `TinyTree`, `TinyTreeBuilder` (implements `IResultReceiver`), `TinyTreeBuilder.Load(XmlReader)`. Whitespace-only text nodes are kept (stripping is the XSLT layer's job). DTD processing off.
 

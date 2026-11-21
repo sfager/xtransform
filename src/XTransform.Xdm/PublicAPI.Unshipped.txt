@@ -236,3 +236,25 @@ override XTransform.Xdm.XsdDateTime.Equals(object? obj) -> bool
 override XTransform.Xdm.XsdDateTime.GetHashCode() -> int
 static XTransform.Xdm.XsdDateTime.operator ==(XTransform.Xdm.XsdDateTime l, XTransform.Xdm.XsdDateTime r) -> bool
 static XTransform.Xdm.XsdDateTime.operator !=(XTransform.Xdm.XsdDateTime l, XTransform.Xdm.XsdDateTime r) -> bool
+XTransform.Xdm.XdmNodeKind
+XTransform.Xdm.XdmNodeKind.Document = 0 -> XTransform.Xdm.XdmNodeKind
+XTransform.Xdm.XdmNodeKind.Element = 1 -> XTransform.Xdm.XdmNodeKind
+XTransform.Xdm.XdmNodeKind.Attribute = 2 -> XTransform.Xdm.XdmNodeKind
+XTransform.Xdm.XdmNodeKind.Text = 3 -> XTransform.Xdm.XdmNodeKind
+XTransform.Xdm.XdmNodeKind.Comment = 4 -> XTransform.Xdm.XdmNodeKind
+XTransform.Xdm.XdmNodeKind.ProcessingInstruction = 5 -> XTransform.Xdm.XdmNodeKind
+XTransform.Xdm.XdmNodeKind.Namespace = 6 -> XTransform.Xdm.XdmNodeKind
+XTransform.Xdm.Axis
+XTransform.Xdm.Axis.Child = 0 -> XTransform.Xdm.Axis
+XTransform.Xdm.Axis.Descendant = 1 -> XTransform.Xdm.Axis
+XTransform.Xdm.Axis.DescendantOrSelf = 2 -> XTransform.Xdm.Axis
+XTransform.Xdm.Axis.Self = 3 -> XTransform.Xdm.Axis
+XTransform.Xdm.Axis.Attribute = 4 -> XTransform.Xdm.Axis
+XTransform.Xdm.Axis.Parent = 5 -> XTransform.Xdm.Axis
+XTransform.Xdm.Axis.Ancestor = 6 -> XTransform.Xdm.Axis
+XTransform.Xdm.Axis.AncestorOrSelf = 7 -> XTransform.Xdm.Axis
+XTransform.Xdm.Axis.FollowingSibling = 8 -> XTransform.Xdm.Axis
+XTransform.Xdm.Axis.PrecedingSibling = 9 -> XTransform.Xdm.Axis
+XTransform.Xdm.Axis.Following = 10 -> XTransform.Xdm.Axis
+XTransform.Xdm.Axis.Preceding = 11 -> XTransform.Xdm.Axis
+XTransform.Xdm.Axis.Namespace = 12 -> XTransform.Xdm.Axis
