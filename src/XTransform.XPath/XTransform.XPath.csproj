@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\XTransform.Xdm\XTransform.Xdm.csproj" />
+    <PackageReference Include="System.Collections.Immutable" />
   </ItemGroup>
 
 </Project>

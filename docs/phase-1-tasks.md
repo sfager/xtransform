@@ -153,7 +153,7 @@ How to work through this list:
 
 ## P1-12 XPath AST and expression parser
 
-- [ ] Done
+- [x] Done
 
 **Scope.** AST records (see interfaces.md) and `XPathParser.ParseExpression`, one method per grammar production in XPath 2.0 Appendix A.1, including the leading-`/` rule and `xgs:` constraints.
 
