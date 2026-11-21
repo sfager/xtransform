@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>XTransform: an XSLT 2.0 and XPath 2.0 transformation engine for .NET.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\XTransform.Xslt\XTransform.Xslt.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>XSLT 2.0 stylesheet reader, compiler, instructions and template dispatch for XTransform.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\XTransform.XPath\XTransform.XPath.csproj" />
+    <ProjectReference Include="..\XTransform.Serialization\XTransform.Serialization.csproj" />
+  </ItemGroup>
+
+</Project>

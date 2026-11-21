@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    W3C conformance harness. The suites are not vendored: run eng/fetch-test-suites.sh
+    (or .ps1) to clone the pinned commits into .testsuites/. Tests are marked
+    [Category("Conformance")] and skipped when the suites are missing.
+  -->
+  <PropertyGroup>
+    <TargetFrameworks>net8.0</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\XTransform\XTransform.csproj" />
+  </ItemGroup>
+
+</Project>

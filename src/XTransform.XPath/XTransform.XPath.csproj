@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>XPath 2.0 lexer, parser, expression compiler, evaluator and function library for XTransform.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\XTransform.Xdm\XTransform.Xdm.csproj" />
+  </ItemGroup>
+
+</Project>

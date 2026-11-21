@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>net8.0</TargetFrameworks>
+    <Description>Command-line runner for the XTransform XSLT 2.0 engine.</Description>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>xtransform</ToolCommandName>
+    <PackageId>XTransform.Cli</PackageId>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\XTransform\XTransform.csproj" />
+  </ItemGroup>
+
+</Project>

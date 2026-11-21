@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>XSLT and XQuery Serialization 1.0 receivers and emitters (xml, html, xhtml, text) for XTransform.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\XTransform.Xdm\XTransform.Xdm.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Drop-in replacement for System.Xml.Xsl.XslCompiledTransform, backed by the XTransform engine.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\XTransform\XTransform.csproj" />
+  </ItemGroup>
+
+</Project>

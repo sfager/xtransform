@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>XDM data model for XTransform: items, nodes, atomic values, sequences, NamePool, TinyTree and the XPath cast table.</Description>
+  </PropertyGroup>
+
+</Project>
