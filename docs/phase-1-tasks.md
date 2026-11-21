@@ -37,7 +37,7 @@ How to work through this list:
 
 ## P1-01 Names and source locations
 
-- [ ] Done
+- [x] Done
 
 **Scope.** `QName`, `NamePool`, `SourceSpan` in `XTransform.Xdm`.
 

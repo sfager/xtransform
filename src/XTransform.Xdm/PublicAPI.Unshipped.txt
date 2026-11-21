@@ -1,1 +1,28 @@
 #nullable enable
+XTransform.Xdm.QName
+XTransform.Xdm.QName.QName() -> void
+XTransform.Xdm.QName.QName(string! localName) -> void
+XTransform.Xdm.QName.QName(string! namespaceUri, string! localName) -> void
+XTransform.Xdm.QName.QName(string! prefix, string! namespaceUri, string! localName) -> void
+XTransform.Xdm.QName.ClarkName.get -> string!
+XTransform.Xdm.QName.LocalName.get -> string!
+XTransform.Xdm.QName.NamespaceUri.get -> string!
+XTransform.Xdm.QName.Prefix.get -> string!
+XTransform.Xdm.QName.Equals(XTransform.Xdm.QName other) -> bool
+override XTransform.Xdm.QName.Equals(object? obj) -> bool
+override XTransform.Xdm.QName.GetHashCode() -> int
+override XTransform.Xdm.QName.ToString() -> string!
+static XTransform.Xdm.QName.ParseClark(string! clarkName) -> XTransform.Xdm.QName
+static XTransform.Xdm.QName.operator !=(XTransform.Xdm.QName left, XTransform.Xdm.QName right) -> bool
+static XTransform.Xdm.QName.operator ==(XTransform.Xdm.QName left, XTransform.Xdm.QName right) -> bool
+XTransform.Xdm.SourceSpan
+XTransform.Xdm.SourceSpan.SourceSpan() -> void
+XTransform.Xdm.SourceSpan.SourceSpan(string? moduleUri, int line, int column, int start = 0, int length = 0) -> void
+XTransform.Xdm.SourceSpan.Column.get -> int
+XTransform.Xdm.SourceSpan.Length.get -> int
+XTransform.Xdm.SourceSpan.Line.get -> int
+XTransform.Xdm.SourceSpan.ModuleUri.get -> string?
+XTransform.Xdm.SourceSpan.Start.get -> int
+XTransform.Xdm.SourceSpan.WithRange(int start, int length) -> XTransform.Xdm.SourceSpan
+override XTransform.Xdm.SourceSpan.ToString() -> string!
+static XTransform.Xdm.SourceSpan.None.get -> XTransform.Xdm.SourceSpan

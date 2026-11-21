@@ -18,8 +18,12 @@
     <PackageReference Include="NUnit.Analyzers" PrivateAssets="all" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'net462'">
-    <PackageReference Include="PolySharp" PrivateAssets="all" />
-  </ItemGroup>
+  <!-- PolySharp is intentionally omitted for net462 test projects. Every src assembly also uses
+       PolySharp and generates internal System.Index, System.Range, and nullable-analysis types;
+       all are visible via InternalsVisibleTo. Having the test project generate the same types
+       causes CS0433 ambiguity when two src assemblies define the same PolySharp type. Test code
+       that needs net462 polyfills can rely on those from the src assemblies via InternalsVisibleTo,
+       or use #if NET8_0_OR_GREATER guarded code. -->
+
 
 </Project>
