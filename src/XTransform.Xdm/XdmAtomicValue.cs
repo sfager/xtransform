@@ -244,6 +244,15 @@ public sealed class XdmAtomicValue : XdmItem, IEquatable<XdmAtomicValue>
                 SourceSpan.None);
         }
 
+        // Validate derived-type facets (range checks for integer-family, pattern checks for string-family)
+        if (!CastTable.ValidateDerivedFacets(result!, type, out string? facetError))
+        {
+            throw new XPathDynamicException(
+                XPathErrors.FORG0001,
+                facetError ?? $"Value is not valid for type xs:{CastTable.GetXsLocalName(type)}.",
+                SourceSpan.None);
+        }
+
         return result!;
     }
 
@@ -261,7 +270,17 @@ public sealed class XdmAtomicValue : XdmItem, IEquatable<XdmAtomicValue>
         if (lexical is null) { throw new ArgumentNullException(nameof(lexical)); }
 #pragma warning restore CA1510
 
-        return TryParseCore(lexical, type, out value);
+        if (!TryParseCore(lexical, type, out value))
+        {
+            return false;
+        }
+        // Validate derived-type facets after a successful core parse
+        if (!CastTable.ValidateDerivedFacets(value!, type, out _))
+        {
+            value = null;
+            return false;
+        }
+        return true;
     }
 
     // -------------------------------------------------------------------------
@@ -1440,6 +1459,22 @@ public sealed class XdmAtomicValue : XdmItem, IEquatable<XdmAtomicValue>
     {
         throw new InvalidCastException(
             $"Cannot access xs:{CastTable.GetXsLocalName(_typeCode)} value as {expected}.");
+    }
+
+    // -------------------------------------------------------------------------
+    // Internal helper for derived-type casts (CastTable.Cast.cs)
+    // -------------------------------------------------------------------------
+
+    // Creates a new XdmAtomicValue with the same payload but a different TypeCode.
+    // Used when casting to a derived type (e.g. xs:integer → xs:byte) where the
+    // payload is already correct but the type code needs updating.
+    internal XdmAtomicValue WithTypeCode(XdmTypeCode newTypeCode)
+    {
+        if (newTypeCode == _typeCode)
+        {
+            return this;
+        }
+        return new XdmAtomicValue(newTypeCode, _payload);
     }
 }
 

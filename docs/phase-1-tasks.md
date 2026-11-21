@@ -91,7 +91,7 @@ How to work through this list:
 
 ## P1-06 Cast table
 
-- [ ] Done
+- [x] Done
 
 **Scope.** `CastTable.IsCastAllowed`, `Cast`, `TryCast`, `TryPromote` per F&O §17.1 (the full casting matrix).
 
