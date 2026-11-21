@@ -275,3 +275,26 @@ XTransform.Xdm.Axis.PrecedingSibling = 9 -> XTransform.Xdm.Axis
 XTransform.Xdm.Axis.Following = 10 -> XTransform.Xdm.Axis
 XTransform.Xdm.Axis.Preceding = 11 -> XTransform.Xdm.Axis
 XTransform.Xdm.Axis.Namespace = 12 -> XTransform.Xdm.Axis
+XTransform.Xdm.Occurrence
+XTransform.Xdm.Occurrence.ExactlyOne = 0 -> XTransform.Xdm.Occurrence
+XTransform.Xdm.Occurrence.ZeroOrOne = 1 -> XTransform.Xdm.Occurrence
+XTransform.Xdm.Occurrence.ZeroOrMore = 2 -> XTransform.Xdm.Occurrence
+XTransform.Xdm.Occurrence.OneOrMore = 3 -> XTransform.Xdm.Occurrence
+XTransform.Xdm.Occurrence.Empty = 4 -> XTransform.Xdm.Occurrence
+XTransform.Xdm.ItemType
+abstract XTransform.Xdm.ItemType.IsSubtypeOf(XTransform.Xdm.ItemType! other) -> bool
+abstract XTransform.Xdm.ItemType.Matches(XTransform.Xdm.XdmItem! item) -> bool
+static XTransform.Xdm.ItemType.AnyItem.get -> XTransform.Xdm.ItemType!
+static XTransform.Xdm.ItemType.AnyNode.get -> XTransform.Xdm.ItemType!
+static XTransform.Xdm.ItemType.Atomic(XTransform.Xdm.XdmTypeCode type) -> XTransform.Xdm.ItemType!
+static XTransform.Xdm.ItemType.DocumentNode(XTransform.Xdm.ItemType? elementContent = null) -> XTransform.Xdm.ItemType!
+static XTransform.Xdm.ItemType.Kind(XTransform.Xdm.XdmNodeKind kind, XTransform.Xdm.QName? name = null) -> XTransform.Xdm.ItemType!
+XTransform.Xdm.SequenceType
+XTransform.Xdm.SequenceType.IsSubtypeOf(XTransform.Xdm.SequenceType! other) -> bool
+XTransform.Xdm.SequenceType.ItemType.get -> XTransform.Xdm.ItemType!
+XTransform.Xdm.SequenceType.Matches(XTransform.Xdm.XdmSequence! value) -> bool
+XTransform.Xdm.SequenceType.Occurrence.get -> XTransform.Xdm.Occurrence
+XTransform.Xdm.SequenceType.SequenceType(XTransform.Xdm.ItemType! itemType, XTransform.Xdm.Occurrence occurrence) -> void
+override XTransform.Xdm.SequenceType.ToString() -> string!
+static XTransform.Xdm.SequenceType.AnySequence.get -> XTransform.Xdm.SequenceType!
+static XTransform.Xdm.SequenceType.EmptySequence.get -> XTransform.Xdm.SequenceType!

@@ -134,7 +134,7 @@ How to work through this list:
 
 ## P1-10 Sequence types
 
-- [ ] Done
+- [x] Done
 
 **Scope.** `ItemType`, `Occurrence`, `SequenceType` with `Matches` and `IsSubtypeOf` (XPath 2.0 §2.5.4, without schema types).
 
