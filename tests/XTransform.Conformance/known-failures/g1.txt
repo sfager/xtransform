@@ -1,0 +1,4 @@
+# g1.txt — known failures for the G1 parse-only gate.
+# Format: one test-case name per line; everything after '#' is a comment reason.
+# Add an entry when a parse-only miss is accepted as a known difference.
+# Lines starting with '#' and blank lines are ignored.

@@ -172,7 +172,7 @@ How to work through this list:
 
 ## P1-14 Conformance harness (QT3, parse-only mode)
 
-- [ ] Done
+- [x] Done
 
 **Scope.** `XTransform.Conformance`: catalog and test-set reader for QT3 applying the D2 filter; NUnit `TestCaseSource` per in-scope test, grouped by test set; a `parse-only` mode that checks only "parses" vs "expects XPST0003"; a summary report (`artifacts/conformance/qt3-summary.md`) with counts and pass-rate per area; a known-failures file whose entries are skipped with a reason.
 
