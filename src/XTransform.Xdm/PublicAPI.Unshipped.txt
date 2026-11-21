@@ -71,3 +71,49 @@ XTransform.Xdm.XsltDynamicException.TemplateStack.init -> void
 XTransform.Xdm.XsltStaticException
 XTransform.Xdm.XsltStaticException.XsltStaticException(System.Collections.Generic.IReadOnlyList<XTransform.Xdm.Diagnostic!>! errors) -> void
 XTransform.Xdm.XsltStaticException.Errors.get -> System.Collections.Generic.IReadOnlyList<XTransform.Xdm.Diagnostic!>!
+XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.AnyAtomicType = 0 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.UntypedAtomic = 1 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.String = 2 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.NormalizedString = 3 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.Token = 4 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.Language = 5 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.NmToken = 6 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.Name = 7 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.NcName = 8 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.Id = 9 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.IdRef = 10 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.Entity = 11 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.Boolean = 12 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.Decimal = 13 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.Integer = 14 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.NonPositiveInteger = 15 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.NegativeInteger = 16 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.Long = 17 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.Int = 18 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.Short = 19 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.Byte = 20 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.NonNegativeInteger = 21 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.UnsignedLong = 22 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.UnsignedInt = 23 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.UnsignedShort = 24 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.UnsignedByte = 25 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.PositiveInteger = 26 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.Double = 27 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.Float = 28 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.Duration = 29 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.DayTimeDuration = 30 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.YearMonthDuration = 31 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.DateTime = 32 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.Date = 33 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.Time = 34 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.GYearMonth = 35 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.GYear = 36 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.GMonthDay = 37 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.GDay = 38 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.GMonth = 39 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.HexBinary = 40 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.Base64Binary = 41 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.AnyUri = 42 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.QName = 43 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.Notation = 44 -> XTransform.Xdm.XdmTypeCode

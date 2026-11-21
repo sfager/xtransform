@@ -59,7 +59,7 @@ How to work through this list:
 
 ## P1-03 Atomic type hierarchy
 
-- [ ] Done
+- [x] Done
 
 **Scope.** `XdmTypeCode` and the derivation tree: `CastTable.PrimitiveTypeOf`, `CastTable.IsSubtypeOf`, plus a name ↔ code map for `xs:` names (used by the parser for `cast as`, `instance of`).
 
