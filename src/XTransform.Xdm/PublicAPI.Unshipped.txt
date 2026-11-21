@@ -67,6 +67,7 @@ XTransform.Xdm.XsltErrors
 static readonly XTransform.Xdm.XsltErrors.XTDE0640 -> XTransform.Xdm.QName
 static readonly XTransform.Xdm.XsltErrors.XTMM9000 -> XTransform.Xdm.QName
 static readonly XTransform.Xdm.XsltErrors.XTSE0010 -> XTransform.Xdm.QName
+static readonly XTransform.Xdm.XsltErrors.XTSE0340 -> XTransform.Xdm.QName
 XTransform.Xdm.XTransformException
 XTransform.Xdm.XTransformException.ErrorCode.get -> XTransform.Xdm.QName
 XTransform.Xdm.XTransformException.Location.get -> XTransform.Xdm.SourceSpan

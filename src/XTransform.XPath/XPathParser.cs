@@ -70,6 +70,28 @@ internal static class XPathParser
         return parser.ParseExpr();
     }
 
+    /// <summary>
+    /// Parses <paramref name="pattern"/> as an XSLT 2.0 Pattern (§5.5.2).
+    /// </summary>
+    /// <param name="pattern">The pattern text.</param>
+    /// <param name="span">Source location to embed in thrown exceptions.</param>
+    /// <param name="namespaces">Namespace resolver for prefix lookups.</param>
+    /// <returns>The parsed <see cref="PatternAst"/>.</returns>
+    /// <exception cref="XsltStaticException">
+    ///   Thrown with <see cref="XsltErrors.XTSE0340"/> for constructs that are
+    ///   syntactically valid XPath but invalid as patterns (wrong axis, arithmetic, etc.).
+    /// </exception>
+    public static PatternAst ParsePattern(string pattern, SourceSpan span, IStaticNamespaceResolver namespaces)
+    {
+#pragma warning disable CA1510
+        if (pattern is null) { throw new ArgumentNullException(nameof(pattern)); }
+        if (namespaces is null) { throw new ArgumentNullException(nameof(namespaces)); }
+#pragma warning restore CA1510
+
+        var patternParser = new PatternParser(pattern, span, namespaces);
+        return patternParser.ParseUnionPattern();
+    }
+
     // ── Inner parser class ────────────────────────────────────────────────────
 
     private sealed class Parser
@@ -85,6 +107,19 @@ internal static class XPathParser
             _ns = ns;
             // Prime the lexer — Current is EndOfInput until first Advance.
             _lexer.Advance();
+        }
+
+        /// <summary>
+        /// Initializes a parser sharing an already-primed <paramref name="lexer"/>.
+        /// Used by <see cref="PatternParser"/> so that predicate expressions are parsed
+        /// using the same lexer position.
+        /// </summary>
+        internal Parser(XPathLexer lexer, SourceSpan baseSpan, IStaticNamespaceResolver ns)
+        {
+            _lexer = lexer;
+            _baseSpan = baseSpan;
+            _ns = ns;
+            // Lexer is already primed; do not call Advance() again.
         }
 
         // ── Token helpers ─────────────────────────────────────────────────────
@@ -1313,6 +1348,606 @@ internal static class XPathParser
 
             // NameTestAst in ItemType position shouldn't happen, but handle gracefully
             return ItemType.AnyNode;
+        }
+
+        // ── Internal predicate helper (used by PatternParser) ─────────────────
+
+        /// <summary>
+        /// Parses a full XPath Expr from the shared lexer and asserts the next token is ']'.
+        /// Used by the XSLT pattern parser to parse predicate expressions.
+        /// </summary>
+        internal XPathAst ParsePredicateExpr()
+        {
+            return ParseExprForParen();
+        }
+    }
+
+    // ── XSLT pattern parser ───────────────────────────────────────────────────
+
+    /// <summary>
+    /// Parses XSLT 2.0 patterns (§5.5.2). The XPath lexer and namespace resolver are shared
+    /// with a <see cref="Parser"/> instance so that predicates can be parsed via full XPath.
+    /// </summary>
+    private sealed class PatternParser
+    {
+        private readonly XPathLexer _lexer;
+        private readonly SourceSpan _baseSpan;
+        private readonly IStaticNamespaceResolver _ns;
+
+        // A Parser instance sharing the same lexer, used to parse predicate expressions.
+        private readonly Parser _xpathParser;
+
+        internal PatternParser(string pattern, SourceSpan baseSpan, IStaticNamespaceResolver ns)
+        {
+            _lexer = new XPathLexer(pattern, baseSpan);
+            _baseSpan = baseSpan;
+            _ns = ns;
+            _lexer.Advance();
+            _xpathParser = new Parser(_lexer, baseSpan, ns);
+        }
+
+        // ── Token helpers ─────────────────────────────────────────────────────
+
+        private Token Current => _lexer.Current;
+        private TokenKind Kind => _lexer.Current.Kind;
+
+        private Token Peek(int ahead = 1) => _lexer.Peek(ahead);
+
+        private Token Consume()
+        {
+            Token t = Current;
+            _lexer.Advance();
+            return t;
+        }
+
+        private Token Expect(TokenKind kind)
+        {
+            if (Kind != kind)
+            {
+                throw PatternError($"Expected {kind} but found {Kind} ('{Current.Text ?? Kind.ToString()}')");
+            }
+            return Consume();
+        }
+
+        private bool TryConsume(TokenKind kind)
+        {
+            if (Kind != kind) { return false; }
+            Consume();
+            return true;
+        }
+
+        private SourceSpan TokenSpan(Token t) => _baseSpan.WithRange(t.Start, t.Length);
+
+        private XsltStaticException PatternError(string message, int? offset = null)
+        {
+            int pos = offset ?? Current.Start;
+            int len = offset.HasValue ? 0 : Current.Length;
+            return new XsltStaticException(new Diagnostic[]
+            {
+                new Diagnostic(DiagnosticSeverity.Error, XsltErrors.XTSE0340,
+                               message, _baseSpan.WithRange(pos, len)),
+            });
+        }
+
+        // ── QName resolution ──────────────────────────────────────────────────
+
+        private QName ResolveQName(string rawName, string defaultNamespace, Token atToken)
+        {
+            int colon = rawName.IndexOf(':');
+            if (colon < 0)
+            {
+                return new QName("", defaultNamespace, rawName);
+            }
+
+            string prefix = rawName.Substring(0, colon);
+            string local = rawName.Substring(colon + 1);
+            string? uri = _ns.LookupNamespace(prefix);
+            if (uri == null)
+            {
+                throw new XPathStaticException(
+                    XPathErrors.XPST0081,
+                    $"Undeclared namespace prefix '{prefix}'",
+                    _baseSpan.WithRange(atToken.Start, atToken.Length));
+            }
+            return new QName(prefix, uri, local);
+        }
+
+        // ── Pattern grammar ───────────────────────────────────────────────────
+
+        // XSLT 2.0 §5.5.2: Pattern ::= PathPattern ("|" PathPattern)*
+        internal PatternAst ParseUnionPattern()
+        {
+            int start = Current.Start;
+            PatternAst first = ParsePathPattern();
+
+            if (Kind != TokenKind.Pipe)
+            {
+                // Ensure nothing is left over
+                if (Kind != TokenKind.EndOfInput)
+                {
+                    throw PatternError($"Unexpected token '{Current.Text ?? Kind.ToString()}' in pattern");
+                }
+                return first;
+            }
+
+            var alternatives = ImmutableArray.CreateBuilder<PatternAst>();
+            alternatives.Add(first);
+            while (TryConsume(TokenKind.Pipe))
+            {
+                alternatives.Add(ParsePathPattern());
+            }
+
+            if (Kind != TokenKind.EndOfInput)
+            {
+                throw PatternError($"Unexpected token '{Current.Text ?? Kind.ToString()}' in pattern");
+            }
+
+            return new UnionPatternAst(_baseSpan.WithRange(start, Current.Start - start), alternatives.ToImmutable());
+        }
+
+        // XSLT 2.0 §5.5.2:
+        // PathPattern ::= RelativePathPattern
+        //               | "/" RelativePathPattern?
+        //               | "//" RelativePathPattern
+        //               | IdKeyPattern (("/" | "//") RelativePathPattern)?
+        private PatternAst ParsePathPattern()
+        {
+            int start = Current.Start;
+
+            // "/" — rooted
+            if (Kind == TokenKind.Slash)
+            {
+                Consume(); // "/"
+                if (!CanStartStepPattern())
+                {
+                    // Bare "/"
+                    return new PathPatternAst(
+                        _baseSpan.WithRange(start, Current.Start - start),
+                        PatternAnchor.Root,
+                        ImmutableArray<StepPatternAst>.Empty);
+                }
+                var steps = ParseRelativePathPattern(StepCombinator.Leading);
+                return new PathPatternAst(
+                    _baseSpan.WithRange(start, Current.Start - start),
+                    PatternAnchor.Root, steps);
+            }
+
+            // "//" — root descendant
+            if (Kind == TokenKind.DoubleSlash)
+            {
+                Consume(); // "//"
+                var steps = ParseRelativePathPattern(StepCombinator.Leading);
+                return new PathPatternAst(
+                    _baseSpan.WithRange(start, Current.Start - start),
+                    PatternAnchor.RootDescendantOrSelf, steps);
+            }
+
+            // id(...) or key(...)  — but only when followed by "("
+            if (Kind == TokenKind.Name && Current.Text != null)
+            {
+                string name = Current.Text;
+                if (string.Equals(name, "id", StringComparison.Ordinal) && Peek(1).Kind == TokenKind.LeftParen)
+                {
+                    return ParseIdKeyPattern(start);
+                }
+                if (string.Equals(name, "key", StringComparison.Ordinal) && Peek(1).Kind == TokenKind.LeftParen)
+                {
+                    return ParseIdKeyPattern(start);
+                }
+            }
+
+            // RelativePathPattern
+            {
+                var steps = ParseRelativePathPattern(StepCombinator.Leading);
+                return new PathPatternAst(
+                    _baseSpan.WithRange(start, Current.Start - start),
+                    PatternAnchor.Relative, steps);
+            }
+        }
+
+        // XSLT 2.0 §5.5.2:
+        // RelativePathPattern ::= StepPattern (("/" | "//") StepPattern)*
+        private ImmutableArray<StepPatternAst> ParseRelativePathPattern(StepCombinator firstCombinator)
+        {
+            var steps = ImmutableArray.CreateBuilder<StepPatternAst>();
+            steps.Add(ParseStepPattern(firstCombinator));
+
+            while (Kind == TokenKind.Slash || Kind == TokenKind.DoubleSlash)
+            {
+                StepCombinator comb = Kind == TokenKind.DoubleSlash
+                    ? StepCombinator.DoubleSlash
+                    : StepCombinator.Slash;
+                Consume();
+                steps.Add(ParseStepPattern(comb));
+            }
+
+            return steps.ToImmutable();
+        }
+
+        // XSLT 2.0 §5.5.2:
+        // StepPattern ::= (ChildOrAttributeAxisSpecifier NodeTest PredicateList)
+        // ChildOrAttributeAxisSpecifier ::= ("child" "::") | ("attribute" "::") | "@"  (child is default)
+        private StepPatternAst ParseStepPattern(StepCombinator combinator)
+        {
+            int start = Current.Start;
+
+            // "@" → attribute axis
+            if (Kind == TokenKind.At)
+            {
+                Consume(); // "@"
+                NodeTestAst attrTest = ParsePatternNodeTest(Axis.Attribute);
+                ImmutableArray<XPathAst> attrPreds = ParsePatternPredicateList();
+                return new StepPatternAst(
+                    _baseSpan.WithRange(start, Current.Start - start),
+                    Axis.Attribute, attrTest, attrPreds, combinator);
+            }
+
+            // Check for axis name followed by "::"
+            if (Kind == TokenKind.Name && Current.Text != null && Peek(1).Kind == TokenKind.DoubleColon)
+            {
+                string axisName = Current.Text;
+                // Only child:: and attribute:: are allowed in pattern steps
+                if (string.Equals(axisName, "child", StringComparison.Ordinal))
+                {
+                    Consume(); // axis name
+                    Consume(); // "::"
+                    NodeTestAst childTest = ParsePatternNodeTest(Axis.Child);
+                    ImmutableArray<XPathAst> childPreds = ParsePatternPredicateList();
+                    return new StepPatternAst(
+                        _baseSpan.WithRange(start, Current.Start - start),
+                        Axis.Child, childTest, childPreds, combinator);
+                }
+                else if (string.Equals(axisName, "attribute", StringComparison.Ordinal))
+                {
+                    Consume(); // axis name
+                    Consume(); // "::"
+                    NodeTestAst attrTest2 = ParsePatternNodeTest(Axis.Attribute);
+                    ImmutableArray<XPathAst> attrPreds2 = ParsePatternPredicateList();
+                    return new StepPatternAst(
+                        _baseSpan.WithRange(start, Current.Start - start),
+                        Axis.Attribute, attrTest2, attrPreds2, combinator);
+                }
+                else if (s_axisNames.ContainsKey(axisName))
+                {
+                    // A known axis that is not child or attribute — XTSE0340
+                    throw PatternError($"Axis '{axisName}' is not allowed in a pattern step; only 'child' and 'attribute' are permitted", Current.Start);
+                }
+                // Not a known axis — fall through to treat as a name test
+            }
+
+            // ".." is parent::node() — forbidden in patterns
+            if (Kind == TokenKind.DotDot)
+            {
+                throw PatternError("'parent::node()' (..) is not allowed in a pattern step", Current.Start);
+            }
+
+            // Name, *, or kind test — implicit child axis
+            if (Kind == TokenKind.Name || Kind == TokenKind.Star ||
+                Kind == TokenKind.PrefixWildcard || Kind == TokenKind.LocalWildcard)
+            {
+                NodeTestAst test = ParsePatternNodeTest(Axis.Child);
+                ImmutableArray<XPathAst> preds = ParsePatternPredicateList();
+                return new StepPatternAst(
+                    _baseSpan.WithRange(start, Current.Start - start),
+                    Axis.Child, test, preds, combinator);
+            }
+
+            throw PatternError($"Expected a step pattern but found '{Current.Text ?? Kind.ToString()}'");
+        }
+
+        // Node tests valid in pattern context — same as full XPath node tests
+        private NodeTestAst ParsePatternNodeTest(Axis axis)
+        {
+            if (Kind == TokenKind.Name && Current.Text != null)
+            {
+                string name = Current.Text;
+                if (s_kindTestNames.Contains(name) && Peek(1).Kind == TokenKind.LeftParen)
+                {
+                    return ParseKindTestForPattern(axis);
+                }
+            }
+            return ParsePatternNameTest(axis);
+        }
+
+        private NameTestAst ParsePatternNameTest(Axis axis)
+        {
+            int start = Current.Start;
+            switch (Kind)
+            {
+                case TokenKind.Star:
+                {
+                    Consume();
+                    return new NameTestAst(_baseSpan.WithRange(start, 1), null, NameTestKind.AnyName);
+                }
+
+                case TokenKind.PrefixWildcard:
+                {
+                    Token t = Consume();
+                    string prefix = t.Text!;
+                    string? uri = _ns.LookupNamespace(prefix);
+                    if (uri == null)
+                    {
+                        throw new XPathStaticException(
+                            XPathErrors.XPST0081,
+                            $"Undeclared namespace prefix '{prefix}'",
+                            _baseSpan.WithRange(t.Start, t.Length));
+                    }
+                    var qn = new QName(prefix, uri, "*");
+                    return new NameTestAst(_baseSpan.WithRange(start, t.Length), qn, NameTestKind.PrefixWildcard);
+                }
+
+                case TokenKind.LocalWildcard:
+                {
+                    Token t = Consume();
+                    string local = t.Text!;
+                    var qn = new QName("", "", local);
+                    return new NameTestAst(_baseSpan.WithRange(start, t.Length), qn, NameTestKind.LocalWildcard);
+                }
+
+                case TokenKind.Name:
+                {
+                    Token t = Consume();
+                    string rawName = t.Text!;
+                    string defaultNs = (axis == Axis.Attribute) ? "" : _ns.DefaultElementNamespace;
+                    QName qn = ResolveQName(rawName, defaultNs, t);
+                    return new NameTestAst(_baseSpan.WithRange(start, t.Length), qn, NameTestKind.QualifiedName);
+                }
+
+                default:
+                    throw PatternError($"Expected a name test but found '{Current.Text ?? Kind.ToString()}'");
+            }
+        }
+
+        // Parse kind tests in pattern context — delegates to the XPath Parser's ParseKindTest
+        // by recreating a local inline parsing loop (the kind test grammar is identical).
+        private NodeTestAst ParseKindTestForPattern(Axis axis)
+        {
+            int start = Current.Start;
+            Token kindToken = Consume(); // kind name
+            string kindName = kindToken.Text!;
+            Expect(TokenKind.LeftParen); // "("
+
+            XdmNodeKind nodeKind = KindNameToNodeKindPattern(kindName);
+
+            if (string.Equals(kindName, "node", StringComparison.Ordinal))
+            {
+                Expect(TokenKind.RightParen);
+                return new AnyKindTestAst(_baseSpan.WithRange(start, Current.Start - start));
+            }
+
+            if (string.Equals(kindName, "text", StringComparison.Ordinal) ||
+                string.Equals(kindName, "comment", StringComparison.Ordinal))
+            {
+                Expect(TokenKind.RightParen);
+                return new KindTestAst(_baseSpan.WithRange(start, Current.Start - start), nodeKind, null, null);
+            }
+
+            if (string.Equals(kindName, "processing-instruction", StringComparison.Ordinal))
+            {
+                QName? piName = null;
+                if (Kind != TokenKind.RightParen)
+                {
+                    if (Kind == TokenKind.StringLiteral)
+                    {
+                        Token piTarget = Consume();
+                        piName = new QName("", "", piTarget.Text!);
+                    }
+                    else if (Kind == TokenKind.Name)
+                    {
+                        Token piTarget = Consume();
+                        piName = new QName("", "", piTarget.Text!);
+                    }
+                    else
+                    {
+                        throw PatternError("Expected PI target name or string literal");
+                    }
+                }
+                Expect(TokenKind.RightParen);
+                return new KindTestAst(_baseSpan.WithRange(start, Current.Start - start), nodeKind, piName, null);
+            }
+
+            if (string.Equals(kindName, "document-node", StringComparison.Ordinal))
+            {
+                NodeTestAst? elementArg = null;
+                if (Kind != TokenKind.RightParen)
+                {
+                    if (Kind == TokenKind.Name &&
+                        (string.Equals(Current.Text, "element", StringComparison.Ordinal) ||
+                         string.Equals(Current.Text, "schema-element", StringComparison.Ordinal)) &&
+                        Peek(1).Kind == TokenKind.LeftParen)
+                    {
+                        elementArg = ParseKindTestForPattern(Axis.Child);
+                    }
+                    else
+                    {
+                        throw PatternError("Expected element() inside document-node()");
+                    }
+                }
+                Expect(TokenKind.RightParen);
+                return new KindTestAst(_baseSpan.WithRange(start, Current.Start - start), nodeKind, null, elementArg);
+            }
+
+            if (string.Equals(kindName, "element", StringComparison.Ordinal) ||
+                string.Equals(kindName, "schema-element", StringComparison.Ordinal) ||
+                string.Equals(kindName, "attribute", StringComparison.Ordinal) ||
+                string.Equals(kindName, "schema-attribute", StringComparison.Ordinal))
+            {
+                QName? nameArg = null;
+                if (Kind != TokenKind.RightParen)
+                {
+                    if (Kind == TokenKind.Star)
+                    {
+                        Consume(); // wildcard — name stays null, but mark as "explicit wildcard"
+                        // We use a sentinel: null NameArg means both "empty" and "explicit *"
+                        // We need to distinguish element(*) from element() for priority.
+                        // Use a special QName with LocalName="*" to mark explicit wildcard.
+                        nameArg = new QName("", "", "*");
+                    }
+                    else if (Kind == TokenKind.Name)
+                    {
+                        Token nameToken = Consume();
+                        string defaultNs = (string.Equals(kindName, "attribute", StringComparison.Ordinal) ||
+                                            string.Equals(kindName, "schema-attribute", StringComparison.Ordinal))
+                            ? ""
+                            : _ns.DefaultElementNamespace;
+                        nameArg = ResolveQName(nameToken.Text!, defaultNs, nameToken);
+                    }
+                    else
+                    {
+                        throw PatternError($"Expected name or * in {kindName}() test");
+                    }
+
+                    // Skip optional second type argument (schema-aware, out of scope)
+                    if (Kind == TokenKind.Comma)
+                    {
+                        Consume();
+                        if (Kind == TokenKind.Name)
+                        {
+                            Consume();
+                            TryConsume(TokenKind.QuestionMark);
+                        }
+                        else if (Kind == TokenKind.Star)
+                        {
+                            Consume();
+                        }
+                    }
+                }
+                Expect(TokenKind.RightParen);
+                return new KindTestAst(_baseSpan.WithRange(start, Current.Start - start), nodeKind, nameArg, null);
+            }
+
+            Expect(TokenKind.RightParen);
+            return new KindTestAst(_baseSpan.WithRange(start, Current.Start - start), nodeKind, null, null);
+        }
+
+        private static XdmNodeKind KindNameToNodeKindPattern(string name)
+        {
+            return name switch
+            {
+                "element" => XdmNodeKind.Element,
+                "schema-element" => XdmNodeKind.Element,
+                "attribute" => XdmNodeKind.Attribute,
+                "schema-attribute" => XdmNodeKind.Attribute,
+                "text" => XdmNodeKind.Text,
+                "comment" => XdmNodeKind.Comment,
+                "processing-instruction" => XdmNodeKind.ProcessingInstruction,
+                "document-node" => XdmNodeKind.Document,
+                _ => XdmNodeKind.Element,
+            };
+        }
+
+        // Parse predicate list: "[" Expr "]"*
+        // Full XPath is allowed inside predicates (not just pattern syntax).
+        private ImmutableArray<XPathAst> ParsePatternPredicateList()
+        {
+            if (Kind != TokenKind.LeftBracket)
+            {
+                return ImmutableArray<XPathAst>.Empty;
+            }
+
+            var predicates = ImmutableArray.CreateBuilder<XPathAst>();
+            while (Kind == TokenKind.LeftBracket)
+            {
+                Consume(); // "["
+                XPathAst predExpr = _xpathParser.ParsePredicateExpr();
+                Expect(TokenKind.RightBracket);
+                predicates.Add(predExpr);
+            }
+            return predicates.ToImmutable();
+        }
+
+        // ── id() and key() patterns ───────────────────────────────────────────
+
+        // XSLT 2.0 §5.5.2:
+        // IdKeyPattern ::= "id" "(" (StringLiteral | VariableReference) ")"
+        //                | "key" "(" StringLiteral "," (StringLiteral | VariableReference) ")"
+        private PatternAst ParseIdKeyPattern(int start)
+        {
+            string funcName = Current.Text!;
+            Consume(); // "id" or "key"
+            Expect(TokenKind.LeftParen);
+
+            PatternAst head;
+
+            if (string.Equals(funcName, "id", StringComparison.Ordinal))
+            {
+                if (Kind == TokenKind.StringLiteral)
+                {
+                    Token lit = Consume();
+                    Expect(TokenKind.RightParen);
+                    head = new IdPatternAst(_baseSpan.WithRange(start, Current.Start - start), lit.Text!, null);
+                }
+                else if (Kind == TokenKind.VariableMarker)
+                {
+                    Consume(); // "$"
+                    Token varName = Expect(TokenKind.Name);
+                    QName varRef = ResolveQName(varName.Text!, "", varName);
+                    Expect(TokenKind.RightParen);
+                    head = new IdPatternAst(_baseSpan.WithRange(start, Current.Start - start), null, varRef);
+                }
+                else
+                {
+                    throw PatternError("Expected string literal or variable reference in id()");
+                }
+            }
+            else // "key"
+            {
+                Token keyNameToken = Expect(TokenKind.StringLiteral);
+                QName keyQName = new QName("", "", keyNameToken.Text!);
+                Expect(TokenKind.Comma);
+
+                KeyPatternAst keyHead;
+                if (Kind == TokenKind.StringLiteral)
+                {
+                    Token valLit = Consume();
+                    Expect(TokenKind.RightParen);
+                    keyHead = new KeyPatternAst(_baseSpan.WithRange(start, Current.Start - start), keyQName, valLit.Text!, null);
+                }
+                else if (Kind == TokenKind.VariableMarker)
+                {
+                    Consume(); // "$"
+                    Token varName = Expect(TokenKind.Name);
+                    QName varRef = ResolveQName(varName.Text!, "", varName);
+                    Expect(TokenKind.RightParen);
+                    keyHead = new KeyPatternAst(_baseSpan.WithRange(start, Current.Start - start), keyQName, null, varRef);
+                }
+                else
+                {
+                    throw PatternError("Expected string literal or variable reference as second argument of key()");
+                }
+                head = keyHead;
+            }
+
+            // Optional tail: ("/" | "//") RelativePathPattern
+            if (Kind == TokenKind.Slash || Kind == TokenKind.DoubleSlash)
+            {
+                StepCombinator comb = Kind == TokenKind.DoubleSlash
+                    ? StepCombinator.DoubleSlash
+                    : StepCombinator.Slash;
+                Consume();
+                ImmutableArray<StepPatternAst> tail = ParseRelativePathPattern(StepCombinator.Leading);
+                return new IdKeyWithPathAst(_baseSpan.WithRange(start, Current.Start - start), head, tail);
+            }
+
+            return head;
+        }
+
+        // ── Helpers ───────────────────────────────────────────────────────────
+
+        /// <summary>Returns true when the current token can start a step pattern.</summary>
+        private bool CanStartStepPattern()
+        {
+            switch (Kind)
+            {
+                case TokenKind.Name:
+                case TokenKind.At:
+                case TokenKind.Star:
+                case TokenKind.PrefixWildcard:
+                case TokenKind.LocalWildcard:
+                    return true;
+                default:
+                    return false;
+            }
         }
     }
 }
