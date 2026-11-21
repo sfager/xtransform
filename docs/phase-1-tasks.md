@@ -48,7 +48,7 @@ How to work through this list:
 
 ## P1-02 Errors and diagnostics
 
-- [ ] Done
+- [x] Done
 
 **Scope.** Exception hierarchy, `Diagnostic`, `DiagnosticBag`, `XPathErrors`, `XsltErrors` (start with the codes listed in interfaces.md; add more as later tasks need them).
 

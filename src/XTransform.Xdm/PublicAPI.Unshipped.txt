@@ -26,3 +26,48 @@ XTransform.Xdm.SourceSpan.Start.get -> int
 XTransform.Xdm.SourceSpan.WithRange(int start, int length) -> XTransform.Xdm.SourceSpan
 override XTransform.Xdm.SourceSpan.ToString() -> string!
 static XTransform.Xdm.SourceSpan.None.get -> XTransform.Xdm.SourceSpan
+XTransform.Xdm.DiagnosticSeverity
+XTransform.Xdm.DiagnosticSeverity.Error = 1 -> XTransform.Xdm.DiagnosticSeverity
+XTransform.Xdm.DiagnosticSeverity.Warning = 0 -> XTransform.Xdm.DiagnosticSeverity
+XTransform.Xdm.Diagnostic
+XTransform.Xdm.Diagnostic.Diagnostic(XTransform.Xdm.DiagnosticSeverity severity, XTransform.Xdm.QName code, string! message, XTransform.Xdm.SourceSpan location) -> void
+XTransform.Xdm.Diagnostic.Code.get -> XTransform.Xdm.QName
+XTransform.Xdm.Diagnostic.Location.get -> XTransform.Xdm.SourceSpan
+XTransform.Xdm.Diagnostic.Message.get -> string!
+XTransform.Xdm.Diagnostic.Severity.get -> XTransform.Xdm.DiagnosticSeverity
+override XTransform.Xdm.Diagnostic.ToString() -> string!
+XTransform.Xdm.XdmSequence
+XTransform.Xdm.XdmSequence.XdmSequence() -> void
+XTransform.Xdm.XPathErrors
+const XTransform.Xdm.XPathErrors.Namespace = "http://www.w3.org/2005/xqt-errors" -> string!
+static readonly XTransform.Xdm.XPathErrors.FOAR0001 -> XTransform.Xdm.QName
+static readonly XTransform.Xdm.XPathErrors.FOCA0002 -> XTransform.Xdm.QName
+static readonly XTransform.Xdm.XPathErrors.FORG0001 -> XTransform.Xdm.QName
+static readonly XTransform.Xdm.XPathErrors.XPDY0002 -> XTransform.Xdm.QName
+static readonly XTransform.Xdm.XPathErrors.XPST0003 -> XTransform.Xdm.QName
+static readonly XTransform.Xdm.XPathErrors.XPST0008 -> XTransform.Xdm.QName
+static readonly XTransform.Xdm.XPathErrors.XPST0017 -> XTransform.Xdm.QName
+static readonly XTransform.Xdm.XPathErrors.XPST0051 -> XTransform.Xdm.QName
+static readonly XTransform.Xdm.XPathErrors.XPST0081 -> XTransform.Xdm.QName
+static readonly XTransform.Xdm.XPathErrors.XPTY0004 -> XTransform.Xdm.QName
+XTransform.Xdm.XsltErrors
+static readonly XTransform.Xdm.XsltErrors.XTDE0640 -> XTransform.Xdm.QName
+static readonly XTransform.Xdm.XsltErrors.XTMM9000 -> XTransform.Xdm.QName
+static readonly XTransform.Xdm.XsltErrors.XTSE0010 -> XTransform.Xdm.QName
+XTransform.Xdm.XTransformException
+XTransform.Xdm.XTransformException.ErrorCode.get -> XTransform.Xdm.QName
+XTransform.Xdm.XTransformException.Location.get -> XTransform.Xdm.SourceSpan
+XTransform.Xdm.XTransformException.XTransformException(XTransform.Xdm.QName errorCode, string! message, XTransform.Xdm.SourceSpan location, System.Exception? innerException = null) -> void
+XTransform.Xdm.XPathStaticException
+XTransform.Xdm.XPathStaticException.XPathStaticException(XTransform.Xdm.QName errorCode, string! message, XTransform.Xdm.SourceSpan location) -> void
+XTransform.Xdm.XPathDynamicException
+XTransform.Xdm.XPathDynamicException.XPathDynamicException(XTransform.Xdm.QName errorCode, string! message, XTransform.Xdm.SourceSpan location) -> void
+XTransform.Xdm.XPathDynamicException.ErrorObject.get -> XTransform.Xdm.XdmSequence?
+XTransform.Xdm.XPathDynamicException.ErrorObject.init -> void
+XTransform.Xdm.XsltDynamicException
+XTransform.Xdm.XsltDynamicException.XsltDynamicException(XTransform.Xdm.QName errorCode, string! message, XTransform.Xdm.SourceSpan location) -> void
+XTransform.Xdm.XsltDynamicException.TemplateStack.get -> System.Collections.Generic.IReadOnlyList<XTransform.Xdm.SourceSpan>!
+XTransform.Xdm.XsltDynamicException.TemplateStack.init -> void
+XTransform.Xdm.XsltStaticException
+XTransform.Xdm.XsltStaticException.XsltStaticException(System.Collections.Generic.IReadOnlyList<XTransform.Xdm.Diagnostic!>! errors) -> void
+XTransform.Xdm.XsltStaticException.Errors.get -> System.Collections.Generic.IReadOnlyList<XTransform.Xdm.Diagnostic!>!
