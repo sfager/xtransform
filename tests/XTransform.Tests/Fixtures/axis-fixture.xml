@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<root xmlns:a="http://example.com/a">
+  <child1 id="x" a:name="first">
+    <grandchild1/>
+    <!-- comment -->
+    text content
+    <?pi target data?>
+    <grandchild2>
+      <great-grandchild/>
+    </grandchild2>
+  </child1>
+  <child2>
+    <grandchild3 a:name="deep"/>
+  </child2>
+  <child3/>
+</root>
