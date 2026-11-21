@@ -80,7 +80,7 @@ How to work through this list:
 
 ## P1-05 `XdmAtomicValue`
 
-- [ ] Done
+- [x] Done
 
 **Scope.** The class, all factories, `Parse`/`TryParse` for every v1 type, `GetStringValue`, typed accessors, value equality.
 

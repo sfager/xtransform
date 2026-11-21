@@ -158,6 +158,51 @@ override XTransform.Xdm.XsdDuration.Equals(object? obj) -> bool
 override XTransform.Xdm.XsdDuration.GetHashCode() -> int
 static XTransform.Xdm.XsdDuration.operator ==(XTransform.Xdm.XsdDuration l, XTransform.Xdm.XsdDuration r) -> bool
 static XTransform.Xdm.XsdDuration.operator !=(XTransform.Xdm.XsdDuration l, XTransform.Xdm.XsdDuration r) -> bool
+XTransform.Xdm.XdmItem
+abstract XTransform.Xdm.XdmItem.IsNode.get -> bool
+abstract XTransform.Xdm.XdmItem.IsAtomic.get -> bool
+abstract XTransform.Xdm.XdmItem.GetStringValue() -> string!
+XTransform.Xdm.XdmAtomicValue
+XTransform.Xdm.XdmAtomicValue.TypeCode.get -> XTransform.Xdm.XdmTypeCode
+override XTransform.Xdm.XdmAtomicValue.IsNode.get -> bool
+override XTransform.Xdm.XdmAtomicValue.IsAtomic.get -> bool
+override XTransform.Xdm.XdmAtomicValue.GetStringValue() -> string!
+static XTransform.Xdm.XdmAtomicValue.String(string! value) -> XTransform.Xdm.XdmAtomicValue!
+static XTransform.Xdm.XdmAtomicValue.UntypedAtomic(string! value) -> XTransform.Xdm.XdmAtomicValue!
+static XTransform.Xdm.XdmAtomicValue.AnyUri(string! value) -> XTransform.Xdm.XdmAtomicValue!
+static XTransform.Xdm.XdmAtomicValue.Boolean(bool value) -> XTransform.Xdm.XdmAtomicValue!
+static XTransform.Xdm.XdmAtomicValue.Integer(long value) -> XTransform.Xdm.XdmAtomicValue!
+static XTransform.Xdm.XdmAtomicValue.Integer(System.Numerics.BigInteger value) -> XTransform.Xdm.XdmAtomicValue!
+static XTransform.Xdm.XdmAtomicValue.Decimal(decimal value) -> XTransform.Xdm.XdmAtomicValue!
+static XTransform.Xdm.XdmAtomicValue.Decimal(XTransform.Xdm.XsdDecimal value) -> XTransform.Xdm.XdmAtomicValue!
+static XTransform.Xdm.XdmAtomicValue.Double(double value) -> XTransform.Xdm.XdmAtomicValue!
+static XTransform.Xdm.XdmAtomicValue.Float(float value) -> XTransform.Xdm.XdmAtomicValue!
+static XTransform.Xdm.XdmAtomicValue.QNameValue(XTransform.Xdm.QName value) -> XTransform.Xdm.XdmAtomicValue!
+static XTransform.Xdm.XdmAtomicValue.DateTimeValue(XTransform.Xdm.XsdDateTime value) -> XTransform.Xdm.XdmAtomicValue!
+static XTransform.Xdm.XdmAtomicValue.Duration(XTransform.Xdm.XsdDuration value) -> XTransform.Xdm.XdmAtomicValue!
+static XTransform.Xdm.XdmAtomicValue.DayTimeDuration(XTransform.Xdm.XsdDuration value) -> XTransform.Xdm.XdmAtomicValue!
+static XTransform.Xdm.XdmAtomicValue.YearMonthDuration(XTransform.Xdm.XsdDuration value) -> XTransform.Xdm.XdmAtomicValue!
+static XTransform.Xdm.XdmAtomicValue.HexBinary(System.ReadOnlyMemory<byte> value) -> XTransform.Xdm.XdmAtomicValue!
+static XTransform.Xdm.XdmAtomicValue.Base64Binary(System.ReadOnlyMemory<byte> value) -> XTransform.Xdm.XdmAtomicValue!
+static XTransform.Xdm.XdmAtomicValue.Parse(string! lexical, XTransform.Xdm.XdmTypeCode type) -> XTransform.Xdm.XdmAtomicValue!
+static XTransform.Xdm.XdmAtomicValue.TryParse(string! lexical, XTransform.Xdm.XdmTypeCode type, out XTransform.Xdm.XdmAtomicValue? value) -> bool
+XTransform.Xdm.XdmAtomicValue.AsString() -> string!
+XTransform.Xdm.XdmAtomicValue.AsBoolean() -> bool
+XTransform.Xdm.XdmAtomicValue.AsInt64() -> long
+XTransform.Xdm.XdmAtomicValue.AsBigInteger() -> System.Numerics.BigInteger
+XTransform.Xdm.XdmAtomicValue.AsDecimal() -> XTransform.Xdm.XsdDecimal
+XTransform.Xdm.XdmAtomicValue.AsDouble() -> double
+XTransform.Xdm.XdmAtomicValue.AsFloat() -> float
+XTransform.Xdm.XdmAtomicValue.AsQName() -> XTransform.Xdm.QName
+XTransform.Xdm.XdmAtomicValue.AsDateTime() -> XTransform.Xdm.XsdDateTime
+XTransform.Xdm.XdmAtomicValue.AsDuration() -> XTransform.Xdm.XsdDuration
+XTransform.Xdm.XdmAtomicValue.AsHexBinary() -> System.ReadOnlyMemory<byte>
+XTransform.Xdm.XdmAtomicValue.AsBase64Binary() -> System.ReadOnlyMemory<byte>
+XTransform.Xdm.XdmAtomicValue.Equals(XTransform.Xdm.XdmAtomicValue? other) -> bool
+override XTransform.Xdm.XdmAtomicValue.Equals(object? obj) -> bool
+override XTransform.Xdm.XdmAtomicValue.GetHashCode() -> int
+static XTransform.Xdm.XdmAtomicValue.operator ==(XTransform.Xdm.XdmAtomicValue? left, XTransform.Xdm.XdmAtomicValue? right) -> bool
+static XTransform.Xdm.XdmAtomicValue.operator !=(XTransform.Xdm.XdmAtomicValue? left, XTransform.Xdm.XdmAtomicValue? right) -> bool
 XTransform.Xdm.XsdDateTime
 XTransform.Xdm.XsdDateTime.XsdDateTime() -> void
 XTransform.Xdm.XsdDateTime.XsdDateTime(XTransform.Xdm.XsdDateTimeKind kind, long year, int month, int day, int hour, int minute, XTransform.Xdm.XsdDecimal second, int? timezoneMinutes) -> void
