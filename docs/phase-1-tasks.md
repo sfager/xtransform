@@ -69,7 +69,7 @@ How to work through this list:
 
 ## P1-04 Payload structs: decimal, duration, date/time
 
-- [ ] Done
+- [x] Done
 
 **Scope.** `XsdDecimal`, `XsdDuration`, `XsdDateTime` (see interfaces.md, Atomic types): lexical parsing per XSD 1.0, canonical output per F&O §17.1.2, equality and ordering per F&O §10.4 (date/time comparisons use the implicit timezone, which is a parameter, not `TimeZoneInfo.Local`).
 

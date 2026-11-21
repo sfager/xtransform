@@ -117,3 +117,64 @@ XTransform.Xdm.XdmTypeCode.Base64Binary = 41 -> XTransform.Xdm.XdmTypeCode
 XTransform.Xdm.XdmTypeCode.AnyUri = 42 -> XTransform.Xdm.XdmTypeCode
 XTransform.Xdm.XdmTypeCode.QName = 43 -> XTransform.Xdm.XdmTypeCode
 XTransform.Xdm.XdmTypeCode.Notation = 44 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XsdDecimal
+XTransform.Xdm.XsdDecimal.XsdDecimal() -> void
+XTransform.Xdm.XsdDecimal.XsdDecimal(decimal value) -> void
+XTransform.Xdm.XsdDecimal.Value.get -> decimal
+static XTransform.Xdm.XsdDecimal.Parse(string! lexical) -> XTransform.Xdm.XsdDecimal
+static XTransform.Xdm.XsdDecimal.TryParse(string! lexical, out XTransform.Xdm.XsdDecimal result) -> bool
+override XTransform.Xdm.XsdDecimal.ToString() -> string!
+XTransform.Xdm.XsdDecimal.Equals(XTransform.Xdm.XsdDecimal other) -> bool
+override XTransform.Xdm.XsdDecimal.Equals(object? obj) -> bool
+override XTransform.Xdm.XsdDecimal.GetHashCode() -> int
+XTransform.Xdm.XsdDecimal.CompareTo(XTransform.Xdm.XsdDecimal other) -> int
+static XTransform.Xdm.XsdDecimal.operator ==(XTransform.Xdm.XsdDecimal l, XTransform.Xdm.XsdDecimal r) -> bool
+static XTransform.Xdm.XsdDecimal.operator !=(XTransform.Xdm.XsdDecimal l, XTransform.Xdm.XsdDecimal r) -> bool
+static XTransform.Xdm.XsdDecimal.operator <(XTransform.Xdm.XsdDecimal l, XTransform.Xdm.XsdDecimal r) -> bool
+static XTransform.Xdm.XsdDecimal.operator >(XTransform.Xdm.XsdDecimal l, XTransform.Xdm.XsdDecimal r) -> bool
+static XTransform.Xdm.XsdDecimal.operator <=(XTransform.Xdm.XsdDecimal l, XTransform.Xdm.XsdDecimal r) -> bool
+static XTransform.Xdm.XsdDecimal.operator >=(XTransform.Xdm.XsdDecimal l, XTransform.Xdm.XsdDecimal r) -> bool
+static XTransform.Xdm.XsdDecimal.implicit operator XTransform.Xdm.XsdDecimal(decimal value) -> XTransform.Xdm.XsdDecimal
+static XTransform.Xdm.XsdDecimal.explicit operator decimal(XTransform.Xdm.XsdDecimal value) -> decimal
+XTransform.Xdm.XsdDateTimeKind
+XTransform.Xdm.XsdDateTimeKind.DateTime = 0 -> XTransform.Xdm.XsdDateTimeKind
+XTransform.Xdm.XsdDateTimeKind.Date = 1 -> XTransform.Xdm.XsdDateTimeKind
+XTransform.Xdm.XsdDateTimeKind.Time = 2 -> XTransform.Xdm.XsdDateTimeKind
+XTransform.Xdm.XsdDateTimeKind.GYearMonth = 3 -> XTransform.Xdm.XsdDateTimeKind
+XTransform.Xdm.XsdDateTimeKind.GYear = 4 -> XTransform.Xdm.XsdDateTimeKind
+XTransform.Xdm.XsdDateTimeKind.GMonthDay = 5 -> XTransform.Xdm.XsdDateTimeKind
+XTransform.Xdm.XsdDateTimeKind.GDay = 6 -> XTransform.Xdm.XsdDateTimeKind
+XTransform.Xdm.XsdDateTimeKind.GMonth = 7 -> XTransform.Xdm.XsdDateTimeKind
+XTransform.Xdm.XsdDuration
+XTransform.Xdm.XsdDuration.XsdDuration() -> void
+XTransform.Xdm.XsdDuration.XsdDuration(int months, XTransform.Xdm.XsdDecimal seconds) -> void
+XTransform.Xdm.XsdDuration.Months.get -> int
+XTransform.Xdm.XsdDuration.Seconds.get -> XTransform.Xdm.XsdDecimal
+static XTransform.Xdm.XsdDuration.Parse(string! lexical) -> XTransform.Xdm.XsdDuration
+static XTransform.Xdm.XsdDuration.TryParse(string! lexical, out XTransform.Xdm.XsdDuration result) -> bool
+override XTransform.Xdm.XsdDuration.ToString() -> string!
+XTransform.Xdm.XsdDuration.Equals(XTransform.Xdm.XsdDuration other) -> bool
+override XTransform.Xdm.XsdDuration.Equals(object? obj) -> bool
+override XTransform.Xdm.XsdDuration.GetHashCode() -> int
+static XTransform.Xdm.XsdDuration.operator ==(XTransform.Xdm.XsdDuration l, XTransform.Xdm.XsdDuration r) -> bool
+static XTransform.Xdm.XsdDuration.operator !=(XTransform.Xdm.XsdDuration l, XTransform.Xdm.XsdDuration r) -> bool
+XTransform.Xdm.XsdDateTime
+XTransform.Xdm.XsdDateTime.XsdDateTime() -> void
+XTransform.Xdm.XsdDateTime.XsdDateTime(XTransform.Xdm.XsdDateTimeKind kind, long year, int month, int day, int hour, int minute, XTransform.Xdm.XsdDecimal second, int? timezoneMinutes) -> void
+XTransform.Xdm.XsdDateTime.Kind.get -> XTransform.Xdm.XsdDateTimeKind
+XTransform.Xdm.XsdDateTime.Year.get -> long
+XTransform.Xdm.XsdDateTime.Month.get -> int
+XTransform.Xdm.XsdDateTime.Day.get -> int
+XTransform.Xdm.XsdDateTime.Hour.get -> int
+XTransform.Xdm.XsdDateTime.Minute.get -> int
+XTransform.Xdm.XsdDateTime.Second.get -> XTransform.Xdm.XsdDecimal
+XTransform.Xdm.XsdDateTime.TimezoneMinutes.get -> int?
+XTransform.Xdm.XsdDateTime.HasTimezone.get -> bool
+static XTransform.Xdm.XsdDateTime.Parse(string! lexical, XTransform.Xdm.XsdDateTimeKind kind) -> XTransform.Xdm.XsdDateTime
+static XTransform.Xdm.XsdDateTime.TryParse(string! lexical, XTransform.Xdm.XsdDateTimeKind kind, out XTransform.Xdm.XsdDateTime result) -> bool
+override XTransform.Xdm.XsdDateTime.ToString() -> string!
+XTransform.Xdm.XsdDateTime.Equals(XTransform.Xdm.XsdDateTime other) -> bool
+override XTransform.Xdm.XsdDateTime.Equals(object? obj) -> bool
+override XTransform.Xdm.XsdDateTime.GetHashCode() -> int
+static XTransform.Xdm.XsdDateTime.operator ==(XTransform.Xdm.XsdDateTime l, XTransform.Xdm.XsdDateTime r) -> bool
+static XTransform.Xdm.XsdDateTime.operator !=(XTransform.Xdm.XsdDateTime l, XTransform.Xdm.XsdDateTime r) -> bool
