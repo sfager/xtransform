@@ -34,10 +34,11 @@ wins. Schema-aware features are out of scope for v1.
 ## Build and test
 
 ```bash
-dotnet build                                   # all projects, all target frameworks
-dotnet test --filter "TestCategory!=Conformance"   # unit tests (fast)
-eng/fetch-test-suites.sh                       # once: clone pinned W3C suites into .testsuites/
-dotnet test tests/XTransform.Conformance       # conformance suites (slow)
+dotnet build                                                    # all projects, all target frameworks
+dotnet test --filter "TestCategory!=Conformance"                # unit tests (fast)
+dotnet test tests/XTransform.Tests --filter "Name~MethodName"  # single test or class
+eng/fetch-test-suites.sh                                        # once: ~550 MB into .testsuites/ (git-ignored)
+dotnet test tests/XTransform.Conformance                        # conformance suites (slow)
 ```
 
 On Windows use `pwsh eng/fetch-test-suites.ps1`. Tests also run on `net462` on Windows.
@@ -61,6 +62,10 @@ docs/                          design, decisions, interfaces, task lists
 
 References only point downward: Xdm ← XPath ← Xslt → Serialization → Xdm; XTransform ← Xslt;
 Compat and Cli ← XTransform. Never add a reference that points back up.
+
+Central build config: `Directory.Build.props` (version prefix/suffix, common properties),
+`Directory.Packages.props` (all NuGet version pins). `InternalsVisibleTo` in each src project
+already covers the test, conformance, and benchmark projects.
 
 ## Coding conventions
 
