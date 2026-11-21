@@ -101,7 +101,7 @@ How to work through this list:
 
 ## P1-07 Items, sequences, iterators
 
-- [ ] Done
+- [x] Done
 
 **Scope.** `XdmItem`, `XdmSequence` (empty, singleton, array, lazy), `IXdmIterator` and basic iterators (array, single, empty, concatenation, mapping).
 

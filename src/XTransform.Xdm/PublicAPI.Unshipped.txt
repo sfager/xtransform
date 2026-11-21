@@ -37,7 +37,20 @@ XTransform.Xdm.Diagnostic.Message.get -> string!
 XTransform.Xdm.Diagnostic.Severity.get -> XTransform.Xdm.DiagnosticSeverity
 override XTransform.Xdm.Diagnostic.ToString() -> string!
 XTransform.Xdm.XdmSequence
-XTransform.Xdm.XdmSequence.XdmSequence() -> void
+abstract XTransform.Xdm.XdmSequence.Count.get -> int
+abstract XTransform.Xdm.XdmSequence.GetIterator() -> XTransform.Xdm.IXdmIterator!
+abstract XTransform.Xdm.XdmSequence.this[int index].get -> XTransform.Xdm.XdmItem!
+virtual XTransform.Xdm.XdmSequence.FirstOrNull() -> XTransform.Xdm.XdmItem?
+XTransform.Xdm.XdmSequence.GetEnumerator() -> System.Collections.Generic.IEnumerator<XTransform.Xdm.XdmItem!>!
+XTransform.Xdm.XdmSequence.IsEmpty.get -> bool
+static XTransform.Xdm.XdmSequence.Empty.get -> XTransform.Xdm.XdmSequence!
+static XTransform.Xdm.XdmSequence.From(System.Collections.Generic.IEnumerable<XTransform.Xdm.XdmItem!>! items) -> XTransform.Xdm.XdmSequence!
+static XTransform.Xdm.XdmSequence.Of(XTransform.Xdm.XdmItem! item) -> XTransform.Xdm.XdmSequence!
+static XTransform.Xdm.XdmSequence.Of(params XTransform.Xdm.XdmItem![]! items) -> XTransform.Xdm.XdmSequence!
+XTransform.Xdm.IXdmIterator
+XTransform.Xdm.IXdmIterator.Clone() -> XTransform.Xdm.IXdmIterator!
+XTransform.Xdm.IXdmIterator.Next() -> XTransform.Xdm.XdmItem?
+XTransform.Xdm.IXdmIterator.Position.get -> int
 XTransform.Xdm.XPathErrors
 const XTransform.Xdm.XPathErrors.Namespace = "http://www.w3.org/2005/xqt-errors" -> string!
 static readonly XTransform.Xdm.XPathErrors.FOAR0001 -> XTransform.Xdm.QName
