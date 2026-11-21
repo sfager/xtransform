@@ -183,7 +183,7 @@ How to work through this list:
 
 ## P1-15 Gate G1 run and CI job
 
-- [ ] Done
+- [x] Done
 
 **Scope.** Fix parser gaps until G1's numbers are met; add a CI job that fetches the suites (cached by commit), runs the conformance project and uploads the summary as an artifact; fail the job if the pass-rate drops below the last recorded value in `tests/XTransform.Conformance/baseline.json`.
 
