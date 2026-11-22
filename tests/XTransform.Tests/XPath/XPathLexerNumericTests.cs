@@ -71,7 +71,7 @@ internal sealed class XPathLexerNumericTests
     // ── Leading minus is NOT part of numeric literal ──────────────────────────────────────
 
     [Test]
-    public void Minus_BeforeInteger_IsSeperateMinusToken()
+    public void Minus_BeforeInteger_IsSeparateMinusToken()
     {
         // Arrange
         var lexer = new XPathLexer("-5", SourceSpan.None);
