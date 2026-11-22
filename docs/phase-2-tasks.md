@@ -72,7 +72,7 @@ slot allocator helper for the compiler to reserve local-variable indexes.
 
 ## P2-02 XPath compiler
 
-- [ ] Done
+- [x] Done
 
 **Scope.** `XPathCompiler.Compile(XPathAst, IStaticNamespaceResolver, FunctionLibrary) → ExpressionNode`.
 Three passes: (1) name and scope resolution — bind each `VariableRef` to a
