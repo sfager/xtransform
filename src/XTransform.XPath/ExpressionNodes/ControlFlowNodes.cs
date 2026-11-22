@@ -1,14 +1,14 @@
 // XPath 2.0 §3.8 — for expressions; §3.9 — quantified expressions; §3.10 — if expressions.
 
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Text;
 using XTransform.Xdm;
+using XTransform.Xdm.Iterators;
 using XTransform.XPath.Ast;
 
 namespace XTransform.XPath.ExpressionNodes;
-
-// TODO (P2-04): implement Iterate for ForNode, QuantifiedNode, IfNode
 
 /// <summary>
 /// A single variable binding in a for-expression or quantified expression.
@@ -49,8 +49,48 @@ internal sealed class ForNode : ExpressionNode
     /// <inheritdoc/>
     public override IXdmIterator Iterate(DynamicContext context)
     {
-        // TODO (P2-04): implement Iterate
-        throw new NotImplementedException("Evaluation for ForNode is implemented in P2-04.");
+        return new EnumeratorIterator(() => EnumerateBindings(context, 0).GetEnumerator());
+    }
+
+    // XPath 2.0 §3.8: each clause iterates its sequence; the return expression is evaluated
+    // once per nested-tuple binding, and its items are yielded in order. Nested clauses
+    // form a lexicographic cross-product.
+    private IEnumerable<XdmItem> EnumerateBindings(DynamicContext context, int clauseIndex)
+    {
+        if (clauseIndex == Clauses.Length)
+        {
+            IXdmIterator inner = Return.Iterate(context);
+            while (true)
+            {
+                XdmItem? n = inner.Next();
+                if (n is null)
+                {
+                    yield break;
+                }
+                yield return n;
+            }
+        }
+        else
+        {
+            ForClauseBinding clause = Clauses[clauseIndex];
+            IXdmIterator source = clause.SequenceExpr.Iterate(context);
+            XdmSequence[] frame = context.LocalFrame;
+            while (true)
+            {
+                XdmItem? item = source.Next();
+                if (item is null)
+                {
+                    yield break;
+                }
+                // $v in XPath 2.0 is bound to a single item. Store it as a one-item sequence
+                // so VariableRefNode.Iterate can return a fresh iterator each time.
+                frame[clause.SlotIndex] = XdmSequence.Of(item);
+                foreach (XdmItem inner in EnumerateBindings(context, clauseIndex + 1))
+                {
+                    yield return inner;
+                }
+            }
+        }
     }
 
     /// <inheritdoc/>
@@ -122,8 +162,56 @@ internal sealed class QuantifiedNode : ExpressionNode
     /// <inheritdoc/>
     public override IXdmIterator Iterate(DynamicContext context)
     {
-        // TODO (P2-04): implement Iterate
-        throw new NotImplementedException("Evaluation for QuantifiedNode is implemented in P2-04.");
+        bool result = EvaluateBoolean(context);
+        return new SingleItemIterator(XdmAtomicValue.Boolean(result));
+    }
+
+    /// <inheritdoc/>
+    public override XdmItem? EvaluateItem(DynamicContext context)
+        => XdmAtomicValue.Boolean(EvaluateBoolean(context));
+
+    /// <inheritdoc/>
+    public override bool EffectiveBooleanValue(DynamicContext context)
+        => EvaluateBoolean(context);
+
+    // XPath 2.0 §3.9: 'some' is true iff at least one tuple makes satisfies true; 'every'
+    // is true iff every tuple makes it true. Both short-circuit; both vacuously match
+    // the empty source (some → false, every → true).
+    private bool EvaluateBoolean(DynamicContext context) => EvaluateAtClause(context, 0);
+
+    private bool EvaluateAtClause(DynamicContext context, int clauseIndex)
+    {
+        if (clauseIndex == Clauses.Length)
+        {
+            return Satisfies.EffectiveBooleanValue(context);
+        }
+
+        ForClauseBinding clause = Clauses[clauseIndex];
+        IXdmIterator source = clause.SequenceExpr.Iterate(context);
+        XdmSequence[] frame = context.LocalFrame;
+        while (true)
+        {
+            XdmItem? item = source.Next();
+            if (item is null)
+            {
+                break;
+            }
+            frame[clause.SlotIndex] = XdmSequence.Of(item);
+            bool inner = EvaluateAtClause(context, clauseIndex + 1);
+            if (Kind == QuantifierKind.Some && inner)
+            {
+                return true;
+            }
+            if (Kind == QuantifierKind.Every && !inner)
+            {
+                return false;
+            }
+        }
+
+        // No tuple produced the early-exit result.
+        //   some: nothing was true → false
+        //   every: nothing was false (incl. the empty case) → true
+        return Kind == QuantifierKind.Every;
     }
 
     /// <inheritdoc/>
@@ -195,9 +283,24 @@ internal sealed class IfNode : ExpressionNode
     /// <inheritdoc/>
     public override IXdmIterator Iterate(DynamicContext context)
     {
-        // TODO (P2-04): implement Iterate
-        throw new NotImplementedException("Evaluation for IfNode is implemented in P2-04.");
+        // XPath 2.0 §3.10: evaluate the test's effective boolean value, then pick ONE branch.
+        // The untaken branch is never evaluated, even if it would have thrown.
+        return Test.EffectiveBooleanValue(context)
+            ? Then.Iterate(context)
+            : Else.Iterate(context);
     }
+
+    /// <inheritdoc/>
+    public override XdmItem? EvaluateItem(DynamicContext context)
+        => Test.EffectiveBooleanValue(context)
+            ? Then.EvaluateItem(context)
+            : Else.EvaluateItem(context);
+
+    /// <inheritdoc/>
+    public override bool EffectiveBooleanValue(DynamicContext context)
+        => Test.EffectiveBooleanValue(context)
+            ? Then.EffectiveBooleanValue(context)
+            : Else.EffectiveBooleanValue(context);
 
     /// <inheritdoc/>
     public override string ToDebugString()
