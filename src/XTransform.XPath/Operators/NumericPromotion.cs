@@ -1,7 +1,6 @@
 // F&O §6.2 — numeric type promotion lattice.
 // xs:integer < xs:decimal < xs:float < xs:double
 
-using System;
 using XTransform.Xdm;
 
 namespace XTransform.XPath.Operators;
