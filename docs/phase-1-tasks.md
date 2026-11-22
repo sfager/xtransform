@@ -142,7 +142,7 @@ How to work through this list:
 
 ## P1-11 XPath lexer
 
-- [ ] Done
+- [x] Done
 
 **Scope.** `TokenKind`, `Token`, `XPathLexer` per XPath 2.0 Appendix A.2 (lexical structure), including operand/operator state for `*`, `div`, `-` and keyword names, nested comments, string escapes (`""` and `''`), and numeric literal forms.
 
