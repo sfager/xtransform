@@ -42,4 +42,20 @@ public static class XPathErrors
 
     /// <summary>fn:error called with no argument or an error QName (F&amp;O §3.1.1 / FOER0000).</summary>
     public static readonly QName FOER0000 = new QName("err", Namespace, "FOER0000");
+
+    /// <summary>
+    /// An invalid code point was supplied as an argument to fn:codepoints-to-string.
+    /// (F&amp;O §7.2.1 FOCH0001)
+    /// </summary>
+    public static readonly QName FOCH0001 = new QName("err", Namespace, "FOCH0001");
+
+    /// <summary>
+    /// The collation URI is not in the statically known collations. (F&amp;O §7.3.4 FOCH0002)
+    /// </summary>
+    public static readonly QName FOCH0002 = new QName("err", Namespace, "FOCH0002");
+
+    /// <summary>
+    /// The normalization form is not supported. (F&amp;O §7.4.6 FOCH0003)
+    /// </summary>
+    public static readonly QName FOCH0003 = new QName("err", Namespace, "FOCH0003");
 }
