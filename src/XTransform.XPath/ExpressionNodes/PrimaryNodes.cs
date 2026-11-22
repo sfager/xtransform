@@ -4,11 +4,12 @@ using System;
 using System.Collections.Immutable;
 using System.Text;
 using XTransform.Xdm;
+using XTransform.Xdm.Iterators;
 
 namespace XTransform.XPath.ExpressionNodes;
 
-// TODO (P2-03): implement Iterate for LiteralNode, ContextItemNode, EmptySequenceNode,
-// SequenceConcatNode, VariableRefNode, FunctionCallNode
+// TODO (P2-04): implement Iterate for VariableRefNode
+// TODO (P2-08): implement Iterate for FunctionCallNode
 
 /// <summary>
 /// A compiled literal value — xs:integer, xs:decimal, xs:double, or xs:string.
@@ -33,9 +34,12 @@ internal sealed class LiteralNode : ExpressionNode
     /// <inheritdoc/>
     public override IXdmIterator Iterate(DynamicContext context)
     {
-        // TODO (P2-03): implement Iterate
-        throw new NotImplementedException("Evaluation for LiteralNode is implemented in P2-03.");
+        // Literal values are context-independent; produce a one-item iterator.
+        return new SingleItemIterator(Value);
     }
+
+    /// <inheritdoc/>
+    public override XdmItem? EvaluateItem(DynamicContext context) => Value;
 
     /// <inheritdoc/>
     public override string ToDebugString()
@@ -63,8 +67,23 @@ internal sealed class ContextItemNode : ExpressionNode
     /// <inheritdoc/>
     public override IXdmIterator Iterate(DynamicContext context)
     {
-        // TODO (P2-03): implement Iterate
-        throw new NotImplementedException("Evaluation for ContextItemNode is implemented in P2-03.");
+        XdmItem? item = EvaluateItem(context);
+        return item is null ? EmptyIterator.Instance : new SingleItemIterator(item);
+    }
+
+    /// <inheritdoc/>
+    public override XdmItem? EvaluateItem(DynamicContext context)
+    {
+        // XPath 2.0 §2.1.2 — reading the context item when none is in scope raises XPDY0002.
+        XdmItem? item = context.ContextItem;
+        if (item is null)
+        {
+            throw new XPathDynamicException(
+                XPathErrors.XPDY0002,
+                "The context item is undefined",
+                Location);
+        }
+        return item;
     }
 
     /// <inheritdoc/>
@@ -84,11 +103,13 @@ internal sealed class EmptySequenceNode : ExpressionNode
     }
 
     /// <inheritdoc/>
-    public override IXdmIterator Iterate(DynamicContext context)
-    {
-        // TODO (P2-03): implement Iterate
-        throw new NotImplementedException("Evaluation for EmptySequenceNode is implemented in P2-03.");
-    }
+    public override IXdmIterator Iterate(DynamicContext context) => EmptyIterator.Instance;
+
+    /// <inheritdoc/>
+    public override XdmItem? EvaluateItem(DynamicContext context) => null;
+
+    /// <inheritdoc/>
+    public override bool EffectiveBooleanValue(DynamicContext context) => false;
 
     /// <inheritdoc/>
     public override string ToDebugString() => "EmptySequenceNode";
@@ -119,8 +140,58 @@ internal sealed class SequenceConcatNode : ExpressionNode
     /// <inheritdoc/>
     public override IXdmIterator Iterate(DynamicContext context)
     {
-        // TODO (P2-03): implement Iterate
-        throw new NotImplementedException("Evaluation for SequenceConcatNode is implemented in P2-03.");
+        return new ExpressionConcatIterator(Items, context);
+    }
+
+    /// <summary>
+    /// Pull-style concatenation of expression sub-iterators. Each child expression's
+    /// <see cref="ExpressionNode.Iterate"/> is only invoked when the previous child has
+    /// been fully consumed, so a consumer that stops after N items only evaluates the
+    /// children producing those N items.
+    /// </summary>
+    private sealed class ExpressionConcatIterator : IXdmIterator
+    {
+        private readonly ImmutableArray<ExpressionNode> _nodes;
+        private readonly DynamicContext _context;
+        private int _nodeIndex;
+        private IXdmIterator? _currentInner;
+        private int _position;
+
+        public ExpressionConcatIterator(ImmutableArray<ExpressionNode> nodes, DynamicContext context)
+        {
+            _nodes = nodes;
+            _context = context;
+        }
+
+        public int Position => _position;
+
+        public XdmItem? Next()
+        {
+            while (true)
+            {
+                if (_currentInner is null)
+                {
+                    if (_nodeIndex >= _nodes.Length)
+                    {
+                        return null;
+                    }
+                    _currentInner = _nodes[_nodeIndex].Iterate(_context);
+                    _nodeIndex++;
+                }
+                XdmItem? item = _currentInner.Next();
+                if (item is not null)
+                {
+                    _position++;
+                    return item;
+                }
+                _currentInner = null;
+            }
+        }
+
+        public IXdmIterator Clone()
+        {
+            return new ExpressionConcatIterator(_nodes, _context);
+        }
     }
 
     /// <inheritdoc/>

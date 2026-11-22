@@ -98,7 +98,7 @@ variable binding.
 
 ## P2-03 Literal, sequence, parens, context item
 
-- [ ] Done
+- [x] Done
 
 **Scope.** `LiteralNode`, `SequenceConcatNode` (for `(a, b, c)` with lazy
 concat), `ContextItemNode`. ParenthesizedExpr is folded away by the compiler
