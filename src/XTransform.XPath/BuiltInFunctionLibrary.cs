@@ -40,6 +40,7 @@ internal sealed class BuiltInFunctionLibrary : FunctionLibrary
         RegisterSequences();
         RegisterRegex();
         RegisterConstructors();
+        RegisterQNames();
     }
 
     // ── FunctionLibrary contract ───────────────────────────────────────────────
@@ -661,6 +662,8 @@ internal sealed class BuiltInFunctionLibrary : FunctionLibrary
         new SequenceType(ItemType.AnyItem, Occurrence.OneOrMore);
     private static SequenceType ST_Element_Star =>
         new SequenceType(ItemType.Kind(XdmNodeKind.Element), Occurrence.ZeroOrMore);
+    private static SequenceType ST_Element_ExactlyOne =>
+        new SequenceType(ItemType.Kind(XdmNodeKind.Element), Occurrence.ExactlyOne);
     private static SequenceType ST_Node_Star =>
         new SequenceType(ItemType.AnyNode, Occurrence.ZeroOrMore);
 
@@ -829,6 +832,56 @@ internal sealed class BuiltInFunctionLibrary : FunctionLibrary
         Register("tokenize", 3, ST_String_Star,
             new[] { ST_String_ZeroOrOne, ST_String_ExactlyOne, ST_String_ExactlyOne },
             RegexFunctions.FnTokenize3);
+    }
+
+    private void RegisterQNames()
+    {
+        // F&O §16.1.1 fn:QName($paramURI as xs:string?, $paramQName as xs:string) as xs:QName
+        Register("QName", 2, ST_QName_ExactlyOne,
+            new[] { ST_String_ZeroOrOne, ST_String_ExactlyOne },
+            QNameFunctions.FnQName);
+
+        // F&O §16.1.2 fn:resolve-QName($qname as xs:string?, $element as element()) as xs:QName?
+        Register("resolve-QName", 2, ST_QName_ZeroOrOne,
+            new[] { ST_String_ZeroOrOne, ST_Element_ExactlyOne },
+            QNameFunctions.FnResolveQName);
+
+        // F&O §16.1.3 fn:prefix-from-QName($arg as xs:QName?) as xs:NCName?
+        // Return type is xs:NCName? — represented as xs:string? here (NCName is-a string).
+        Register("prefix-from-QName", 1, ST_String_ZeroOrOne,
+            new[] { ST_QName_ZeroOrOne },
+            QNameFunctions.FnPrefixFromQName);
+
+        // F&O §16.1.4 fn:local-name-from-QName($arg as xs:QName?) as xs:NCName?
+        Register("local-name-from-QName", 1, ST_String_ZeroOrOne,
+            new[] { ST_QName_ZeroOrOne },
+            QNameFunctions.FnLocalNameFromQName);
+
+        // F&O §16.1.5 fn:namespace-uri-from-QName($arg as xs:QName?) as xs:anyURI?
+        Register("namespace-uri-from-QName", 1, ST_AnyUri_ZeroOrOne,
+            new[] { ST_QName_ZeroOrOne },
+            QNameFunctions.FnNamespaceUriFromQName);
+
+        // F&O §16.1.6 fn:namespace-uri-for-prefix($prefix as xs:string?, $element as element()) as xs:anyURI?
+        Register("namespace-uri-for-prefix", 2, ST_AnyUri_ZeroOrOne,
+            new[] { ST_String_ZeroOrOne, ST_Element_ExactlyOne },
+            QNameFunctions.FnNamespaceUriForPrefix);
+
+        // F&O §16.1.7 fn:in-scope-prefixes($element as element()) as xs:string*
+        Register("in-scope-prefixes", 1, ST_String_Star,
+            new[] { ST_Element_ExactlyOne },
+            QNameFunctions.FnInScopePrefixes);
+
+        // F&O §13.3.2 fn:lang($testlang as xs:string?) as xs:boolean — 1-arg uses context item
+        Register("lang", 1, ST_Boolean_ExactlyOne,
+            new[] { ST_String_ZeroOrOne },
+            QNameFunctions.FnLang1,
+            ExpressionDependencies.ContextItem);
+
+        // F&O §13.3.2 fn:lang($testlang as xs:string?, $node as node()) as xs:boolean — 2-arg
+        Register("lang", 2, ST_Boolean_ExactlyOne,
+            new[] { ST_String_ZeroOrOne, ST_Node_ExactlyOne },
+            QNameFunctions.FnLang2);
     }
 
     /// <summary>

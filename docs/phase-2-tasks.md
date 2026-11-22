@@ -358,7 +358,7 @@ pattern string; cache compiled regexes in `RunState` by translated pattern.
 
 ## P2-14 QName and namespace functions
 
-- [ ] Done
+- [x] Done
 
 **Scope.** F&O §16: `fn:QName`, `fn:resolve-QName`, `fn:prefix-from-QName`,
 `fn:local-name-from-QName`, `fn:namespace-uri-from-QName`,

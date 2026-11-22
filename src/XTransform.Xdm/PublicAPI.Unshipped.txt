@@ -312,3 +312,4 @@ XTransform.Xdm.SequenceType.SequenceType(XTransform.Xdm.ItemType! itemType, XTra
 override XTransform.Xdm.SequenceType.ToString() -> string!
 static XTransform.Xdm.SequenceType.AnySequence.get -> XTransform.Xdm.SequenceType!
 static XTransform.Xdm.SequenceType.EmptySequence.get -> XTransform.Xdm.SequenceType!
+static readonly XTransform.Xdm.XPathErrors.FONS0004 -> XTransform.Xdm.QName
