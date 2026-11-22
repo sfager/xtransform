@@ -37,7 +37,7 @@ How to work through this list:
 
 ## P1-01 Names and source locations
 
-- [ ] Done
+- [x] Done
 
 **Scope.** `QName`, `NamePool`, `SourceSpan` in `XTransform.Xdm`.
 
@@ -48,7 +48,7 @@ How to work through this list:
 
 ## P1-02 Errors and diagnostics
 
-- [ ] Done
+- [x] Done
 
 **Scope.** Exception hierarchy, `Diagnostic`, `DiagnosticBag`, `XPathErrors`, `XsltErrors` (start with the codes listed in interfaces.md; add more as later tasks need them).
 
@@ -59,7 +59,7 @@ How to work through this list:
 
 ## P1-03 Atomic type hierarchy
 
-- [ ] Done
+- [x] Done
 
 **Scope.** `XdmTypeCode` and the derivation tree: `CastTable.PrimitiveTypeOf`, `CastTable.IsSubtypeOf`, plus a name ↔ code map for `xs:` names (used by the parser for `cast as`, `instance of`).
 
@@ -69,7 +69,7 @@ How to work through this list:
 
 ## P1-04 Payload structs: decimal, duration, date/time
 
-- [ ] Done
+- [x] Done
 
 **Scope.** `XsdDecimal`, `XsdDuration`, `XsdDateTime` (see interfaces.md, Atomic types): lexical parsing per XSD 1.0, canonical output per F&O §17.1.2, equality and ordering per F&O §10.4 (date/time comparisons use the implicit timezone, which is a parameter, not `TimeZoneInfo.Local`).
 
@@ -80,7 +80,7 @@ How to work through this list:
 
 ## P1-05 `XdmAtomicValue`
 
-- [ ] Done
+- [x] Done
 
 **Scope.** The class, all factories, `Parse`/`TryParse` for every v1 type, `GetStringValue`, typed accessors, value equality.
 
@@ -91,7 +91,7 @@ How to work through this list:
 
 ## P1-06 Cast table
 
-- [ ] Done
+- [x] Done
 
 **Scope.** `CastTable.IsCastAllowed`, `Cast`, `TryCast`, `TryPromote` per F&O §17.1 (the full casting matrix).
 
@@ -101,7 +101,7 @@ How to work through this list:
 
 ## P1-07 Items, sequences, iterators
 
-- [ ] Done
+- [x] Done
 
 **Scope.** `XdmItem`, `XdmSequence` (empty, singleton, array, lazy), `IXdmIterator` and basic iterators (array, single, empty, concatenation, mapping).
 

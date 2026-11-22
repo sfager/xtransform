@@ -5,4 +5,10 @@
     <ProjectReference Include="..\..\src\XTransform.Compat\XTransform.Compat.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="TestData\CastMatrix.csv">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

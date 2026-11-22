@@ -1,1 +1,238 @@
 #nullable enable
+XTransform.Xdm.QName
+XTransform.Xdm.QName.QName() -> void
+XTransform.Xdm.QName.QName(string! localName) -> void
+XTransform.Xdm.QName.QName(string! namespaceUri, string! localName) -> void
+XTransform.Xdm.QName.QName(string! prefix, string! namespaceUri, string! localName) -> void
+XTransform.Xdm.QName.ClarkName.get -> string!
+XTransform.Xdm.QName.LocalName.get -> string!
+XTransform.Xdm.QName.NamespaceUri.get -> string!
+XTransform.Xdm.QName.Prefix.get -> string!
+XTransform.Xdm.QName.Equals(XTransform.Xdm.QName other) -> bool
+override XTransform.Xdm.QName.Equals(object? obj) -> bool
+override XTransform.Xdm.QName.GetHashCode() -> int
+override XTransform.Xdm.QName.ToString() -> string!
+static XTransform.Xdm.QName.ParseClark(string! clarkName) -> XTransform.Xdm.QName
+static XTransform.Xdm.QName.operator !=(XTransform.Xdm.QName left, XTransform.Xdm.QName right) -> bool
+static XTransform.Xdm.QName.operator ==(XTransform.Xdm.QName left, XTransform.Xdm.QName right) -> bool
+XTransform.Xdm.SourceSpan
+XTransform.Xdm.SourceSpan.SourceSpan() -> void
+XTransform.Xdm.SourceSpan.SourceSpan(string? moduleUri, int line, int column, int start = 0, int length = 0) -> void
+XTransform.Xdm.SourceSpan.Column.get -> int
+XTransform.Xdm.SourceSpan.Length.get -> int
+XTransform.Xdm.SourceSpan.Line.get -> int
+XTransform.Xdm.SourceSpan.ModuleUri.get -> string?
+XTransform.Xdm.SourceSpan.Start.get -> int
+XTransform.Xdm.SourceSpan.WithRange(int start, int length) -> XTransform.Xdm.SourceSpan
+override XTransform.Xdm.SourceSpan.ToString() -> string!
+static XTransform.Xdm.SourceSpan.None.get -> XTransform.Xdm.SourceSpan
+XTransform.Xdm.DiagnosticSeverity
+XTransform.Xdm.DiagnosticSeverity.Error = 1 -> XTransform.Xdm.DiagnosticSeverity
+XTransform.Xdm.DiagnosticSeverity.Warning = 0 -> XTransform.Xdm.DiagnosticSeverity
+XTransform.Xdm.Diagnostic
+XTransform.Xdm.Diagnostic.Diagnostic(XTransform.Xdm.DiagnosticSeverity severity, XTransform.Xdm.QName code, string! message, XTransform.Xdm.SourceSpan location) -> void
+XTransform.Xdm.Diagnostic.Code.get -> XTransform.Xdm.QName
+XTransform.Xdm.Diagnostic.Location.get -> XTransform.Xdm.SourceSpan
+XTransform.Xdm.Diagnostic.Message.get -> string!
+XTransform.Xdm.Diagnostic.Severity.get -> XTransform.Xdm.DiagnosticSeverity
+override XTransform.Xdm.Diagnostic.ToString() -> string!
+XTransform.Xdm.XdmSequence
+abstract XTransform.Xdm.XdmSequence.Count.get -> int
+abstract XTransform.Xdm.XdmSequence.GetIterator() -> XTransform.Xdm.IXdmIterator!
+abstract XTransform.Xdm.XdmSequence.this[int index].get -> XTransform.Xdm.XdmItem!
+virtual XTransform.Xdm.XdmSequence.FirstOrNull() -> XTransform.Xdm.XdmItem?
+XTransform.Xdm.XdmSequence.GetEnumerator() -> System.Collections.Generic.IEnumerator<XTransform.Xdm.XdmItem!>!
+XTransform.Xdm.XdmSequence.IsEmpty.get -> bool
+static XTransform.Xdm.XdmSequence.Empty.get -> XTransform.Xdm.XdmSequence!
+static XTransform.Xdm.XdmSequence.From(System.Collections.Generic.IEnumerable<XTransform.Xdm.XdmItem!>! items) -> XTransform.Xdm.XdmSequence!
+static XTransform.Xdm.XdmSequence.Of(XTransform.Xdm.XdmItem! item) -> XTransform.Xdm.XdmSequence!
+static XTransform.Xdm.XdmSequence.Of(params XTransform.Xdm.XdmItem![]! items) -> XTransform.Xdm.XdmSequence!
+XTransform.Xdm.IXdmIterator
+XTransform.Xdm.IXdmIterator.Clone() -> XTransform.Xdm.IXdmIterator!
+XTransform.Xdm.IXdmIterator.Next() -> XTransform.Xdm.XdmItem?
+XTransform.Xdm.IXdmIterator.Position.get -> int
+XTransform.Xdm.XPathErrors
+const XTransform.Xdm.XPathErrors.Namespace = "http://www.w3.org/2005/xqt-errors" -> string!
+static readonly XTransform.Xdm.XPathErrors.FOAR0001 -> XTransform.Xdm.QName
+static readonly XTransform.Xdm.XPathErrors.FOCA0002 -> XTransform.Xdm.QName
+static readonly XTransform.Xdm.XPathErrors.FORG0001 -> XTransform.Xdm.QName
+static readonly XTransform.Xdm.XPathErrors.XPDY0002 -> XTransform.Xdm.QName
+static readonly XTransform.Xdm.XPathErrors.XPST0003 -> XTransform.Xdm.QName
+static readonly XTransform.Xdm.XPathErrors.XPST0008 -> XTransform.Xdm.QName
+static readonly XTransform.Xdm.XPathErrors.XPST0017 -> XTransform.Xdm.QName
+static readonly XTransform.Xdm.XPathErrors.XPST0051 -> XTransform.Xdm.QName
+static readonly XTransform.Xdm.XPathErrors.XPST0081 -> XTransform.Xdm.QName
+static readonly XTransform.Xdm.XPathErrors.XPTY0004 -> XTransform.Xdm.QName
+XTransform.Xdm.XsltErrors
+static readonly XTransform.Xdm.XsltErrors.XTDE0640 -> XTransform.Xdm.QName
+static readonly XTransform.Xdm.XsltErrors.XTMM9000 -> XTransform.Xdm.QName
+static readonly XTransform.Xdm.XsltErrors.XTSE0010 -> XTransform.Xdm.QName
+XTransform.Xdm.XTransformException
+XTransform.Xdm.XTransformException.ErrorCode.get -> XTransform.Xdm.QName
+XTransform.Xdm.XTransformException.Location.get -> XTransform.Xdm.SourceSpan
+XTransform.Xdm.XTransformException.XTransformException(XTransform.Xdm.QName errorCode, string! message, XTransform.Xdm.SourceSpan location, System.Exception? innerException = null) -> void
+XTransform.Xdm.XPathStaticException
+XTransform.Xdm.XPathStaticException.XPathStaticException(XTransform.Xdm.QName errorCode, string! message, XTransform.Xdm.SourceSpan location) -> void
+XTransform.Xdm.XPathDynamicException
+XTransform.Xdm.XPathDynamicException.XPathDynamicException(XTransform.Xdm.QName errorCode, string! message, XTransform.Xdm.SourceSpan location) -> void
+XTransform.Xdm.XPathDynamicException.ErrorObject.get -> XTransform.Xdm.XdmSequence?
+XTransform.Xdm.XPathDynamicException.ErrorObject.init -> void
+XTransform.Xdm.XsltDynamicException
+XTransform.Xdm.XsltDynamicException.XsltDynamicException(XTransform.Xdm.QName errorCode, string! message, XTransform.Xdm.SourceSpan location) -> void
+XTransform.Xdm.XsltDynamicException.TemplateStack.get -> System.Collections.Generic.IReadOnlyList<XTransform.Xdm.SourceSpan>!
+XTransform.Xdm.XsltDynamicException.TemplateStack.init -> void
+XTransform.Xdm.XsltStaticException
+XTransform.Xdm.XsltStaticException.XsltStaticException(System.Collections.Generic.IReadOnlyList<XTransform.Xdm.Diagnostic!>! errors) -> void
+XTransform.Xdm.XsltStaticException.Errors.get -> System.Collections.Generic.IReadOnlyList<XTransform.Xdm.Diagnostic!>!
+XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.AnyAtomicType = 0 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.UntypedAtomic = 1 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.String = 2 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.NormalizedString = 3 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.Token = 4 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.Language = 5 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.NmToken = 6 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.Name = 7 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.NcName = 8 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.Id = 9 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.IdRef = 10 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.Entity = 11 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.Boolean = 12 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.Decimal = 13 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.Integer = 14 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.NonPositiveInteger = 15 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.NegativeInteger = 16 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.Long = 17 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.Int = 18 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.Short = 19 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.Byte = 20 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.NonNegativeInteger = 21 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.UnsignedLong = 22 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.UnsignedInt = 23 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.UnsignedShort = 24 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.UnsignedByte = 25 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.PositiveInteger = 26 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.Double = 27 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.Float = 28 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.Duration = 29 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.DayTimeDuration = 30 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.YearMonthDuration = 31 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.DateTime = 32 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.Date = 33 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.Time = 34 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.GYearMonth = 35 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.GYear = 36 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.GMonthDay = 37 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.GDay = 38 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.GMonth = 39 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.HexBinary = 40 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.Base64Binary = 41 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.AnyUri = 42 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.QName = 43 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XdmTypeCode.Notation = 44 -> XTransform.Xdm.XdmTypeCode
+XTransform.Xdm.XsdDecimal
+XTransform.Xdm.XsdDecimal.XsdDecimal() -> void
+XTransform.Xdm.XsdDecimal.XsdDecimal(decimal value) -> void
+XTransform.Xdm.XsdDecimal.Value.get -> decimal
+static XTransform.Xdm.XsdDecimal.Parse(string! lexical) -> XTransform.Xdm.XsdDecimal
+static XTransform.Xdm.XsdDecimal.TryParse(string! lexical, out XTransform.Xdm.XsdDecimal result) -> bool
+override XTransform.Xdm.XsdDecimal.ToString() -> string!
+XTransform.Xdm.XsdDecimal.Equals(XTransform.Xdm.XsdDecimal other) -> bool
+override XTransform.Xdm.XsdDecimal.Equals(object? obj) -> bool
+override XTransform.Xdm.XsdDecimal.GetHashCode() -> int
+XTransform.Xdm.XsdDecimal.CompareTo(XTransform.Xdm.XsdDecimal other) -> int
+static XTransform.Xdm.XsdDecimal.operator ==(XTransform.Xdm.XsdDecimal l, XTransform.Xdm.XsdDecimal r) -> bool
+static XTransform.Xdm.XsdDecimal.operator !=(XTransform.Xdm.XsdDecimal l, XTransform.Xdm.XsdDecimal r) -> bool
+static XTransform.Xdm.XsdDecimal.operator <(XTransform.Xdm.XsdDecimal l, XTransform.Xdm.XsdDecimal r) -> bool
+static XTransform.Xdm.XsdDecimal.operator >(XTransform.Xdm.XsdDecimal l, XTransform.Xdm.XsdDecimal r) -> bool
+static XTransform.Xdm.XsdDecimal.operator <=(XTransform.Xdm.XsdDecimal l, XTransform.Xdm.XsdDecimal r) -> bool
+static XTransform.Xdm.XsdDecimal.operator >=(XTransform.Xdm.XsdDecimal l, XTransform.Xdm.XsdDecimal r) -> bool
+static XTransform.Xdm.XsdDecimal.implicit operator XTransform.Xdm.XsdDecimal(decimal value) -> XTransform.Xdm.XsdDecimal
+static XTransform.Xdm.XsdDecimal.explicit operator decimal(XTransform.Xdm.XsdDecimal value) -> decimal
+XTransform.Xdm.XsdDateTimeKind
+XTransform.Xdm.XsdDateTimeKind.DateTime = 0 -> XTransform.Xdm.XsdDateTimeKind
+XTransform.Xdm.XsdDateTimeKind.Date = 1 -> XTransform.Xdm.XsdDateTimeKind
+XTransform.Xdm.XsdDateTimeKind.Time = 2 -> XTransform.Xdm.XsdDateTimeKind
+XTransform.Xdm.XsdDateTimeKind.GYearMonth = 3 -> XTransform.Xdm.XsdDateTimeKind
+XTransform.Xdm.XsdDateTimeKind.GYear = 4 -> XTransform.Xdm.XsdDateTimeKind
+XTransform.Xdm.XsdDateTimeKind.GMonthDay = 5 -> XTransform.Xdm.XsdDateTimeKind
+XTransform.Xdm.XsdDateTimeKind.GDay = 6 -> XTransform.Xdm.XsdDateTimeKind
+XTransform.Xdm.XsdDateTimeKind.GMonth = 7 -> XTransform.Xdm.XsdDateTimeKind
+XTransform.Xdm.XsdDuration
+XTransform.Xdm.XsdDuration.XsdDuration() -> void
+XTransform.Xdm.XsdDuration.XsdDuration(int months, XTransform.Xdm.XsdDecimal seconds) -> void
+XTransform.Xdm.XsdDuration.Months.get -> int
+XTransform.Xdm.XsdDuration.Seconds.get -> XTransform.Xdm.XsdDecimal
+static XTransform.Xdm.XsdDuration.Parse(string! lexical) -> XTransform.Xdm.XsdDuration
+static XTransform.Xdm.XsdDuration.TryParse(string! lexical, out XTransform.Xdm.XsdDuration result) -> bool
+override XTransform.Xdm.XsdDuration.ToString() -> string!
+XTransform.Xdm.XsdDuration.Equals(XTransform.Xdm.XsdDuration other) -> bool
+override XTransform.Xdm.XsdDuration.Equals(object? obj) -> bool
+override XTransform.Xdm.XsdDuration.GetHashCode() -> int
+static XTransform.Xdm.XsdDuration.operator ==(XTransform.Xdm.XsdDuration l, XTransform.Xdm.XsdDuration r) -> bool
+static XTransform.Xdm.XsdDuration.operator !=(XTransform.Xdm.XsdDuration l, XTransform.Xdm.XsdDuration r) -> bool
+XTransform.Xdm.XdmItem
+abstract XTransform.Xdm.XdmItem.IsNode.get -> bool
+abstract XTransform.Xdm.XdmItem.IsAtomic.get -> bool
+abstract XTransform.Xdm.XdmItem.GetStringValue() -> string!
+XTransform.Xdm.XdmAtomicValue
+XTransform.Xdm.XdmAtomicValue.TypeCode.get -> XTransform.Xdm.XdmTypeCode
+override XTransform.Xdm.XdmAtomicValue.IsNode.get -> bool
+override XTransform.Xdm.XdmAtomicValue.IsAtomic.get -> bool
+override XTransform.Xdm.XdmAtomicValue.GetStringValue() -> string!
+static XTransform.Xdm.XdmAtomicValue.String(string! value) -> XTransform.Xdm.XdmAtomicValue!
+static XTransform.Xdm.XdmAtomicValue.UntypedAtomic(string! value) -> XTransform.Xdm.XdmAtomicValue!
+static XTransform.Xdm.XdmAtomicValue.AnyUri(string! value) -> XTransform.Xdm.XdmAtomicValue!
+static XTransform.Xdm.XdmAtomicValue.Boolean(bool value) -> XTransform.Xdm.XdmAtomicValue!
+static XTransform.Xdm.XdmAtomicValue.Integer(long value) -> XTransform.Xdm.XdmAtomicValue!
+static XTransform.Xdm.XdmAtomicValue.Integer(System.Numerics.BigInteger value) -> XTransform.Xdm.XdmAtomicValue!
+static XTransform.Xdm.XdmAtomicValue.Decimal(decimal value) -> XTransform.Xdm.XdmAtomicValue!
+static XTransform.Xdm.XdmAtomicValue.Decimal(XTransform.Xdm.XsdDecimal value) -> XTransform.Xdm.XdmAtomicValue!
+static XTransform.Xdm.XdmAtomicValue.Double(double value) -> XTransform.Xdm.XdmAtomicValue!
+static XTransform.Xdm.XdmAtomicValue.Float(float value) -> XTransform.Xdm.XdmAtomicValue!
+static XTransform.Xdm.XdmAtomicValue.QNameValue(XTransform.Xdm.QName value) -> XTransform.Xdm.XdmAtomicValue!
+static XTransform.Xdm.XdmAtomicValue.DateTimeValue(XTransform.Xdm.XsdDateTime value) -> XTransform.Xdm.XdmAtomicValue!
+static XTransform.Xdm.XdmAtomicValue.Duration(XTransform.Xdm.XsdDuration value) -> XTransform.Xdm.XdmAtomicValue!
+static XTransform.Xdm.XdmAtomicValue.DayTimeDuration(XTransform.Xdm.XsdDuration value) -> XTransform.Xdm.XdmAtomicValue!
+static XTransform.Xdm.XdmAtomicValue.YearMonthDuration(XTransform.Xdm.XsdDuration value) -> XTransform.Xdm.XdmAtomicValue!
+static XTransform.Xdm.XdmAtomicValue.HexBinary(System.ReadOnlyMemory<byte> value) -> XTransform.Xdm.XdmAtomicValue!
+static XTransform.Xdm.XdmAtomicValue.Base64Binary(System.ReadOnlyMemory<byte> value) -> XTransform.Xdm.XdmAtomicValue!
+static XTransform.Xdm.XdmAtomicValue.Parse(string! lexical, XTransform.Xdm.XdmTypeCode type) -> XTransform.Xdm.XdmAtomicValue!
+static XTransform.Xdm.XdmAtomicValue.TryParse(string! lexical, XTransform.Xdm.XdmTypeCode type, out XTransform.Xdm.XdmAtomicValue? value) -> bool
+XTransform.Xdm.XdmAtomicValue.AsString() -> string!
+XTransform.Xdm.XdmAtomicValue.AsBoolean() -> bool
+XTransform.Xdm.XdmAtomicValue.AsInt64() -> long
+XTransform.Xdm.XdmAtomicValue.AsBigInteger() -> System.Numerics.BigInteger
+XTransform.Xdm.XdmAtomicValue.AsDecimal() -> XTransform.Xdm.XsdDecimal
+XTransform.Xdm.XdmAtomicValue.AsDouble() -> double
+XTransform.Xdm.XdmAtomicValue.AsFloat() -> float
+XTransform.Xdm.XdmAtomicValue.AsQName() -> XTransform.Xdm.QName
+XTransform.Xdm.XdmAtomicValue.AsDateTime() -> XTransform.Xdm.XsdDateTime
+XTransform.Xdm.XdmAtomicValue.AsDuration() -> XTransform.Xdm.XsdDuration
+XTransform.Xdm.XdmAtomicValue.AsHexBinary() -> System.ReadOnlyMemory<byte>
+XTransform.Xdm.XdmAtomicValue.AsBase64Binary() -> System.ReadOnlyMemory<byte>
+XTransform.Xdm.XdmAtomicValue.Equals(XTransform.Xdm.XdmAtomicValue? other) -> bool
+override XTransform.Xdm.XdmAtomicValue.Equals(object? obj) -> bool
+override XTransform.Xdm.XdmAtomicValue.GetHashCode() -> int
+static XTransform.Xdm.XdmAtomicValue.operator ==(XTransform.Xdm.XdmAtomicValue? left, XTransform.Xdm.XdmAtomicValue? right) -> bool
+static XTransform.Xdm.XdmAtomicValue.operator !=(XTransform.Xdm.XdmAtomicValue? left, XTransform.Xdm.XdmAtomicValue? right) -> bool
+XTransform.Xdm.XsdDateTime
+XTransform.Xdm.XsdDateTime.XsdDateTime() -> void
+XTransform.Xdm.XsdDateTime.XsdDateTime(XTransform.Xdm.XsdDateTimeKind kind, long year, int month, int day, int hour, int minute, XTransform.Xdm.XsdDecimal second, int? timezoneMinutes) -> void
+XTransform.Xdm.XsdDateTime.Kind.get -> XTransform.Xdm.XsdDateTimeKind
+XTransform.Xdm.XsdDateTime.Year.get -> long
+XTransform.Xdm.XsdDateTime.Month.get -> int
+XTransform.Xdm.XsdDateTime.Day.get -> int
+XTransform.Xdm.XsdDateTime.Hour.get -> int
+XTransform.Xdm.XsdDateTime.Minute.get -> int
+XTransform.Xdm.XsdDateTime.Second.get -> XTransform.Xdm.XsdDecimal
+XTransform.Xdm.XsdDateTime.TimezoneMinutes.get -> int?
+XTransform.Xdm.XsdDateTime.HasTimezone.get -> bool
+static XTransform.Xdm.XsdDateTime.Parse(string! lexical, XTransform.Xdm.XsdDateTimeKind kind) -> XTransform.Xdm.XsdDateTime
+static XTransform.Xdm.XsdDateTime.TryParse(string! lexical, XTransform.Xdm.XsdDateTimeKind kind, out XTransform.Xdm.XsdDateTime result) -> bool
+override XTransform.Xdm.XsdDateTime.ToString() -> string!
+XTransform.Xdm.XsdDateTime.Equals(XTransform.Xdm.XsdDateTime other) -> bool
+override XTransform.Xdm.XsdDateTime.Equals(object? obj) -> bool
+override XTransform.Xdm.XsdDateTime.GetHashCode() -> int
+static XTransform.Xdm.XsdDateTime.operator ==(XTransform.Xdm.XsdDateTime l, XTransform.Xdm.XsdDateTime r) -> bool
+static XTransform.Xdm.XsdDateTime.operator !=(XTransform.Xdm.XsdDateTime l, XTransform.Xdm.XsdDateTime r) -> bool
