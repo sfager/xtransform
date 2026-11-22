@@ -60,6 +60,9 @@ static readonly XTransform.Xdm.XPathErrors.FOCH0002 -> XTransform.Xdm.QName
 static readonly XTransform.Xdm.XPathErrors.FOCH0003 -> XTransform.Xdm.QName
 static readonly XTransform.Xdm.XPathErrors.FODT0003 -> XTransform.Xdm.QName
 static readonly XTransform.Xdm.XPathErrors.FORG0008 -> XTransform.Xdm.QName
+static readonly XTransform.Xdm.XPathErrors.FORG0003 -> XTransform.Xdm.QName
+static readonly XTransform.Xdm.XPathErrors.FORG0004 -> XTransform.Xdm.QName
+static readonly XTransform.Xdm.XPathErrors.FORG0005 -> XTransform.Xdm.QName
 static readonly XTransform.Xdm.XPathErrors.FOER0000 -> XTransform.Xdm.QName
 static readonly XTransform.Xdm.XPathErrors.FORG0001 -> XTransform.Xdm.QName
 static readonly XTransform.Xdm.XPathErrors.XPDY0002 -> XTransform.Xdm.QName
