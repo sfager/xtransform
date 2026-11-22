@@ -2,10 +2,9 @@
 
 using System;
 using XTransform.Xdm;
+using XTransform.Xdm.Iterators;
 
 namespace XTransform.XPath.ExpressionNodes;
-
-// TODO (P2-05): implement Iterate for InstanceOfNode, TreatNode, CastableNode, CastNode
 
 /// <summary>
 /// A compiled <c>instance of</c> expression. Static type is <c>xs:boolean</c>.
@@ -34,9 +33,45 @@ internal sealed class InstanceOfNode : ExpressionNode
 
     /// <inheritdoc/>
     public override IXdmIterator Iterate(DynamicContext context)
+        => new SingleItemIterator(XdmAtomicValue.Boolean(EvaluateBoolean(context)));
+
+    /// <inheritdoc/>
+    public override XdmItem? EvaluateItem(DynamicContext context)
+        => XdmAtomicValue.Boolean(EvaluateBoolean(context));
+
+    /// <inheritdoc/>
+    public override bool EffectiveBooleanValue(DynamicContext context) => EvaluateBoolean(context);
+
+    private bool EvaluateBoolean(DynamicContext context)
     {
-        // TODO (P2-05): implement Iterate
-        throw new NotImplementedException("Evaluation for InstanceOfNode is implemented in P2-05.");
+        // XPath 2.0 §3.5.2: "instance of" tests the sequence against a SequenceType.
+        // Materialise the operand into an XdmSequence so SequenceType.Matches can inspect
+        // count + per-item type without pulling multiple times.
+        return TargetType.Matches(MaterialiseOperand(Expr, context));
+    }
+
+    internal static XdmSequence MaterialiseOperand(ExpressionNode node, DynamicContext context)
+    {
+        IXdmIterator iter = node.Iterate(context);
+        XdmItem? first = iter.Next();
+        if (first is null)
+        {
+            return XdmSequence.Empty;
+        }
+        XdmItem? second = iter.Next();
+        if (second is null)
+        {
+            return XdmSequence.Of(first);
+        }
+        // Multi-item sequence — read the rest.
+        System.Collections.Generic.List<XdmItem> items = new() { first, second };
+        while (true)
+        {
+            XdmItem? n = iter.Next();
+            if (n is null) { break; }
+            items.Add(n);
+        }
+        return XdmSequence.Of(items.ToArray());
     }
 
     /// <inheritdoc/>
@@ -74,8 +109,17 @@ internal sealed class TreatNode : ExpressionNode
     /// <inheritdoc/>
     public override IXdmIterator Iterate(DynamicContext context)
     {
-        // TODO (P2-05): implement Iterate
-        throw new NotImplementedException("Evaluation for TreatNode is implemented in P2-05.");
+        // XPath 2.0 §3.10.5: treat-as checks the operand's dynamic type against the target.
+        // Mismatch → XPTY0004; otherwise the operand passes through unchanged.
+        XdmSequence materialised = InstanceOfNode.MaterialiseOperand(Expr, context);
+        if (!TargetType.Matches(materialised))
+        {
+            throw new XPathDynamicException(
+                XPathErrors.XPTY0004,
+                $"treat as {TargetType}: value does not match the declared type",
+                Location);
+        }
+        return materialised.GetIterator();
     }
 
     /// <inheritdoc/>
@@ -121,9 +165,36 @@ internal sealed class CastableNode : ExpressionNode
 
     /// <inheritdoc/>
     public override IXdmIterator Iterate(DynamicContext context)
+        => new SingleItemIterator(XdmAtomicValue.Boolean(EvaluateBoolean(context)));
+
+    /// <inheritdoc/>
+    public override XdmItem? EvaluateItem(DynamicContext context)
+        => XdmAtomicValue.Boolean(EvaluateBoolean(context));
+
+    /// <inheritdoc/>
+    public override bool EffectiveBooleanValue(DynamicContext context) => EvaluateBoolean(context);
+
+    private bool EvaluateBoolean(DynamicContext context)
     {
-        // TODO (P2-05): implement Iterate
-        throw new NotImplementedException("Evaluation for CastableNode is implemented in P2-05.");
+        XdmTypeCode target = CastHelpers.GetTargetTypeCode(TargetType, Location);
+
+        IXdmIterator source = Atomization.Atomize(Expr.Iterate(context));
+        XdmItem? first = source.Next();
+        if (first is null)
+        {
+            // Empty sequence is castable iff ? was specified or target is xs:string/xs:anyURI/xs:untypedAtomic
+            // Per F&O §17.1.1 strictly: castable iff AllowEmpty. For types that construct from
+            // empty strings (xs:string), empty → castable only when AllowEmpty is true.
+            return AllowEmpty;
+        }
+        XdmItem? second = source.Next();
+        if (second is not null)
+        {
+            // Castable-as requires a single-item (possibly empty) operand; more → false.
+            return false;
+        }
+
+        return CastTable.TryCast((XdmAtomicValue)first, target, out _);
     }
 
     /// <inheritdoc/>
@@ -167,8 +238,39 @@ internal sealed class CastNode : ExpressionNode
     /// <inheritdoc/>
     public override IXdmIterator Iterate(DynamicContext context)
     {
-        // TODO (P2-05): implement Iterate
-        throw new NotImplementedException("Evaluation for CastNode is implemented in P2-05.");
+        XdmItem? item = EvaluateItem(context);
+        return item is null ? EmptyIterator.Instance : new SingleItemIterator(item);
+    }
+
+    /// <inheritdoc/>
+    public override XdmItem? EvaluateItem(DynamicContext context)
+    {
+        XdmTypeCode target = CastHelpers.GetTargetTypeCode(TargetType, Location);
+
+        IXdmIterator source = Atomization.Atomize(Expr.Iterate(context));
+        XdmItem? first = source.Next();
+        if (first is null)
+        {
+            if (AllowEmpty)
+            {
+                return null;
+            }
+            throw new XPathDynamicException(
+                XPathErrors.XPTY0004,
+                "cast as: operand is the empty sequence but '?' was not specified",
+                Location);
+        }
+        XdmItem? second = source.Next();
+        if (second is not null)
+        {
+            throw new XPathDynamicException(
+                XPathErrors.XPTY0004,
+                "cast as: operand must be a single atomic value",
+                Location);
+        }
+
+        // CastTable.Cast throws XPathDynamicException with FORG0001 / XPTY0004 as appropriate.
+        return CastTable.Cast((XdmAtomicValue)first, target, Location);
     }
 
     /// <inheritdoc/>
@@ -178,5 +280,25 @@ internal sealed class CastNode : ExpressionNode
         sb.Append("CastNode(").Append(TargetType.ToString()).AppendLine(")");
         AppendIndented(sb, Expr.ToDebugString(), 1);
         return sb.ToString().TrimEnd();
+    }
+}
+
+/// <summary>Shared helpers for cast / castable nodes.</summary>
+internal static class CastHelpers
+{
+    /// <summary>
+    /// Extracts the target atomic type code from a SingleType sequence type; throws
+    /// XPTY0004 when the sequence type isn't an atomic type (e.g. a kind test).
+    /// </summary>
+    public static XdmTypeCode GetTargetTypeCode(SequenceType target, SourceSpan location)
+    {
+        if (target.ItemType is ItemType.AtomicItemType atomic)
+        {
+            return atomic.TypeCode;
+        }
+        throw new XPathDynamicException(
+            XPathErrors.XPTY0004,
+            $"cast / castable target must be an atomic type, not {target}",
+            location);
     }
 }

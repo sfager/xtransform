@@ -182,7 +182,7 @@ input contains more than one node and the step output could reorder.
 
 ## P2-07 Set expressions, range, instance-of / treat / cast / castable
 
-- [ ] Done
+- [x] Done
 
 **Scope.** `SetExprNode` (`union`, `intersect`, `except`) with document-order
 dedup via node identity, returning in document order per F&O §15.3.
