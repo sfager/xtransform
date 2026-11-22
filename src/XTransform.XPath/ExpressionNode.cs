@@ -3,6 +3,7 @@
 
 using System;
 using System.Numerics;
+using System.Text;
 using XTransform.Xdm;
 
 namespace XTransform.XPath;
@@ -37,6 +38,58 @@ internal abstract class ExpressionNode
 
     /// <summary>Which pieces of the dynamic context this expression reads.</summary>
     public ExpressionDependencies Dependencies { get; }
+
+    /// <summary>
+    /// Returns a debug string representation of this node and its subtree.
+    /// The default implementation returns the class name without any subtree.
+    /// Subclasses override this to include their payload and children.
+    /// Format: "NodeName(summary)\n  Child1\n  Child2\n..."
+    /// </summary>
+    /// <returns>A deterministic, human-readable rendering of the node tree.</returns>
+    public virtual string ToDebugString() => GetType().Name;
+
+    // ── Shared helpers for subclasses ─────────────────────────────────────────
+
+    /// <summary>
+    /// Appends <paramref name="childDebug"/> indented by <paramref name="depth"/> * 2 spaces
+    /// to <paramref name="sb"/>. Each line of <paramref name="childDebug"/> is prefixed.
+    /// </summary>
+    /// <param name="sb">The <see cref="StringBuilder"/> to append to.</param>
+    /// <param name="childDebug">The child's <see cref="ToDebugString"/> output.</param>
+    /// <param name="depth">Indent depth (each level = 2 spaces).</param>
+    protected static void AppendIndented(StringBuilder sb, string childDebug, int depth)
+    {
+        string indent = new string(' ', depth * 2);
+        foreach (string line in childDebug.Split('\n'))
+        {
+            string trimmed = line.TrimEnd('\r');
+            if (trimmed.Length > 0)
+            {
+                sb.Append(indent).AppendLine(trimmed);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Formats a <see cref="QName"/> as "prefix:local" when a prefix is present,
+    /// or "{uri}local" when there is a namespace URI but no prefix, or just "local".
+    /// </summary>
+    /// <param name="name">The name to format.</param>
+    /// <returns>A human-readable string representation.</returns>
+    protected static string FormatQName(QName name)
+    {
+        if (name.Prefix.Length > 0)
+        {
+            return name.Prefix + ":" + name.LocalName;
+        }
+
+        if (name.NamespaceUri.Length > 0)
+        {
+            return "{" + name.NamespaceUri + "}" + name.LocalName;
+        }
+
+        return name.LocalName;
+    }
 
     /// <summary>
     /// Pull evaluation. Must be lazy wherever the result can be consumed partially.
