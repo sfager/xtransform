@@ -329,7 +329,7 @@ XPath 2.0 §15.5.2). Non-lazy functions use lazy iterators where safe
 
 ## P2-13 Regex functions
 
-- [ ] Done
+- [x] Done
 
 **Scope.** XPath 2.0 regex (F&O §7.6) with the W3C XML Schema regex dialect:
 `fn:matches`, `fn:replace`, `fn:tokenize`. Implement an XPath-regex → .NET

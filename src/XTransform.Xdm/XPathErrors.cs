@@ -83,4 +83,26 @@ public static class XPathErrors
     /// fn:exactly-one called with a sequence containing zero or more than one item. (F&amp;O §15.2.5 FORG0005)
     /// </summary>
     public static readonly QName FORG0005 = new QName("err", Namespace, "FORG0005");
+
+    /// <summary>
+    /// Invalid regular expression flags. (F&amp;O §7.6 FORX0001)
+    /// </summary>
+    public static readonly QName FORX0001 = new QName("err", Namespace, "FORX0001");
+
+    /// <summary>
+    /// Invalid or unsupported regular expression pattern. (F&amp;O §7.6 FORX0002)
+    /// Raised for invalid patterns, lookaround assertions, and other unsupported XPath 2.0 regex constructs.
+    /// </summary>
+    public static readonly QName FORX0002 = new QName("err", Namespace, "FORX0002");
+
+    /// <summary>
+    /// Regular expression matches the empty string; not permitted in fn:replace or fn:tokenize. (F&amp;O §7.6 FORX0003)
+    /// </summary>
+    public static readonly QName FORX0003 = new QName("err", Namespace, "FORX0003");
+
+    /// <summary>
+    /// Invalid replacement string in fn:replace. (F&amp;O §7.6.4 FORX0004)
+    /// Raised when '$' in the replacement is not followed by a digit or another '$'.
+    /// </summary>
+    public static readonly QName FORX0004 = new QName("err", Namespace, "FORX0004");
 }
