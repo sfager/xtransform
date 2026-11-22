@@ -38,6 +38,7 @@ internal sealed class BuiltInFunctionLibrary : FunctionLibrary
         RegisterNumerics();
         RegisterDateTime();
         RegisterSequences();
+        RegisterRegex();
         RegisterConstructors();
     }
 
@@ -795,6 +796,39 @@ internal sealed class BuiltInFunctionLibrary : FunctionLibrary
             RegisterXs(localName, 1, returnType, new[] { paramType },
                 (ctx, cargs) => ConstructorInvoker(capturedTarget, cargs));
         }
+    }
+
+    private void RegisterRegex()
+    {
+        // F&O §7.6.2 fn:matches($input as xs:string?, $pattern as xs:string) as xs:boolean
+        Register("matches", 2, ST_Boolean_ExactlyOne,
+            new[] { ST_String_ZeroOrOne, ST_String_ExactlyOne },
+            RegexFunctions.FnMatches2);
+
+        // F&O §7.6.2 fn:matches($input, $pattern, $flags) as xs:boolean
+        Register("matches", 3, ST_Boolean_ExactlyOne,
+            new[] { ST_String_ZeroOrOne, ST_String_ExactlyOne, ST_String_ExactlyOne },
+            RegexFunctions.FnMatches3);
+
+        // F&O §7.6.3 fn:replace($input, $pattern, $replacement) as xs:string
+        Register("replace", 3, ST_String_ExactlyOne,
+            new[] { ST_String_ZeroOrOne, ST_String_ExactlyOne, ST_String_ExactlyOne },
+            RegexFunctions.FnReplace3);
+
+        // F&O §7.6.3 fn:replace($input, $pattern, $replacement, $flags) as xs:string
+        Register("replace", 4, ST_String_ExactlyOne,
+            new[] { ST_String_ZeroOrOne, ST_String_ExactlyOne, ST_String_ExactlyOne, ST_String_ExactlyOne },
+            RegexFunctions.FnReplace4);
+
+        // F&O §7.6.4 fn:tokenize($input as xs:string?, $pattern as xs:string) as xs:string*
+        Register("tokenize", 2, ST_String_Star,
+            new[] { ST_String_ZeroOrOne, ST_String_ExactlyOne },
+            RegexFunctions.FnTokenize2);
+
+        // F&O §7.6.4 fn:tokenize($input, $pattern, $flags) as xs:string*
+        Register("tokenize", 3, ST_String_Star,
+            new[] { ST_String_ZeroOrOne, ST_String_ExactlyOne, ST_String_ExactlyOne },
+            RegexFunctions.FnTokenize3);
     }
 
     /// <summary>
