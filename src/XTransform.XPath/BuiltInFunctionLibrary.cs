@@ -3,13 +3,15 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using XTransform.Xdm;
+using XTransform.Xdm.Iterators;
 using XTransform.XPath.Functions;
 
 namespace XTransform.XPath;
 
 /// <summary>
 /// Built-in XPath 2.0 / F&amp;O function library.
-/// Populated with the P2-08 function tranche: accessor, boolean, context, and error functions.
+/// Populated with accessor, boolean, context, error, string, numeric, date/time functions,
+/// and xs: constructor functions for all v1 atomic types.
 /// Thread-safe singleton — all registrations happen in the constructor.
 /// </summary>
 internal sealed class BuiltInFunctionLibrary : FunctionLibrary
@@ -20,17 +22,22 @@ internal sealed class BuiltInFunctionLibrary : FunctionLibrary
     /// <summary>Namespace URI for the XPath built-in functions ("fn:" prefix).</summary>
     public const string FnNamespace = "http://www.w3.org/2005/xpath-functions";
 
+    /// <summary>Namespace URI for XML Schema types ("xs:" prefix).</summary>
+    public const string XsNamespace = "http://www.w3.org/2001/XMLSchema";
+
     private readonly Dictionary<string, FunctionSignature> _byKey;
 
     private BuiltInFunctionLibrary()
     {
-        _byKey = new Dictionary<string, FunctionSignature>(128);
+        _byKey = new Dictionary<string, FunctionSignature>(256);
         RegisterAccessors();
         RegisterBooleans();
         RegisterContext();
         RegisterErrors();
         RegisterStrings();
         RegisterNumerics();
+        RegisterDateTime();
+        RegisterConstructors();
     }
 
     // ── FunctionLibrary contract ───────────────────────────────────────────────
@@ -403,10 +410,35 @@ internal sealed class BuiltInFunctionLibrary : FunctionLibrary
             StringFunctions.FnCodepointEqual);
     }
 
-    // ── Additional shorthands for numerics ─────────────────────────────────────
+    // ── Additional shorthands for numerics and date/time ──────────────────────
 
     private static SequenceType ST_AnyAtomicType_ZeroOrMore =>
         new SequenceType(ItemType.Atomic(XdmTypeCode.AnyAtomicType), Occurrence.ZeroOrMore);
+
+    private static SequenceType ST_Decimal_ExactlyOne =>
+        new SequenceType(ItemType.Atomic(XdmTypeCode.Decimal), Occurrence.ExactlyOne);
+    private static SequenceType ST_Decimal_ZeroOrOne =>
+        new SequenceType(ItemType.Atomic(XdmTypeCode.Decimal), Occurrence.ZeroOrOne);
+    private static SequenceType ST_DateTime_ZeroOrOne =>
+        new SequenceType(ItemType.Atomic(XdmTypeCode.DateTime), Occurrence.ZeroOrOne);
+    private static SequenceType ST_Date_ZeroOrOne =>
+        new SequenceType(ItemType.Atomic(XdmTypeCode.Date), Occurrence.ZeroOrOne);
+    private static SequenceType ST_Time_ZeroOrOne =>
+        new SequenceType(ItemType.Atomic(XdmTypeCode.Time), Occurrence.ZeroOrOne);
+    private static SequenceType ST_Duration_ZeroOrOne =>
+        new SequenceType(ItemType.Atomic(XdmTypeCode.Duration), Occurrence.ZeroOrOne);
+    private static SequenceType ST_DayTimeDuration_ZeroOrOne =>
+        new SequenceType(ItemType.Atomic(XdmTypeCode.DayTimeDuration), Occurrence.ZeroOrOne);
+
+    // Register a function in the xs: namespace.
+    private void RegisterXs(string localName, int arity, SequenceType returnType,
+                             SequenceType[] parameters, FunctionInvoker invoker)
+    {
+        QName qn = new QName("xs", XsNamespace, localName);
+        ImmutableArray<SequenceType> paramTypes = parameters.ToImmutableArray();
+        FunctionSignature sig = new FunctionSignature(qn, arity, returnType, paramTypes, invoker);
+        _byKey[MakeKey(XsNamespace, localName, arity)] = sig;
+    }
 
     private void RegisterNumerics()
     {
@@ -484,5 +516,214 @@ internal sealed class BuiltInFunctionLibrary : FunctionLibrary
         Register("number", 1, ST_Double_ExactlyOne,
             new[] { ST_AnyAtomicType_ZeroOrOne },
             NumericFunctions.FnNumber1);
+    }
+
+    private void RegisterDateTime()
+    {
+        // F&O §10.5.1 fn:year-from-dateTime
+        Register("year-from-dateTime", 1, ST_Integer_ZeroOrOne,
+            new[] { ST_DateTime_ZeroOrOne },
+            DateTimeFunctions.FnYearFromDateTime);
+
+        // F&O §10.5.2 fn:month-from-dateTime
+        Register("month-from-dateTime", 1, ST_Integer_ZeroOrOne,
+            new[] { ST_DateTime_ZeroOrOne },
+            DateTimeFunctions.FnMonthFromDateTime);
+
+        // F&O §10.5.3 fn:day-from-dateTime
+        Register("day-from-dateTime", 1, ST_Integer_ZeroOrOne,
+            new[] { ST_DateTime_ZeroOrOne },
+            DateTimeFunctions.FnDayFromDateTime);
+
+        // F&O §10.5.4 fn:hours-from-dateTime
+        Register("hours-from-dateTime", 1, ST_Integer_ZeroOrOne,
+            new[] { ST_DateTime_ZeroOrOne },
+            DateTimeFunctions.FnHoursFromDateTime);
+
+        // F&O §10.5.5 fn:minutes-from-dateTime
+        Register("minutes-from-dateTime", 1, ST_Integer_ZeroOrOne,
+            new[] { ST_DateTime_ZeroOrOne },
+            DateTimeFunctions.FnMinutesFromDateTime);
+
+        // F&O §10.5.6 fn:seconds-from-dateTime
+        Register("seconds-from-dateTime", 1, ST_Decimal_ZeroOrOne,
+            new[] { ST_DateTime_ZeroOrOne },
+            DateTimeFunctions.FnSecondsFromDateTime);
+
+        // F&O §10.5.7 fn:timezone-from-dateTime
+        Register("timezone-from-dateTime", 1, ST_DayTimeDuration_ZeroOrOne,
+            new[] { ST_DateTime_ZeroOrOne },
+            DateTimeFunctions.FnTimezoneFromDateTime);
+
+        // F&O §10.5.8 fn:year-from-date
+        Register("year-from-date", 1, ST_Integer_ZeroOrOne,
+            new[] { ST_Date_ZeroOrOne },
+            DateTimeFunctions.FnYearFromDate);
+
+        // F&O §10.5.9 fn:month-from-date
+        Register("month-from-date", 1, ST_Integer_ZeroOrOne,
+            new[] { ST_Date_ZeroOrOne },
+            DateTimeFunctions.FnMonthFromDate);
+
+        // F&O §10.5.10 fn:day-from-date
+        Register("day-from-date", 1, ST_Integer_ZeroOrOne,
+            new[] { ST_Date_ZeroOrOne },
+            DateTimeFunctions.FnDayFromDate);
+
+        // F&O §10.5.11 fn:timezone-from-date
+        Register("timezone-from-date", 1, ST_DayTimeDuration_ZeroOrOne,
+            new[] { ST_Date_ZeroOrOne },
+            DateTimeFunctions.FnTimezoneFromDate);
+
+        // F&O §10.5.12 fn:hours-from-time
+        Register("hours-from-time", 1, ST_Integer_ZeroOrOne,
+            new[] { ST_Time_ZeroOrOne },
+            DateTimeFunctions.FnHoursFromTime);
+
+        // F&O §10.5.13 fn:minutes-from-time
+        Register("minutes-from-time", 1, ST_Integer_ZeroOrOne,
+            new[] { ST_Time_ZeroOrOne },
+            DateTimeFunctions.FnMinutesFromTime);
+
+        // F&O §10.5.14 fn:seconds-from-time
+        Register("seconds-from-time", 1, ST_Decimal_ZeroOrOne,
+            new[] { ST_Time_ZeroOrOne },
+            DateTimeFunctions.FnSecondsFromTime);
+
+        // F&O §10.5.15 fn:timezone-from-time
+        Register("timezone-from-time", 1, ST_DayTimeDuration_ZeroOrOne,
+            new[] { ST_Time_ZeroOrOne },
+            DateTimeFunctions.FnTimezoneFromTime);
+
+        // F&O §10.6.1 fn:years-from-duration
+        Register("years-from-duration", 1, ST_Integer_ZeroOrOne,
+            new[] { ST_Duration_ZeroOrOne },
+            DateTimeFunctions.FnYearsFromDuration);
+
+        // F&O §10.6.2 fn:months-from-duration
+        Register("months-from-duration", 1, ST_Integer_ZeroOrOne,
+            new[] { ST_Duration_ZeroOrOne },
+            DateTimeFunctions.FnMonthsFromDuration);
+
+        // F&O §10.6.3 fn:days-from-duration
+        Register("days-from-duration", 1, ST_Integer_ZeroOrOne,
+            new[] { ST_Duration_ZeroOrOne },
+            DateTimeFunctions.FnDaysFromDuration);
+
+        // F&O §10.6.4 fn:hours-from-duration
+        Register("hours-from-duration", 1, ST_Integer_ZeroOrOne,
+            new[] { ST_Duration_ZeroOrOne },
+            DateTimeFunctions.FnHoursFromDuration);
+
+        // F&O §10.6.5 fn:minutes-from-duration
+        Register("minutes-from-duration", 1, ST_Integer_ZeroOrOne,
+            new[] { ST_Duration_ZeroOrOne },
+            DateTimeFunctions.FnMinutesFromDuration);
+
+        // F&O §10.6.6 fn:seconds-from-duration
+        Register("seconds-from-duration", 1, ST_Decimal_ZeroOrOne,
+            new[] { ST_Duration_ZeroOrOne },
+            DateTimeFunctions.FnSecondsFromDuration);
+
+        // F&O §10.7.6 fn:adjust-dateTime-to-timezone — 1-arg (uses implicit timezone) and 2-arg
+        Register("adjust-dateTime-to-timezone", 1, ST_DateTime_ZeroOrOne,
+            new[] { ST_DateTime_ZeroOrOne },
+            DateTimeFunctions.FnAdjustDateTimeToTimezone1);
+        Register("adjust-dateTime-to-timezone", 2, ST_DateTime_ZeroOrOne,
+            new[] { ST_DateTime_ZeroOrOne, ST_DayTimeDuration_ZeroOrOne },
+            DateTimeFunctions.FnAdjustDateTimeToTimezone2);
+
+        // F&O §10.7.7 fn:adjust-date-to-timezone — 1-arg (uses implicit timezone) and 2-arg
+        Register("adjust-date-to-timezone", 1, ST_Date_ZeroOrOne,
+            new[] { ST_Date_ZeroOrOne },
+            DateTimeFunctions.FnAdjustDateToTimezone1);
+        Register("adjust-date-to-timezone", 2, ST_Date_ZeroOrOne,
+            new[] { ST_Date_ZeroOrOne, ST_DayTimeDuration_ZeroOrOne },
+            DateTimeFunctions.FnAdjustDateToTimezone2);
+
+        // F&O §10.7.8 fn:adjust-time-to-timezone — 1-arg (uses implicit timezone) and 2-arg
+        Register("adjust-time-to-timezone", 1, ST_Time_ZeroOrOne,
+            new[] { ST_Time_ZeroOrOne },
+            DateTimeFunctions.FnAdjustTimeToTimezone1);
+        Register("adjust-time-to-timezone", 2, ST_Time_ZeroOrOne,
+            new[] { ST_Time_ZeroOrOne, ST_DayTimeDuration_ZeroOrOne },
+            DateTimeFunctions.FnAdjustTimeToTimezone2);
+
+        // F&O §10.8.1 fn:dateTime($date, $time)
+        Register("dateTime", 2, ST_DateTime_ZeroOrOne,
+            new[] { ST_Date_ZeroOrOne, ST_Time_ZeroOrOne },
+            DateTimeFunctions.FnDateTime);
+    }
+
+    // F&O §17 — xs: constructor functions for all v1 atomic types.
+    // Each constructor takes a single xs:anyAtomicType? and casts it to the target type.
+    // The two non-constructible types (AnyAtomicType, Notation) are excluded per F&O §17.1.
+    private void RegisterConstructors()
+    {
+        // Build input parameter type once: xs:anyAtomicType?
+        SequenceType paramType = ST_AnyAtomicType_ZeroOrOne;
+
+        // Explicit list of all constructible type codes — inline to avoid static field
+        // initialization ordering issues (Instance is initialized before any other static field).
+        // AnyAtomicType and Notation are intentionally excluded per F&O §17.1.
+        XdmTypeCode[] targets =
+        {
+            XdmTypeCode.UntypedAtomic,
+            XdmTypeCode.String, XdmTypeCode.NormalizedString, XdmTypeCode.Token,
+            XdmTypeCode.Language, XdmTypeCode.NmToken, XdmTypeCode.Name,
+            XdmTypeCode.NcName, XdmTypeCode.Id, XdmTypeCode.IdRef, XdmTypeCode.Entity,
+            XdmTypeCode.Boolean,
+            XdmTypeCode.Decimal, XdmTypeCode.Integer, XdmTypeCode.NonPositiveInteger,
+            XdmTypeCode.NegativeInteger, XdmTypeCode.Long, XdmTypeCode.Int,
+            XdmTypeCode.Short, XdmTypeCode.Byte, XdmTypeCode.NonNegativeInteger,
+            XdmTypeCode.UnsignedLong, XdmTypeCode.UnsignedInt, XdmTypeCode.UnsignedShort,
+            XdmTypeCode.UnsignedByte, XdmTypeCode.PositiveInteger,
+            XdmTypeCode.Double, XdmTypeCode.Float,
+            XdmTypeCode.Duration, XdmTypeCode.DayTimeDuration, XdmTypeCode.YearMonthDuration,
+            XdmTypeCode.DateTime, XdmTypeCode.Date, XdmTypeCode.Time,
+            XdmTypeCode.GYearMonth, XdmTypeCode.GYear, XdmTypeCode.GMonthDay,
+            XdmTypeCode.GDay, XdmTypeCode.GMonth,
+            XdmTypeCode.HexBinary, XdmTypeCode.Base64Binary,
+            XdmTypeCode.AnyUri, XdmTypeCode.QName,
+        };
+
+        // Register each type code as xs:localName(xs:anyAtomicType?) → target-type?
+        foreach (XdmTypeCode target in targets)
+        {
+            string localName = CastTable.GetXsLocalName(target);
+            XdmTypeCode capturedTarget = target;
+            SequenceType returnType = new SequenceType(ItemType.Atomic(capturedTarget), Occurrence.ZeroOrOne);
+
+            // F&O §17.1: constructor takes xs:anyAtomicType?, returns target-type?.
+            RegisterXs(localName, 1, returnType, new[] { paramType },
+                (ctx, cargs) => ConstructorInvoker(capturedTarget, cargs));
+        }
+    }
+
+    /// <summary>
+    /// Runtime invoker for xs:TYPE(xs:anyAtomicType?) constructor functions.
+    /// F&amp;O §17.1: empty → empty; otherwise cast the single atomic value to the target type.
+    /// </summary>
+    // F&O §17.1
+    private static IXdmIterator ConstructorInvoker(XdmTypeCode target, XdmSequence[] args)
+    {
+        XdmItem? item = args[0].FirstOrNull();
+        if (item is null)
+        {
+            // F&O §17.1: empty → empty.
+            return EmptyIterator.Instance;
+        }
+
+        if (!(item is XdmAtomicValue av))
+        {
+            throw new XPathDynamicException(
+                XPathErrors.XPTY0004,
+                $"xs:{CastTable.GetXsLocalName(target)}() constructor requires an atomic argument.",
+                default);
+        }
+
+        // F&O §17.1: cast the atomic value to the target type.
+        XdmAtomicValue result = CastTable.Cast(av, target, default);
+        return new SingleItemIterator(result);
     }
 }

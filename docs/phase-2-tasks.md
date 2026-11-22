@@ -281,7 +281,7 @@ for `sum` (XPath 2.0 §15.4.3), empty for `avg` / `min` / `max`.
 
 ## P2-11 Date/time and duration functions
 
-- [ ] Done
+- [x] Done
 
 **Scope.** F&O §10: `fn:current-dateTime` et al. (already in P2-08 for context);
 component extractors (`year-from-dateTime`, `month-from-dateTime`, …,

@@ -58,4 +58,14 @@ public static class XPathErrors
     /// The normalization form is not supported. (F&amp;O §7.4.6 FOCH0003)
     /// </summary>
     public static readonly QName FOCH0003 = new QName("err", Namespace, "FOCH0003");
+
+    /// <summary>
+    /// The timezone duration is out of range −14:00..+14:00. (F&amp;O §10.7 FODT0003)
+    /// </summary>
+    public static readonly QName FODT0003 = new QName("err", Namespace, "FODT0003");
+
+    /// <summary>
+    /// Both arguments to fn:dateTime have timezones but they disagree. (F&amp;O §10.8.1 FORG0008)
+    /// </summary>
+    public static readonly QName FORG0008 = new QName("err", Namespace, "FORG0008");
 }
