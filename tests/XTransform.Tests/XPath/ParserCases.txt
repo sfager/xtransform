@@ -1,0 +1,1353 @@
+# integer literal
+42
+Literal(xs:integer, 42)
+
+# string literal
+"hello"
+Literal(xs:string, hello)
+
+# decimal literal
+3.14
+Literal(xs:decimal, 3.14)
+
+# double literal
+1.5e10
+Literal(xs:double, 15000000000)
+
+# variable reference
+$x
+VariableRef(x)
+
+# variable with ns prefix resolved
+$fn:x
+VariableRef(fn:x)
+
+# context item
+.
+ContextItemExpr
+
+# parent shorthand
+..
+AxisStep(parent)
+  KindTest(node())
+
+# empty parens
+()
+ParenthesizedExpr(empty)
+
+# parenthesized literal
+(42)
+ParenthesizedExpr
+  Literal(xs:integer, 42)
+
+# arithmetic add
+1 + 2
+ArithmeticExpr(+)
+  Literal(xs:integer, 1)
+  Literal(xs:integer, 2)
+
+# arithmetic subtract
+5 - 3
+ArithmeticExpr(-)
+  Literal(xs:integer, 5)
+  Literal(xs:integer, 3)
+
+# arithmetic multiply
+3 * 4
+ArithmeticExpr(*)
+  Literal(xs:integer, 3)
+  Literal(xs:integer, 4)
+
+# arithmetic div
+10 div 2
+ArithmeticExpr(div)
+  Literal(xs:integer, 10)
+  Literal(xs:integer, 2)
+
+# arithmetic idiv
+10 idiv 3
+ArithmeticExpr(idiv)
+  Literal(xs:integer, 10)
+  Literal(xs:integer, 3)
+
+# arithmetic mod
+10 mod 3
+ArithmeticExpr(mod)
+  Literal(xs:integer, 10)
+  Literal(xs:integer, 3)
+
+# arithmetic precedence: 1 + 2 * 3
+1 + 2 * 3
+ArithmeticExpr(+)
+  Literal(xs:integer, 1)
+  ArithmeticExpr(*)
+    Literal(xs:integer, 2)
+    Literal(xs:integer, 3)
+
+# unary minus
+-$x
+UnaryExpr(-)
+  VariableRef(x)
+
+# unary plus
++$x
+UnaryExpr(+)
+  VariableRef(x)
+
+# double unary minus
+--$x
+UnaryExpr(-)
+  UnaryExpr(-)
+    VariableRef(x)
+
+# or expression
+a or b
+OrExpr
+  AxisStep(child)
+    NameTest(a)
+  AxisStep(child)
+    NameTest(b)
+
+# and expression
+a and b
+AndExpr
+  AxisStep(child)
+    NameTest(a)
+  AxisStep(child)
+    NameTest(b)
+
+# or and precedence: a or b and c
+a or b and c
+OrExpr
+  AxisStep(child)
+    NameTest(a)
+  AndExpr
+    AxisStep(child)
+      NameTest(b)
+    AxisStep(child)
+      NameTest(c)
+
+# general comparison equals
+a = b
+ComparisonExpr(=)
+  AxisStep(child)
+    NameTest(a)
+  AxisStep(child)
+    NameTest(b)
+
+# general comparison not-equals
+a != b
+ComparisonExpr(!=)
+  AxisStep(child)
+    NameTest(a)
+  AxisStep(child)
+    NameTest(b)
+
+# general comparison less-than
+a < b
+ComparisonExpr(<)
+  AxisStep(child)
+    NameTest(a)
+  AxisStep(child)
+    NameTest(b)
+
+# general comparison greater-than
+a > b
+ComparisonExpr(>)
+  AxisStep(child)
+    NameTest(a)
+  AxisStep(child)
+    NameTest(b)
+
+# general comparison less-than-or-equal
+a <= b
+ComparisonExpr(<=)
+  AxisStep(child)
+    NameTest(a)
+  AxisStep(child)
+    NameTest(b)
+
+# general comparison greater-than-or-equal
+a >= b
+ComparisonExpr(>=)
+  AxisStep(child)
+    NameTest(a)
+  AxisStep(child)
+    NameTest(b)
+
+# value comparison eq
+a eq b
+ComparisonExpr(eq)
+  AxisStep(child)
+    NameTest(a)
+  AxisStep(child)
+    NameTest(b)
+
+# value comparison ne
+a ne b
+ComparisonExpr(ne)
+  AxisStep(child)
+    NameTest(a)
+  AxisStep(child)
+    NameTest(b)
+
+# value comparison lt
+a lt b
+ComparisonExpr(lt)
+  AxisStep(child)
+    NameTest(a)
+  AxisStep(child)
+    NameTest(b)
+
+# value comparison le
+a le b
+ComparisonExpr(le)
+  AxisStep(child)
+    NameTest(a)
+  AxisStep(child)
+    NameTest(b)
+
+# value comparison gt
+a gt b
+ComparisonExpr(gt)
+  AxisStep(child)
+    NameTest(a)
+  AxisStep(child)
+    NameTest(b)
+
+# value comparison ge
+a ge b
+ComparisonExpr(ge)
+  AxisStep(child)
+    NameTest(a)
+  AxisStep(child)
+    NameTest(b)
+
+# node identity is
+a is b
+ComparisonExpr(is)
+  AxisStep(child)
+    NameTest(a)
+  AxisStep(child)
+    NameTest(b)
+
+# node precedes
+a << b
+ComparisonExpr(<<)
+  AxisStep(child)
+    NameTest(a)
+  AxisStep(child)
+    NameTest(b)
+
+# node follows
+a >> b
+ComparisonExpr(>>)
+  AxisStep(child)
+    NameTest(a)
+  AxisStep(child)
+    NameTest(b)
+
+# range expression
+1 to 10
+RangeExpr(to)
+  Literal(xs:integer, 1)
+  Literal(xs:integer, 10)
+
+# union with pipe
+a | b
+SetExpr(union)
+  AxisStep(child)
+    NameTest(a)
+  AxisStep(child)
+    NameTest(b)
+
+# union with keyword
+a union b
+SetExpr(union)
+  AxisStep(child)
+    NameTest(a)
+  AxisStep(child)
+    NameTest(b)
+
+# intersect
+a intersect b
+SetExpr(intersect)
+  AxisStep(child)
+    NameTest(a)
+  AxisStep(child)
+    NameTest(b)
+
+# except
+a except b
+SetExpr(except)
+  AxisStep(child)
+    NameTest(a)
+  AxisStep(child)
+    NameTest(b)
+
+# instance of exact
+$x instance of xs:integer
+InstanceOfExpr(xs:integer)
+  VariableRef(x)
+
+# instance of plus
+$x instance of xs:integer+
+InstanceOfExpr(xs:integer+)
+  VariableRef(x)
+
+# instance of star
+$x instance of xs:string*
+InstanceOfExpr(xs:string*)
+  VariableRef(x)
+
+# instance of question
+$x instance of xs:boolean?
+InstanceOfExpr(xs:boolean?)
+  VariableRef(x)
+
+# treat as
+$x treat as xs:string
+TreatExpr(xs:string)
+  VariableRef(x)
+
+# treat as optional
+$x treat as xs:string?
+TreatExpr(xs:string?)
+  VariableRef(x)
+
+# castable as
+$x castable as xs:integer
+CastableExpr(xs:integer)
+  VariableRef(x)
+
+# castable as optional
+$x castable as xs:integer?
+CastableExpr(xs:integer?)
+  VariableRef(x)
+
+# cast as
+$x cast as xs:integer
+CastExpr(xs:integer)
+  VariableRef(x)
+
+# cast as optional
+$x cast as xs:integer?
+CastExpr(xs:integer?)
+  VariableRef(x)
+
+# if expression
+if (x) then y else z
+IfExpr
+  if
+    AxisStep(child)
+      NameTest(x)
+  then
+    AxisStep(child)
+      NameTest(y)
+  else
+    AxisStep(child)
+      NameTest(z)
+
+# for expression simple
+for $i in 1 to 10 return $i
+ForExpr
+  ForClause(i)
+    RangeExpr(to)
+      Literal(xs:integer, 1)
+      Literal(xs:integer, 10)
+  return
+    VariableRef(i)
+
+# for expression with two clauses
+for $i in a, $j in b return $i + $j
+ForExpr
+  ForClause(i)
+    AxisStep(child)
+      NameTest(a)
+  ForClause(j)
+    AxisStep(child)
+      NameTest(b)
+  return
+    ArithmeticExpr(+)
+      VariableRef(i)
+      VariableRef(j)
+
+# some quantifier
+some $i in list satisfies $i > 0
+QuantifiedExpr(some)
+  ForClause(i)
+    AxisStep(child)
+      NameTest(list)
+  satisfies
+    ComparisonExpr(>)
+      VariableRef(i)
+      Literal(xs:integer, 0)
+
+# every quantifier
+every $i in list satisfies $i > 0
+QuantifiedExpr(every)
+  ForClause(i)
+    AxisStep(child)
+      NameTest(list)
+  satisfies
+    ComparisonExpr(>)
+      VariableRef(i)
+      Literal(xs:integer, 0)
+
+# absolute path bare slash
+/
+PathExpr(/)
+
+# absolute path slash foo
+/foo
+PathExpr(/)
+  AxisStep(child)
+    NameTest(foo)
+
+# absolute double slash foo
+//foo
+PathExpr(//)
+  AxisStep(descendant-or-self)
+    KindTest(node())
+  AxisStep(child)
+    NameTest(foo)
+
+# relative path foo/bar
+foo/bar
+PathExpr(relative)
+  AxisStep(child)
+    NameTest(foo)
+  AxisStep(child)
+    NameTest(bar)
+
+# absolute path /foo/bar
+/foo/bar
+PathExpr(/)
+  AxisStep(child)
+    NameTest(foo)
+  AxisStep(child)
+    NameTest(bar)
+
+# path with double slash //foo//bar
+//foo//bar
+PathExpr(//)
+  AxisStep(descendant-or-self)
+    KindTest(node())
+  AxisStep(child)
+    NameTest(foo)
+  AxisStep(descendant-or-self)
+    KindTest(node())
+  AxisStep(child)
+    NameTest(bar)
+
+# child axis explicit
+child::foo
+AxisStep(child)
+  NameTest(foo)
+
+# descendant axis
+descendant::foo
+AxisStep(descendant)
+  NameTest(foo)
+
+# descendant-or-self axis
+descendant-or-self::foo
+AxisStep(descendant-or-self)
+  NameTest(foo)
+
+# self axis
+self::foo
+AxisStep(self)
+  NameTest(foo)
+
+# attribute axis explicit
+attribute::foo
+AxisStep(attribute)
+  NameTest(foo)
+
+# attribute shorthand
+@foo
+AxisStep(attribute)
+  NameTest(foo)
+
+# parent axis
+parent::foo
+AxisStep(parent)
+  NameTest(foo)
+
+# ancestor axis
+ancestor::foo
+AxisStep(ancestor)
+  NameTest(foo)
+
+# ancestor-or-self axis
+ancestor-or-self::foo
+AxisStep(ancestor-or-self)
+  NameTest(foo)
+
+# following-sibling axis
+following-sibling::foo
+AxisStep(following-sibling)
+  NameTest(foo)
+
+# preceding-sibling axis
+preceding-sibling::foo
+AxisStep(preceding-sibling)
+  NameTest(foo)
+
+# following axis
+following::foo
+AxisStep(following)
+  NameTest(foo)
+
+# preceding axis
+preceding::foo
+AxisStep(preceding)
+  NameTest(foo)
+
+# namespace axis
+namespace::foo
+AxisStep(namespace)
+  NameTest(foo)
+
+# wildcard name test *
+*
+AxisStep(child)
+  NameTest(*)
+
+# prefix wildcard fn:*
+fn:*
+AxisStep(child)
+  NameTest(fn:*)
+
+# local wildcard *:local
+*:local
+AxisStep(child)
+  NameTest(*:local)
+
+# node kind test node()
+node()
+AxisStep(child)
+  KindTest(node())
+
+# element kind test element()
+element()
+AxisStep(child)
+  KindTest(element())
+
+# element kind test with name
+element(foo)
+AxisStep(child)
+  KindTest(element(foo))
+
+# attribute kind test attribute()
+attribute()
+AxisStep(child)
+  KindTest(attribute())
+
+# attribute kind test with name
+attribute(a)
+AxisStep(child)
+  KindTest(attribute(a))
+
+# text kind test
+text()
+AxisStep(child)
+  KindTest(text())
+
+# comment kind test
+comment()
+AxisStep(child)
+  KindTest(comment())
+
+# processing-instruction kind test
+processing-instruction()
+AxisStep(child)
+  KindTest(processing-instruction())
+
+# processing-instruction with target string
+processing-instruction("target")
+AxisStep(child)
+  KindTest(processing-instruction(target))
+
+# document-node kind test
+document-node()
+AxisStep(child)
+  KindTest(document-node())
+
+# document-node with element
+document-node(element(x))
+AxisStep(child)
+  KindTest(document-node(KindTest(element(x))))
+
+# predicate single
+foo[1]
+AxisStep(child)
+  NameTest(foo)
+  Predicate
+    Literal(xs:integer, 1)
+
+# predicate with attribute
+foo[@id]
+AxisStep(child)
+  NameTest(foo)
+  Predicate
+    AxisStep(attribute)
+      NameTest(id)
+
+# predicate with string comparison
+foo[@id="x"]
+AxisStep(child)
+  NameTest(foo)
+  Predicate
+    ComparisonExpr(=)
+      AxisStep(attribute)
+        NameTest(id)
+      Literal(xs:string, x)
+
+# multiple predicates
+foo[2][@a]
+AxisStep(child)
+  NameTest(foo)
+  Predicate
+    Literal(xs:integer, 2)
+  Predicate
+    AxisStep(attribute)
+      NameTest(a)
+
+# function call no args
+string-length(.)
+FunctionCall(string-length)
+  ContextItemExpr
+
+# function call with ns prefix
+fn:count(x)
+FunctionCall(fn:count)
+  AxisStep(child)
+    NameTest(x)
+
+# function call multiple args
+concat("a", "b", "c")
+FunctionCall(concat)
+  Literal(xs:string, a)
+  Literal(xs:string, b)
+  Literal(xs:string, c)
+
+# sequence of two items
+(1, 2, 3)
+ParenthesizedExpr
+  SequenceExpr
+    Literal(xs:integer, 1)
+    Literal(xs:integer, 2)
+    Literal(xs:integer, 3)
+
+# empty sequence
+()
+ParenthesizedExpr(empty)
+
+# complex path
+/root/*[1]/following-sibling::*[@id="x"]
+PathExpr(/)
+  AxisStep(child)
+    NameTest(root)
+  AxisStep(child)
+    NameTest(*)
+    Predicate
+      Literal(xs:integer, 1)
+  AxisStep(following-sibling)
+    NameTest(*)
+    Predicate
+      ComparisonExpr(=)
+        AxisStep(attribute)
+          NameTest(id)
+        Literal(xs:string, x)
+
+# self::node()
+self::node()
+AxisStep(self)
+  KindTest(node())
+
+# parent::node()
+parent::node()
+AxisStep(parent)
+  KindTest(node())
+
+# attribute element in descendant axis
+descendant::element()
+AxisStep(descendant)
+  KindTest(element())
+
+# attribute wildcard
+attribute::*
+AxisStep(attribute)
+  NameTest(*)
+
+# path with self
+./foo
+PathExpr(relative)
+  ContextItemExpr
+  AxisStep(child)
+    NameTest(foo)
+
+# path starting with ..
+../foo
+PathExpr(relative)
+  AxisStep(parent)
+    KindTest(node())
+  AxisStep(child)
+    NameTest(foo)
+
+# double negation in arithmetic
+1 + -2
+ArithmeticExpr(+)
+  Literal(xs:integer, 1)
+  UnaryExpr(-)
+    Literal(xs:integer, 2)
+
+# nested if
+if (a) then if (b) then c else d else e
+IfExpr
+  if
+    AxisStep(child)
+      NameTest(a)
+  then
+    IfExpr
+      if
+        AxisStep(child)
+          NameTest(b)
+      then
+        AxisStep(child)
+          NameTest(c)
+      else
+        AxisStep(child)
+          NameTest(d)
+  else
+    AxisStep(child)
+      NameTest(e)
+
+# some with multiple bindings
+some $i in a, $j in b satisfies $i = $j
+QuantifiedExpr(some)
+  ForClause(i)
+    AxisStep(child)
+      NameTest(a)
+  ForClause(j)
+    AxisStep(child)
+      NameTest(b)
+  satisfies
+    ComparisonExpr(=)
+      VariableRef(i)
+      VariableRef(j)
+
+# every with multiple bindings
+every $i in a, $j in b satisfies $i != $j
+QuantifiedExpr(every)
+  ForClause(i)
+    AxisStep(child)
+      NameTest(a)
+  ForClause(j)
+    AxisStep(child)
+      NameTest(b)
+  satisfies
+    ComparisonExpr(!=)
+      VariableRef(i)
+      VariableRef(j)
+
+# empty-sequence type
+$x instance of empty-sequence()
+InstanceOfExpr(empty-sequence())
+  VariableRef(x)
+
+# item type
+$x instance of item()
+InstanceOfExpr(item())
+  VariableRef(x)
+
+# node type instance of
+$x instance of node()
+InstanceOfExpr(node())
+  VariableRef(x)
+
+# element instance of
+$x instance of element()
+InstanceOfExpr(element())
+  VariableRef(x)
+
+# element with name instance of
+$x instance of element(foo)
+InstanceOfExpr(element(foo))
+  VariableRef(x)
+
+# attribute instance of
+$x instance of attribute()
+InstanceOfExpr(attribute())
+  VariableRef(x)
+
+# text instance of
+$x instance of text()
+InstanceOfExpr(text())
+  VariableRef(x)
+
+# comment instance of
+$x instance of comment()
+InstanceOfExpr(comment())
+  VariableRef(x)
+
+# processing-instruction instance of
+$x instance of processing-instruction()
+InstanceOfExpr(processing-instruction())
+  VariableRef(x)
+
+# document-node instance of
+$x instance of document-node()
+InstanceOfExpr(document-node())
+  VariableRef(x)
+
+# multiplication has higher precedence than addition
+3 * 4 div 2
+ArithmeticExpr(div)
+  ArithmeticExpr(*)
+    Literal(xs:integer, 3)
+    Literal(xs:integer, 4)
+  Literal(xs:integer, 2)
+
+# mod expression
+5 mod 3
+ArithmeticExpr(mod)
+  Literal(xs:integer, 5)
+  Literal(xs:integer, 3)
+
+# set operations precedence: intersect over union
+a intersect b union c
+SetExpr(union)
+  SetExpr(intersect)
+    AxisStep(child)
+      NameTest(a)
+    AxisStep(child)
+      NameTest(b)
+  AxisStep(child)
+    NameTest(c)
+
+# except
+a except b
+SetExpr(except)
+  AxisStep(child)
+    NameTest(a)
+  AxisStep(child)
+    NameTest(b)
+
+# path with predicate on axis step
+child::foo[1]
+AxisStep(child)
+  NameTest(foo)
+  Predicate
+    Literal(xs:integer, 1)
+
+# attribute shorthand in path
+/root/@id
+PathExpr(/)
+  AxisStep(child)
+    NameTest(root)
+  AxisStep(attribute)
+    NameTest(id)
+
+# multiple predicates on axis step
+child::foo[1][2]
+AxisStep(child)
+  NameTest(foo)
+  Predicate
+    Literal(xs:integer, 1)
+  Predicate
+    Literal(xs:integer, 2)
+
+# function call in predicate
+foo[count(child::*) > 0]
+AxisStep(child)
+  NameTest(foo)
+  Predicate
+    ComparisonExpr(>)
+      FunctionCall(count)
+        AxisStep(child)
+          NameTest(*)
+      Literal(xs:integer, 0)
+
+# cast in path context
+$x cast as xs:string
+CastExpr(xs:string)
+  VariableRef(x)
+
+# variable reference in path
+$items/name
+PathExpr(relative)
+  VariableRef(items)
+  AxisStep(child)
+    NameTest(name)
+
+# concat function call
+concat("prefix-", $x)
+FunctionCall(concat)
+  Literal(xs:string, prefix-)
+  VariableRef(x)
+
+# path with two slashes in middle
+a//b
+PathExpr(relative)
+  AxisStep(child)
+    NameTest(a)
+  AxisStep(descendant-or-self)
+    KindTest(node())
+  AxisStep(child)
+    NameTest(b)
+
+# string-length function
+string-length($x)
+FunctionCall(string-length)
+  VariableRef(x)
+
+# boolean function
+boolean($x)
+FunctionCall(boolean)
+  VariableRef(x)
+
+# number function
+number($x)
+FunctionCall(number)
+  VariableRef(x)
+
+# normalize-space function
+normalize-space($x)
+FunctionCall(normalize-space)
+  VariableRef(x)
+
+# starts-with function
+starts-with($x, "prefix")
+FunctionCall(starts-with)
+  VariableRef(x)
+  Literal(xs:string, prefix)
+
+# contains function
+contains($x, "sub")
+FunctionCall(contains)
+  VariableRef(x)
+  Literal(xs:string, sub)
+
+# following-sibling with node test
+following-sibling::element()
+AxisStep(following-sibling)
+  KindTest(element())
+
+# preceding-sibling with name
+preceding-sibling::para
+AxisStep(preceding-sibling)
+  NameTest(para)
+
+# following with text
+following::text()
+AxisStep(following)
+  KindTest(text())
+
+# preceding with comment
+preceding::comment()
+AxisStep(preceding)
+  KindTest(comment())
+
+# ancestor-or-self with *
+ancestor-or-self::*
+AxisStep(ancestor-or-self)
+  NameTest(*)
+
+# path with filter on function call
+(1,2,3)[1]
+FilterExpr
+  ParenthesizedExpr
+    SequenceExpr
+      Literal(xs:integer, 1)
+      Literal(xs:integer, 2)
+      Literal(xs:integer, 3)
+  Predicate
+    Literal(xs:integer, 1)
+
+# cast as xs:string
+"42" cast as xs:integer
+CastExpr(xs:integer)
+  Literal(xs:string, 42)
+
+# castable as check
+"42" castable as xs:integer
+CastableExpr(xs:integer)
+  Literal(xs:string, 42)
+
+# treat as expression
+$items treat as element()*
+TreatExpr(element()*)
+  VariableRef(items)
+
+# abs function
+abs(-5)
+FunctionCall(abs)
+  UnaryExpr(-)
+    Literal(xs:integer, 5)
+
+# floor function
+floor(3.7)
+FunctionCall(floor)
+  Literal(xs:decimal, 3.7)
+
+# ceiling function
+ceiling(3.2)
+FunctionCall(ceiling)
+  Literal(xs:decimal, 3.2)
+
+# round function
+round(3.5)
+FunctionCall(round)
+  Literal(xs:decimal, 3.5)
+
+# name() function call with no args
+name()
+FunctionCall(name)
+
+# position function
+position()
+FunctionCall(position)
+
+# last function
+last()
+FunctionCall(last)
+
+# count function with *
+count(*)
+FunctionCall(count)
+  AxisStep(child)
+    NameTest(*)
+
+# path with self::*
+self::*
+AxisStep(self)
+  NameTest(*)
+
+# element wildcard with predicate
+element(*)[1]
+AxisStep(child)
+  KindTest(element())
+  Predicate
+    Literal(xs:integer, 1)
+
+# complex nested path
+/a/b/c
+PathExpr(/)
+  AxisStep(child)
+    NameTest(a)
+  AxisStep(child)
+    NameTest(b)
+  AxisStep(child)
+    NameTest(c)
+
+# deeply nested arithmetic
+(1 + 2) * (3 - 4)
+ArithmeticExpr(*)
+  ParenthesizedExpr
+    ArithmeticExpr(+)
+      Literal(xs:integer, 1)
+      Literal(xs:integer, 2)
+  ParenthesizedExpr
+    ArithmeticExpr(-)
+      Literal(xs:integer, 3)
+      Literal(xs:integer, 4)
+
+# numeric double negative
+1 - -1
+ArithmeticExpr(-)
+  Literal(xs:integer, 1)
+  UnaryExpr(-)
+    Literal(xs:integer, 1)
+
+# XPath comment
+(: a comment :) 42
+Literal(xs:integer, 42)
+
+# string literal with quote escape
+"he said ""hello"""
+Literal(xs:string, he said "hello")
+
+# single-quoted string
+'hello world'
+Literal(xs:string, hello world)
+
+# negative integer literal
+-42
+UnaryExpr(-)
+  Literal(xs:integer, 42)
+
+# large integer literal
+9999999999999999999
+Literal(xs:integer, 9999999999999999999)
+
+# zero
+0
+Literal(xs:integer, 0)
+
+# decimal with leading dot
+.5
+Literal(xs:decimal, 0.5)
+
+# double with exponent e
+2.5e3
+Literal(xs:double, 2500)
+
+# for single binding
+for $x in items return $x
+ForExpr
+  ForClause(x)
+    AxisStep(child)
+      NameTest(items)
+  return
+    VariableRef(x)
+
+# if with complex test
+if ($x > 0) then "positive" else "non-positive"
+IfExpr
+  if
+    ComparisonExpr(>)
+      VariableRef(x)
+      Literal(xs:integer, 0)
+  then
+    Literal(xs:string, positive)
+  else
+    Literal(xs:string, non-positive)
+
+# multiple or
+a or b or c
+OrExpr
+  OrExpr
+    AxisStep(child)
+      NameTest(a)
+    AxisStep(child)
+      NameTest(b)
+  AxisStep(child)
+    NameTest(c)
+
+# multiple and
+a and b and c
+AndExpr
+  AndExpr
+    AxisStep(child)
+      NameTest(a)
+    AxisStep(child)
+      NameTest(b)
+  AxisStep(child)
+    NameTest(c)
+
+# chained path /a/b/c/d
+/a/b/c/d
+PathExpr(/)
+  AxisStep(child)
+    NameTest(a)
+  AxisStep(child)
+    NameTest(b)
+  AxisStep(child)
+    NameTest(c)
+  AxisStep(child)
+    NameTest(d)
+
+# path with attribute predicate
+/book[@author]
+PathExpr(/)
+  AxisStep(child)
+    NameTest(book)
+    Predicate
+      AxisStep(attribute)
+        NameTest(author)
+
+# path with text content test
+//title/text()
+PathExpr(//)
+  AxisStep(descendant-or-self)
+    KindTest(node())
+  AxisStep(child)
+    NameTest(title)
+  AxisStep(child)
+    KindTest(text())
+
+# abs function two steps
+abs($x)
+FunctionCall(abs)
+  VariableRef(x)
+
+# string cast
+$x cast as xs:string
+CastExpr(xs:string)
+  VariableRef(x)
+
+# boolean cast
+$x cast as xs:boolean
+CastExpr(xs:boolean)
+  VariableRef(x)
+
+# double cast
+$x cast as xs:double
+CastExpr(xs:double)
+  VariableRef(x)
+
+# decimal instance of
+$x instance of xs:decimal
+InstanceOfExpr(xs:decimal)
+  VariableRef(x)
+
+# double instance of star
+$x instance of xs:double*
+InstanceOfExpr(xs:double*)
+  VariableRef(x)
+
+# combined or and and
+a or b and c or d
+OrExpr
+  OrExpr
+    AxisStep(child)
+      NameTest(a)
+    AndExpr
+      AxisStep(child)
+        NameTest(b)
+      AxisStep(child)
+        NameTest(c)
+  AxisStep(child)
+    NameTest(d)
+
+# path with descOrSelf and attribute
+/root//para/@id
+PathExpr(/)
+  AxisStep(child)
+    NameTest(root)
+  AxisStep(descendant-or-self)
+    KindTest(node())
+  AxisStep(child)
+    NameTest(para)
+  AxisStep(attribute)
+    NameTest(id)
+
+# three-step relative path
+a/b/c
+PathExpr(relative)
+  AxisStep(child)
+    NameTest(a)
+  AxisStep(child)
+    NameTest(b)
+  AxisStep(child)
+    NameTest(c)
+
+# element in axis
+descendant::text()
+AxisStep(descendant)
+  KindTest(text())
+
+# self with predicate
+self::*[@id]
+AxisStep(self)
+  NameTest(*)
+  Predicate
+    AxisStep(attribute)
+      NameTest(id)
+
+# ancestor with element test
+ancestor::element()
+AxisStep(ancestor)
+  KindTest(element())
+
+# namespace axis with *
+namespace::*
+AxisStep(namespace)
+  NameTest(*)
+
+# range then comparison
+(1 to 5) = 3
+ComparisonExpr(=)
+  ParenthesizedExpr
+    RangeExpr(to)
+      Literal(xs:integer, 1)
+      Literal(xs:integer, 5)
+  Literal(xs:integer, 3)
+
+# string function
+string($x)
+FunctionCall(string)
+  VariableRef(x)
+
+# function call with empty args
+true()
+FunctionCall(true)
+
+# function call false
+false()
+FunctionCall(false)
+
+# fn:string-length
+fn:string-length($x)
+FunctionCall(fn:string-length)
+  VariableRef(x)
+
+# fn:true
+fn:true()
+FunctionCall(fn:true)
+
+# fn:false
+fn:false()
+FunctionCall(fn:false)
+
+# following-sibling with text
+following-sibling::text()
+AxisStep(following-sibling)
+  KindTest(text())
+
+# preceding with element
+preceding::element(x)
+AxisStep(preceding)
+  KindTest(element(x))
+
+# preceding-sibling with *:local
+preceding-sibling::*:local
+AxisStep(preceding-sibling)
+  NameTest(*:local)
+
+# ancestor-or-self::element()
+ancestor-or-self::element()
+AxisStep(ancestor-or-self)
+  KindTest(element())
+
+# fn: prefix function call
+fn:count(//*)
+FunctionCall(fn:count)
+  PathExpr(//)
+    AxisStep(descendant-or-self)
+      KindTest(node())
+    AxisStep(child)
+      NameTest(*)
+
+# path starting with variable then slash predicate
+$items[1]
+FilterExpr
+  VariableRef(items)
+  Predicate
+    Literal(xs:integer, 1)
+
+# function result with predicate
+fn:reverse(a)[1]
+FilterExpr
+  FunctionCall(fn:reverse)
+    AxisStep(child)
+      NameTest(a)
+  Predicate
+    Literal(xs:integer, 1)
+
+# complex nested if
+if ($debug) then trace($x, "debug") else $x
+IfExpr
+  if
+    VariableRef(debug)
+  then
+    FunctionCall(trace)
+      VariableRef(x)
+      Literal(xs:string, debug)
+  else
+    VariableRef(x)
+
+

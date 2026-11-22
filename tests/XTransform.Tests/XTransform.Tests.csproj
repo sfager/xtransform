@@ -6,6 +6,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="XPath\ParserCases.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="TestData\CastMatrix.csv">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

@@ -4,4 +4,9 @@
     <Description>XDM data model for XTransform: items, nodes, atomic values, sequences, NamePool, TinyTree and the XPath cast table.</Description>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- XTransform.XPath directly accesses CastTable and other internals -->
+    <InternalsVisibleTo Include="XTransform.XPath" />
+  </ItemGroup>
+
 </Project>
