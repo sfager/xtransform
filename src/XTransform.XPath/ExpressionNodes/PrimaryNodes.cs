@@ -8,7 +8,6 @@ using XTransform.Xdm.Iterators;
 
 namespace XTransform.XPath.ExpressionNodes;
 
-// TODO (P2-08): implement Iterate for FunctionCallNode
 
 /// <summary>
 /// A compiled literal value — xs:integer, xs:decimal, xs:double, or xs:string.
@@ -270,7 +269,7 @@ internal sealed class FunctionCallNode : ExpressionNode
                                ImmutableArray<ExpressionNode> arguments)
         : base(location,
                signature.ReturnType,
-               MergeDependencies(arguments))
+               MergeDependencies(arguments) | signature.CallDependencies)
     {
         Signature = signature;
         Arguments = arguments;
@@ -285,8 +284,15 @@ internal sealed class FunctionCallNode : ExpressionNode
     /// <inheritdoc/>
     public override IXdmIterator Iterate(DynamicContext context)
     {
-        // TODO (P2-08): implement Iterate for built-in functions
-        throw new NotImplementedException("Evaluation for FunctionCallNode is implemented in P2-08.");
+        // F&O §3.1.5 — apply function-conversion rules to each argument, then invoke.
+        XdmSequence[] converted = new XdmSequence[Arguments.Length];
+        for (int i = 0; i < Arguments.Length; i++)
+        {
+            IXdmIterator raw = Arguments[i].Iterate(context);
+            converted[i] = FunctionConversion.Apply(raw, Signature.ParameterTypes[i], Location);
+        }
+
+        return Signature.Invoker(context, converted);
     }
 
     /// <inheritdoc/>

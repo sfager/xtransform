@@ -49,7 +49,7 @@ internal sealed class XPathCompilerErrorTests
     private static readonly QName s_xsStringName =
         new QName("xs", "http://www.w3.org/2001/XMLSchema", "string");
 
-    private static readonly FunctionSignature s_xsStringArity1 = new FunctionSignature(
+    private static readonly FunctionSignature s_xsStringArity1 = FunctionSignature.CompileTimeOnly(
         s_xsStringName,
         1,
         new SequenceType(ItemType.Atomic(XdmTypeCode.String), Occurrence.ExactlyOne),
