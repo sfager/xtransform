@@ -46,7 +46,7 @@ How to work through this list:
 
 ## P2-01 Expression runtime foundation
 
-- [ ] Done
+- [x] Done
 
 **Scope.** `ExpressionNode` abstract class (per [interfaces.md Evaluation](interfaces.md#evaluation))
 with `Iterate` / `EvaluateItem` / `EffectiveBooleanValue`; `DynamicContext` with
