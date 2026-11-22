@@ -164,7 +164,7 @@ How to work through this list:
 
 ## P1-13 XSLT pattern parser
 
-- [ ] Done
+- [x] Done
 
 **Scope.** `XPathParser.ParsePattern` for the XSLT 2.0 pattern grammar (§5.5.2), including `id()` and `key()` patterns, unions, and default-priority calculation per §6.4.
 
