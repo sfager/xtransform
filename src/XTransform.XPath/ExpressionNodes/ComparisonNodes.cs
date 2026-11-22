@@ -2,10 +2,10 @@
 
 using System;
 using XTransform.Xdm;
+using XTransform.Xdm.Iterators;
+using XTransform.XPath.Operators;
 
 namespace XTransform.XPath.ExpressionNodes;
-
-// TODO (P2-05): implement Iterate for GeneralComparisonNode, ValueComparisonNode, NodeComparisonNode
 
 /// <summary>Operator codes for general comparisons.</summary>
 internal enum GeneralComparisonOp
@@ -87,8 +87,22 @@ internal sealed class GeneralComparisonNode : ExpressionNode
     /// <inheritdoc/>
     public override IXdmIterator Iterate(DynamicContext context)
     {
-        // TODO (P2-05): implement Iterate
-        throw new NotImplementedException("Evaluation for GeneralComparisonNode is implemented in P2-05.");
+        // XPath 2.0 §3.5.2 — general comparison (existential semantics)
+        bool result = GeneralComparison.Evaluate(Op, Left.Iterate(context), Right.Iterate(context), Location);
+        return new SingleItemIterator(XdmAtomicValue.Boolean(result));
+    }
+
+    /// <inheritdoc/>
+    public override XdmItem? EvaluateItem(DynamicContext context)
+    {
+        bool result = GeneralComparison.Evaluate(Op, Left.Iterate(context), Right.Iterate(context), Location);
+        return XdmAtomicValue.Boolean(result);
+    }
+
+    /// <inheritdoc/>
+    public override bool EffectiveBooleanValue(DynamicContext context)
+    {
+        return GeneralComparison.Evaluate(Op, Left.Iterate(context), Right.Iterate(context), Location);
     }
 
     /// <inheritdoc/>
@@ -148,8 +162,86 @@ internal sealed class ValueComparisonNode : ExpressionNode
     /// <inheritdoc/>
     public override IXdmIterator Iterate(DynamicContext context)
     {
-        // TODO (P2-05): implement Iterate
-        throw new NotImplementedException("Evaluation for ValueComparisonNode is implemented in P2-05.");
+        // XPath 2.0 §3.5.1 — value comparison
+        XdmAtomicValue? result = EvaluateValueComparison(context);
+        if (result is null)
+        {
+            return EmptyIterator.Instance;
+        }
+        return new SingleItemIterator(result);
+    }
+
+    /// <inheritdoc/>
+    public override XdmItem? EvaluateItem(DynamicContext context)
+    {
+        return EvaluateValueComparison(context);
+    }
+
+    private XdmAtomicValue? EvaluateValueComparison(DynamicContext context)
+    {
+        // XPath 2.0 §3.5.1: each operand must yield at most one item
+        XdmAtomicValue? left = Atomization.AtomizeSingle(Left.EvaluateItem(context), Location);
+        XdmAtomicValue? right = Atomization.AtomizeSingle(Right.EvaluateItem(context), Location);
+
+        // Empty operand → empty result (not false)
+        if (left is null || right is null)
+        {
+            return null;
+        }
+
+        // xs:untypedAtomic → cast to xs:string for value comparisons
+        // F&O §3.5.1: untypedAtomic operands in value comparison are cast to xs:string
+        if (left.TypeCode == XdmTypeCode.UntypedAtomic)
+        {
+            left = XdmAtomicValue.String(left.GetStringValue());
+        }
+        if (right.TypeCode == XdmTypeCode.UntypedAtomic)
+        {
+            right = XdmAtomicValue.String(right.GetStringValue());
+        }
+
+        bool resultBool;
+
+        switch (Op)
+        {
+            case ValueComparisonOp.Eq:
+            case ValueComparisonOp.Ne:
+            {
+                bool? eq = ComparisonOperators.ValueEqual(left, right);
+                if (!eq.HasValue)
+                {
+                    throw new XPathDynamicException(
+                        XPathErrors.XPTY0004,
+                        $"Cannot compare xs:{CastTable.GetXsLocalName(left.TypeCode)} with xs:{CastTable.GetXsLocalName(right.TypeCode)}.",
+                        Location);
+                }
+                resultBool = Op == ValueComparisonOp.Eq ? eq.Value : !eq.Value;
+                break;
+            }
+
+            default:
+            {
+                int? cmp = ComparisonOperators.ValueCompare(left, right);
+                if (!cmp.HasValue)
+                {
+                    throw new XPathDynamicException(
+                        XPathErrors.XPTY0004,
+                        $"Cannot compare xs:{CastTable.GetXsLocalName(left.TypeCode)} with xs:{CastTable.GetXsLocalName(right.TypeCode)}.",
+                        Location);
+                }
+                resultBool = Op switch
+                {
+                    ValueComparisonOp.Lt => cmp.Value < 0,
+                    ValueComparisonOp.Le => cmp.Value <= 0,
+                    ValueComparisonOp.Gt => cmp.Value > 0,
+                    ValueComparisonOp.Ge => cmp.Value >= 0,
+                    _ => throw new InvalidOperationException($"Unknown ValueComparisonOp: {Op}"),
+                };
+                break;
+            }
+        }
+
+        return XdmAtomicValue.Boolean(resultBool);
     }
 
     /// <inheritdoc/>
@@ -209,8 +301,77 @@ internal sealed class NodeComparisonNode : ExpressionNode
     /// <inheritdoc/>
     public override IXdmIterator Iterate(DynamicContext context)
     {
-        // TODO (P2-05): implement Iterate
-        throw new NotImplementedException("Evaluation for NodeComparisonNode is implemented in P2-05.");
+        // XPath 2.0 §3.5.3 — node comparison
+        XdmAtomicValue? result = EvaluateNodeComparison(context);
+        if (result is null)
+        {
+            return EmptyIterator.Instance;
+        }
+        return new SingleItemIterator(result);
+    }
+
+    /// <inheritdoc/>
+    public override XdmItem? EvaluateItem(DynamicContext context)
+    {
+        return EvaluateNodeComparison(context);
+    }
+
+    private XdmAtomicValue? EvaluateNodeComparison(DynamicContext context)
+    {
+        // XPath 2.0 §3.5.3: each operand must yield exactly one node or empty sequence.
+        // Evaluate left first; if empty, short-circuit and return empty (avoid evaluating right).
+        XdmItem? leftItem = Left.EvaluateItem(context);
+
+        if (leftItem is null)
+        {
+            return null;
+        }
+
+        XdmItem? rightItem = Right.EvaluateItem(context);
+
+        // Empty right operand → empty result
+        if (rightItem is null)
+        {
+            return null;
+        }
+
+        if (leftItem is not XdmNode leftNode)
+        {
+            throw new XPathDynamicException(
+                XPathErrors.XPTY0004,
+                "Node comparison requires node operands.",
+                Location);
+        }
+
+        if (rightItem is not XdmNode rightNode)
+        {
+            throw new XPathDynamicException(
+                XPathErrors.XPTY0004,
+                "Node comparison requires node operands.",
+                Location);
+        }
+
+        bool resultBool;
+
+        switch (Op)
+        {
+            case NodeComparisonOp.Is:
+                resultBool = leftNode.Equals(rightNode);
+                break;
+
+            case NodeComparisonOp.Precedes:
+                resultBool = leftNode.CompareDocumentOrder(rightNode) < 0;
+                break;
+
+            case NodeComparisonOp.Follows:
+                resultBool = leftNode.CompareDocumentOrder(rightNode) > 0;
+                break;
+
+            default:
+                throw new InvalidOperationException($"Unknown NodeComparisonOp: {Op}");
+        }
+
+        return XdmAtomicValue.Boolean(resultBool);
     }
 
     /// <inheritdoc/>

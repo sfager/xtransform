@@ -137,7 +137,7 @@ branch after computing the effective boolean value of the test.
 
 ## P2-05 Arithmetic, comparison, logical operators
 
-- [ ] Done
+- [x] Done
 
 **Scope.** `ArithmeticNode` (+/-, *, div, idiv, mod with numeric type promotion
 per F&O §6.2); duration arithmetic per F&O §10; `UnaryNode` (sign).

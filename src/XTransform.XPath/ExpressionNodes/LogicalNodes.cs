@@ -1,11 +1,9 @@
 // XPath 2.0 §3.6 — logical expressions (or, and).
 
-using System;
 using XTransform.Xdm;
+using XTransform.Xdm.Iterators;
 
 namespace XTransform.XPath.ExpressionNodes;
-
-// TODO (P2-05): implement Iterate for OrNode, AndNode
 
 /// <summary>
 /// A compiled <c>or</c> expression. Static type is <c>xs:boolean</c>.
@@ -33,10 +31,22 @@ internal sealed class OrNode : ExpressionNode
     internal ExpressionNode Right { get; }
 
     /// <inheritdoc/>
+    public override bool EffectiveBooleanValue(DynamicContext context)
+    {
+        // XPath 2.0 §3.6: short-circuit on left true
+        return Left.EffectiveBooleanValue(context) || Right.EffectiveBooleanValue(context);
+    }
+
+    /// <inheritdoc/>
     public override IXdmIterator Iterate(DynamicContext context)
     {
-        // TODO (P2-05): implement Iterate
-        throw new NotImplementedException("Evaluation for OrNode is implemented in P2-05.");
+        return new SingleItemIterator(XdmAtomicValue.Boolean(EffectiveBooleanValue(context)));
+    }
+
+    /// <inheritdoc/>
+    public override XdmItem? EvaluateItem(DynamicContext context)
+    {
+        return XdmAtomicValue.Boolean(EffectiveBooleanValue(context));
     }
 
     /// <inheritdoc/>
@@ -76,10 +86,22 @@ internal sealed class AndNode : ExpressionNode
     internal ExpressionNode Right { get; }
 
     /// <inheritdoc/>
+    public override bool EffectiveBooleanValue(DynamicContext context)
+    {
+        // XPath 2.0 §3.6: short-circuit on left false
+        return Left.EffectiveBooleanValue(context) && Right.EffectiveBooleanValue(context);
+    }
+
+    /// <inheritdoc/>
     public override IXdmIterator Iterate(DynamicContext context)
     {
-        // TODO (P2-05): implement Iterate
-        throw new NotImplementedException("Evaluation for AndNode is implemented in P2-05.");
+        return new SingleItemIterator(XdmAtomicValue.Boolean(EffectiveBooleanValue(context)));
+    }
+
+    /// <inheritdoc/>
+    public override XdmItem? EvaluateItem(DynamicContext context)
+    {
+        return XdmAtomicValue.Boolean(EffectiveBooleanValue(context));
     }
 
     /// <inheritdoc/>

@@ -1,13 +1,14 @@
 // XPath 2.0 §3.4 — arithmetic expressions; §3.3 — range expressions.
 
 using System;
+using System.Globalization;
 using System.Text;
 using XTransform.Xdm;
+using XTransform.Xdm.Iterators;
 using XTransform.XPath.Ast;
+using XTransform.XPath.Operators;
 
 namespace XTransform.XPath.ExpressionNodes;
-
-// TODO (P2-05): implement Iterate for ArithmeticNode, RangeNode, UnaryNode, SetOpNode
 
 /// <summary>
 /// A compiled arithmetic expression (<c>+</c>, <c>-</c>, <c>*</c>, <c>div</c>, <c>idiv</c>, <c>mod</c>).
@@ -43,8 +44,52 @@ internal sealed class ArithmeticNode : ExpressionNode
     /// <inheritdoc/>
     public override IXdmIterator Iterate(DynamicContext context)
     {
-        // TODO (P2-05): implement Iterate
-        throw new NotImplementedException("Evaluation for ArithmeticNode is implemented in P2-05.");
+        // XPath 2.0 §3.4 — arithmetic expression evaluation
+        XdmAtomicValue? left = Atomization.AtomizeSingle(Left.EvaluateItem(context), Location);
+        XdmAtomicValue? right = Atomization.AtomizeSingle(Right.EvaluateItem(context), Location);
+
+        // F&O §6.2: empty operand → empty result
+        if (left is null || right is null)
+        {
+            return EmptyIterator.Instance;
+        }
+
+        XdmAtomicValue result = Op switch
+        {
+            ArithmeticOp.Add          => ArithmeticOperators.Add(left, right, Location),
+            ArithmeticOp.Subtract     => ArithmeticOperators.Subtract(left, right, Location),
+            ArithmeticOp.Multiply     => ArithmeticOperators.Multiply(left, right, Location),
+            ArithmeticOp.Divide       => ArithmeticOperators.Divide(left, right, Location),
+            ArithmeticOp.IntegerDivide => ArithmeticOperators.IntegerDivide(left, right, Location),
+            ArithmeticOp.Modulo       => ArithmeticOperators.Modulo(left, right, Location),
+            _ => throw new InvalidOperationException($"Unknown ArithmeticOp: {Op}"),
+        };
+
+        return new SingleItemIterator(result);
+    }
+
+    /// <inheritdoc/>
+    public override XdmItem? EvaluateItem(DynamicContext context)
+    {
+        // Fast path: avoid wrapping in iterator when only one item needed.
+        XdmAtomicValue? left = Atomization.AtomizeSingle(Left.EvaluateItem(context), Location);
+        XdmAtomicValue? right = Atomization.AtomizeSingle(Right.EvaluateItem(context), Location);
+
+        if (left is null || right is null)
+        {
+            return null;
+        }
+
+        return Op switch
+        {
+            ArithmeticOp.Add          => ArithmeticOperators.Add(left, right, Location),
+            ArithmeticOp.Subtract     => ArithmeticOperators.Subtract(left, right, Location),
+            ArithmeticOp.Multiply     => ArithmeticOperators.Multiply(left, right, Location),
+            ArithmeticOp.Divide       => ArithmeticOperators.Divide(left, right, Location),
+            ArithmeticOp.IntegerDivide => ArithmeticOperators.IntegerDivide(left, right, Location),
+            ArithmeticOp.Modulo       => ArithmeticOperators.Modulo(left, right, Location),
+            _ => throw new InvalidOperationException($"Unknown ArithmeticOp: {Op}"),
+        };
     }
 
     /// <inheritdoc/>
@@ -129,8 +174,40 @@ internal sealed class RangeNode : ExpressionNode
     /// <inheritdoc/>
     public override IXdmIterator Iterate(DynamicContext context)
     {
-        // TODO (P2-05): implement Iterate
-        throw new NotImplementedException("Evaluation for RangeNode is implemented in P2-05.");
+        // XPath 2.0 §3.3 — range expression
+        XdmAtomicValue? lhs = Atomization.AtomizeSingle(Left.EvaluateItem(context), Location);
+        XdmAtomicValue? rhs = Atomization.AtomizeSingle(Right.EvaluateItem(context), Location);
+
+        if (lhs is null || rhs is null)
+        {
+            return EmptyIterator.Instance;
+        }
+
+        long from;
+        long to;
+        try
+        {
+            from = lhs.TypeCode == XdmTypeCode.UntypedAtomic
+                ? long.Parse(lhs.GetStringValue(), CultureInfo.InvariantCulture)
+                : lhs.AsInt64();
+            to = rhs.TypeCode == XdmTypeCode.UntypedAtomic
+                ? long.Parse(rhs.GetStringValue(), CultureInfo.InvariantCulture)
+                : rhs.AsInt64();
+        }
+        catch (Exception ex) when (ex is FormatException || ex is OverflowException || ex is InvalidCastException)
+        {
+            throw new XPathDynamicException(
+                XPathErrors.XPTY0004,
+                $"Range expression endpoints must be xs:integer: {ex.Message}",
+                Location);
+        }
+
+        if (from > to)
+        {
+            return EmptyIterator.Instance;
+        }
+
+        return new RangeIterator(from, to);
     }
 
     /// <inheritdoc/>
@@ -247,8 +324,58 @@ internal sealed class UnaryNode : ExpressionNode
     /// <inheritdoc/>
     public override IXdmIterator Iterate(DynamicContext context)
     {
-        // TODO (P2-05): implement Iterate
-        throw new NotImplementedException("Evaluation for UnaryNode is implemented in P2-05.");
+        // XPath 2.0 §3.4 — unary arithmetic
+        XdmItem? item = Operand.EvaluateItem(context);
+        XdmAtomicValue? atom = Atomization.AtomizeSingle(item, Location);
+
+        if (atom is null)
+        {
+            return EmptyIterator.Instance;
+        }
+
+        XdmAtomicValue result;
+        if (Op == UnaryOp.Negate)
+        {
+            result = ArithmeticOperators.Negate(atom, Location);
+        }
+        else
+        {
+            // UnaryOp.Plus is identity but xs:untypedAtomic → cast to xs:double
+            if (atom.TypeCode == XdmTypeCode.UntypedAtomic)
+            {
+                result = CastTable.Cast(atom, XdmTypeCode.Double, Location);
+            }
+            else
+            {
+                result = atom;
+            }
+        }
+
+        return new SingleItemIterator(result);
+    }
+
+    /// <inheritdoc/>
+    public override XdmItem? EvaluateItem(DynamicContext context)
+    {
+        XdmItem? item = Operand.EvaluateItem(context);
+        XdmAtomicValue? atom = Atomization.AtomizeSingle(item, Location);
+
+        if (atom is null)
+        {
+            return null;
+        }
+
+        if (Op == UnaryOp.Negate)
+        {
+            return ArithmeticOperators.Negate(atom, Location);
+        }
+
+        if (atom.TypeCode == XdmTypeCode.UntypedAtomic)
+        {
+            return CastTable.Cast(atom, XdmTypeCode.Double, Location);
+        }
+
+        return atom;
     }
 
     /// <inheritdoc/>
@@ -260,4 +387,40 @@ internal sealed class UnaryNode : ExpressionNode
         AppendIndented(sb, Operand.ToDebugString(), 1);
         return sb.ToString().TrimEnd();
     }
+}
+
+/// <summary>
+/// A lazy iterator over an integer range [from..to] inclusive.
+/// XPath 2.0 §3.3 — range expression.
+/// </summary>
+internal sealed class RangeIterator : IXdmIterator
+{
+    private readonly long _from;
+    private readonly long _to;
+    private long _next;
+    private int _position;
+
+    internal RangeIterator(long from, long to)
+    {
+        _from = from;
+        _to = to;
+        _next = from;
+    }
+
+    /// <inheritdoc/>
+    public int Position => _position;
+
+    /// <inheritdoc/>
+    public XdmItem? Next()
+    {
+        if (_next > _to)
+        {
+            return null;
+        }
+        _position++;
+        return XdmAtomicValue.Integer(_next++);
+    }
+
+    /// <inheritdoc/>
+    public IXdmIterator Clone() => new RangeIterator(_from, _to);
 }
