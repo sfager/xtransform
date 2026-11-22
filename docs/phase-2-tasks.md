@@ -304,7 +304,7 @@ and timezone-adjustment functions.
 
 ## P2-12 Sequence functions
 
-- [ ] Done
+- [x] Done
 
 **Scope.** F&O §15.1 and §15.2: `fn:empty`, `fn:exists`, `fn:index-of`,
 `fn:distinct-values`, `fn:insert-before`, `fn:remove`, `fn:reverse`,

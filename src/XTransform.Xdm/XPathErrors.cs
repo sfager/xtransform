@@ -68,4 +68,19 @@ public static class XPathErrors
     /// Both arguments to fn:dateTime have timezones but they disagree. (F&amp;O §10.8.1 FORG0008)
     /// </summary>
     public static readonly QName FORG0008 = new QName("err", Namespace, "FORG0008");
+
+    /// <summary>
+    /// fn:zero-or-one called with a sequence containing more than one item. (F&amp;O §15.2.3 FORG0003)
+    /// </summary>
+    public static readonly QName FORG0003 = new QName("err", Namespace, "FORG0003");
+
+    /// <summary>
+    /// fn:one-or-more called with a sequence containing no items. (F&amp;O §15.2.4 FORG0004)
+    /// </summary>
+    public static readonly QName FORG0004 = new QName("err", Namespace, "FORG0004");
+
+    /// <summary>
+    /// fn:exactly-one called with a sequence containing zero or more than one item. (F&amp;O §15.2.5 FORG0005)
+    /// </summary>
+    public static readonly QName FORG0005 = new QName("err", Namespace, "FORG0005");
 }

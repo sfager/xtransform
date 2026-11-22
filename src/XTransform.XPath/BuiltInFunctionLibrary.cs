@@ -37,6 +37,7 @@ internal sealed class BuiltInFunctionLibrary : FunctionLibrary
         RegisterStrings();
         RegisterNumerics();
         RegisterDateTime();
+        RegisterSequences();
         RegisterConstructors();
     }
 
@@ -653,6 +654,102 @@ internal sealed class BuiltInFunctionLibrary : FunctionLibrary
         Register("dateTime", 2, ST_DateTime_ZeroOrOne,
             new[] { ST_Date_ZeroOrOne, ST_Time_ZeroOrOne },
             DateTimeFunctions.FnDateTime);
+    }
+
+    private static SequenceType ST_Item_OneOrMore =>
+        new SequenceType(ItemType.AnyItem, Occurrence.OneOrMore);
+    private static SequenceType ST_Element_Star =>
+        new SequenceType(ItemType.Kind(XdmNodeKind.Element), Occurrence.ZeroOrMore);
+    private static SequenceType ST_Node_Star =>
+        new SequenceType(ItemType.AnyNode, Occurrence.ZeroOrMore);
+
+    private void RegisterSequences()
+    {
+        // F&O §15.1.1 fn:empty($arg as item()*) as xs:boolean
+        Register("empty", 1, ST_Boolean_ExactlyOne, new[] { ST_Item_Star },
+            SequenceFunctions.FnEmpty);
+
+        // F&O §15.1.2 fn:exists($arg as item()*) as xs:boolean
+        Register("exists", 1, ST_Boolean_ExactlyOne, new[] { ST_Item_Star },
+            SequenceFunctions.FnExists);
+
+        // F&O §15.1.3 fn:distinct-values
+        Register("distinct-values", 1, ST_AnyAtomicType_Star,
+            new[] { ST_AnyAtomicType_Star },
+            SequenceFunctions.FnDistinctValues1);
+        Register("distinct-values", 2, ST_AnyAtomicType_Star,
+            new[] { ST_AnyAtomicType_Star, ST_String_ExactlyOne },
+            SequenceFunctions.FnDistinctValues2);
+
+        // F&O §15.1.4 fn:index-of
+        Register("index-of", 2, ST_Integer_Star,
+            new[] { ST_AnyAtomicType_Star, ST_AnyAtomicType_ZeroOrOne },
+            SequenceFunctions.FnIndexOf2);
+        Register("index-of", 3, ST_Integer_Star,
+            new[] { ST_AnyAtomicType_Star, ST_AnyAtomicType_ZeroOrOne, ST_String_ExactlyOne },
+            SequenceFunctions.FnIndexOf3);
+
+        // F&O §15.1.5 fn:insert-before($target, $position, $inserts)
+        Register("insert-before", 3, ST_Item_Star,
+            new[] { ST_Item_Star, ST_Integer_ExactlyOne, ST_Item_Star },
+            SequenceFunctions.FnInsertBefore);
+
+        // F&O §15.1.6 fn:remove($target, $position)
+        Register("remove", 2, ST_Item_Star,
+            new[] { ST_Item_Star, ST_Integer_ExactlyOne },
+            SequenceFunctions.FnRemove);
+
+        // F&O §15.1.7 fn:reverse($arg)
+        Register("reverse", 1, ST_Item_Star, new[] { ST_Item_Star },
+            SequenceFunctions.FnReverse);
+
+        // F&O §15.1.10 fn:subsequence
+        Register("subsequence", 2, ST_Item_Star,
+            new[] { ST_Item_Star, ST_Double_ExactlyOne },
+            SequenceFunctions.FnSubsequence2);
+        Register("subsequence", 3, ST_Item_Star,
+            new[] { ST_Item_Star, ST_Double_ExactlyOne, ST_Double_ExactlyOne },
+            SequenceFunctions.FnSubsequence3);
+
+        // F&O §15.1.11 fn:unordered($sourceSeq)
+        Register("unordered", 1, ST_Item_Star, new[] { ST_Item_Star },
+            SequenceFunctions.FnUnordered);
+
+        // F&O §15.2.3 fn:zero-or-one($arg)
+        Register("zero-or-one", 1, ST_Item_ZeroOrOne, new[] { ST_Item_Star },
+            SequenceFunctions.FnZeroOrOne);
+
+        // F&O §15.2.4 fn:one-or-more($arg)
+        Register("one-or-more", 1, ST_Item_OneOrMore, new[] { ST_Item_Star },
+            SequenceFunctions.FnOneOrMore);
+
+        // F&O §15.2.5 fn:exactly-one($arg)
+        Register("exactly-one", 1, ST_Item_ZeroOrOne, new[] { ST_Item_Star },
+            SequenceFunctions.FnExactlyOne);
+
+        // F&O §15.3.1 fn:deep-equal
+        Register("deep-equal", 2, ST_Boolean_ExactlyOne,
+            new[] { ST_Item_Star, ST_Item_Star },
+            SequenceFunctions.FnDeepEqual2);
+        Register("deep-equal", 3, ST_Boolean_ExactlyOne,
+            new[] { ST_Item_Star, ST_Item_Star, ST_String_ExactlyOne },
+            SequenceFunctions.FnDeepEqual3);
+
+        // F&O §15.5.1 fn:id
+        Register("id", 1, ST_Element_Star, new[] { ST_String_Star },
+            SequenceFunctions.FnId1,
+            ExpressionDependencies.ContextItem);
+        Register("id", 2, ST_Element_Star,
+            new[] { ST_String_Star, ST_Node_ZeroOrOne },
+            SequenceFunctions.FnId2);
+
+        // F&O §15.5.2 fn:idref
+        Register("idref", 1, ST_Node_Star, new[] { ST_String_Star },
+            SequenceFunctions.FnIdRef1,
+            ExpressionDependencies.ContextItem);
+        Register("idref", 2, ST_Node_Star,
+            new[] { ST_String_Star, ST_Node_ZeroOrOne },
+            SequenceFunctions.FnIdRef2);
     }
 
     // F&O §17 — xs: constructor functions for all v1 atomic types.
