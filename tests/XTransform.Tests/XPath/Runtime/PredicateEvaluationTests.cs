@@ -1,7 +1,6 @@
 // P2-06: Predicate evaluation tests.
 // XPath 2.0 §2.5.4 — predicates.
 
-using System;
 using System.Collections.Generic;
 using NUnit.Framework;
 using XTransform.Xdm;
@@ -107,19 +106,38 @@ internal sealed class PredicateEvaluationTests
             "Predicate [1] on a large range should be lazy and consume only the first item.");
     }
 
-    // ── position() / last() inside predicate: deferred to P2-08 ─────────────
+    // ── position() / last() inside predicate ─────────────────────────────────
 
     [Test]
-    public void Predicate_PositionFunction_SkippedUntilP208()
+    public void Predicate_PositionFunction_ReturnsCorrectItem()
     {
-        // position() is not yet implemented (P2-08). Skip this test.
-        Assert.Ignore("position() inside predicate requires P2-08 (function library).");
+        // (10, 20, 30)[position() = 2] → (20)
+        // Requires BuiltInFunctionLibrary so position() can be resolved and evaluated.
+        CompiledExpression ce = XPathCompiler.ParseAndCompile(
+            "(10, 20, 30)[position() = 2]",
+            SourceSpan.None,
+            DictionaryNamespaceResolver.Default,
+            BuiltInFunctionLibrary.Instance);
+
+        List<XdmItem> items = Drain(ce.Root.Iterate(NewRoot()));
+
+        Assert.That(items, Has.Count.EqualTo(1));
+        Assert.That(Int(items[0]), Is.EqualTo(20L));
     }
 
     [Test]
-    public void Predicate_LastFunction_SkippedUntilP208()
+    public void Predicate_LastFunction_ReturnsLastItem()
     {
-        // last() is not yet implemented (P2-08). Skip this test.
-        Assert.Ignore("last() inside predicate requires P2-08 (function library).");
+        // (10, 20, 30)[last()] → (30)
+        CompiledExpression ce = XPathCompiler.ParseAndCompile(
+            "(10, 20, 30)[last()]",
+            SourceSpan.None,
+            DictionaryNamespaceResolver.Default,
+            BuiltInFunctionLibrary.Instance);
+
+        List<XdmItem> items = Drain(ce.Root.Iterate(NewRoot()));
+
+        Assert.That(items, Has.Count.EqualTo(1));
+        Assert.That(Int(items[0]), Is.EqualTo(30L));
     }
 }

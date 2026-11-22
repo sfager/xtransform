@@ -205,7 +205,7 @@ dedup via node identity, returning in document order per F&O §15.3.
 
 ## P2-08 Function library foundation plus accessor and context functions
 
-- [ ] Done
+- [x] Done
 
 **Scope.** `FunctionLibrary` abstraction and `IExtensionFunction` extension
 point. `FunctionCallNode` resolves to a function via the library at compile

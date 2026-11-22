@@ -39,4 +39,7 @@ public static class XPathErrors
 
     /// <summary>Invalid lexical value for the target type.</summary>
     public static readonly QName FOCA0002 = new QName("err", Namespace, "FOCA0002");
+
+    /// <summary>fn:error called with no argument or an error QName (F&amp;O §3.1.1 / FOER0000).</summary>
+    public static readonly QName FOER0000 = new QName("err", Namespace, "FOER0000");
 }
