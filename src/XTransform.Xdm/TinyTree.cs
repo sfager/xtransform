@@ -13,7 +13,7 @@ namespace XTransform.Xdm;
 /// Layout follows the "tiny tree" approach used by Saxon: parallel arrays avoid
 /// per-node object overhead.  The document node is always at index 0.
 /// </remarks>
-internal sealed class TinyTree
+internal sealed partial class TinyTree
 {
     // ── Static tree-identity counter ───────────────────────────────────────
     private static long s_nextTreeId;

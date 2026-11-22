@@ -123,7 +123,7 @@ How to work through this list:
 
 ## P1-09 Axis navigation, node tests, `XdmNode`
 
-- [ ] Done
+- [x] Done
 
 **Scope.** All 13 axes over `TinyTree`, `NodeTest` (kind tests, name tests, `*`, `prefix:*`, `*:local`), `XdmNode` public wrapper, document-order comparison across trees.
 

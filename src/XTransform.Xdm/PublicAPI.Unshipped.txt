@@ -244,6 +244,23 @@ XTransform.Xdm.XdmNodeKind.Text = 3 -> XTransform.Xdm.XdmNodeKind
 XTransform.Xdm.XdmNodeKind.Comment = 4 -> XTransform.Xdm.XdmNodeKind
 XTransform.Xdm.XdmNodeKind.ProcessingInstruction = 5 -> XTransform.Xdm.XdmNodeKind
 XTransform.Xdm.XdmNodeKind.Namespace = 6 -> XTransform.Xdm.XdmNodeKind
+XTransform.Xdm.XdmNode
+XTransform.Xdm.XdmNode.NodeKind.get -> XTransform.Xdm.XdmNodeKind
+XTransform.Xdm.XdmNode.NodeName.get -> XTransform.Xdm.QName?
+XTransform.Xdm.XdmNode.Parent.get -> XTransform.Xdm.XdmNode?
+XTransform.Xdm.XdmNode.BaseUri.get -> string?
+XTransform.Xdm.XdmNode.DocumentUri.get -> string?
+override XTransform.Xdm.XdmNode.IsNode.get -> bool
+override XTransform.Xdm.XdmNode.IsAtomic.get -> bool
+override XTransform.Xdm.XdmNode.GetStringValue() -> string!
+XTransform.Xdm.XdmNode.GetTypedValue() -> XTransform.Xdm.XdmSequence!
+XTransform.Xdm.XdmNode.Axis(XTransform.Xdm.Axis axis) -> System.Collections.Generic.IEnumerable<XTransform.Xdm.XdmNode!>!
+XTransform.Xdm.XdmNode.CompareDocumentOrder(XTransform.Xdm.XdmNode! other) -> int
+XTransform.Xdm.XdmNode.Equals(XTransform.Xdm.XdmNode? other) -> bool
+override XTransform.Xdm.XdmNode.Equals(object? obj) -> bool
+override XTransform.Xdm.XdmNode.GetHashCode() -> int
+static XTransform.Xdm.XdmNode.operator ==(XTransform.Xdm.XdmNode? left, XTransform.Xdm.XdmNode? right) -> bool
+static XTransform.Xdm.XdmNode.operator !=(XTransform.Xdm.XdmNode? left, XTransform.Xdm.XdmNode? right) -> bool
 XTransform.Xdm.Axis
 XTransform.Xdm.Axis.Child = 0 -> XTransform.Xdm.Axis
 XTransform.Xdm.Axis.Descendant = 1 -> XTransform.Xdm.Axis
