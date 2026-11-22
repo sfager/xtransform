@@ -60,4 +60,50 @@ jobs:
           name: packages
           path: artifacts/packages
 
-  # Conformance runs are added in phase 1, task P1-15 (fetch pinned suites, run, upload summary).
+  conformance:
+    name: Conformance (QT3 parse-only)
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Load pinned test-suite commits
+        id: pins
+        run: |
+          set -eo pipefail
+          # shellcheck disable=SC1091
+          source eng/test-suites.env
+          echo "qt3_commit=$QT3_COMMIT" >> "$GITHUB_OUTPUT"
+          echo "xslt_commit=$XSLT_COMMIT" >> "$GITHUB_OUTPUT"
+
+      - name: Cache W3C test suites
+        uses: actions/cache@v4
+        with:
+          path: .testsuites
+          key: testsuites-${{ steps.pins.outputs.qt3_commit }}-${{ steps.pins.outputs.xslt_commit }}
+
+      - name: Fetch test suites (cache miss)
+        run: bash eng/fetch-test-suites.sh
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build conformance
+        run: dotnet build tests/XTransform.Conformance --no-restore --configuration Release
+
+      - name: Run QT3 conformance (parse-only, gate G1)
+        run: dotnet test tests/XTransform.Conformance --no-build --configuration Release --logger "console;verbosity=minimal"
+
+      - name: Upload QT3 summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qt3-summary
+          path: artifacts/conformance
+
+      - name: Enforce baseline
+        run: bash eng/check-conformance-baseline.sh

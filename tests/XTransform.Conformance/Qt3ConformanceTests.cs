@@ -110,9 +110,14 @@ internal sealed class Qt3ConformanceTests
             return;
         }
 
-        bool expectsError = instance.Case.Result.ExpectedErrorCodes.Contains("XPST0003", StringComparer.Ordinal);
+        // Parse-only agreement: phase-1-tasks.md P1-14 says "checks only parses vs
+        // expects XPST0003". We are strict: parser must throw iff XPST0003 is one of the
+        // expected error codes. Other XPST*/XPTY*/XPDY*/FORG*/etc. codes are runtime
+        // concerns and the parser should accept the expression for parse-only purposes.
+        bool expectsXpst0003 = instance.Case.Result.ExpectedErrorCodes.Contains(
+            "XPST0003", StringComparer.Ordinal);
         Qt3ParseOnlyRunner.Result result = Qt3ParseOnlyRunner.Run(
-            instance.Case.TestExpression, expectsError);
+            instance.Case.TestExpression, expectsXpst0003);
 
         RecordOutcome(instance.Area, result.Outcome);
 
@@ -161,13 +166,13 @@ internal sealed class Qt3ConformanceTests
         // count as in-scope without results — ensure we reflect total discovery count.
         long discoveredInScope = state.Cases.Count;
 
-        using StreamWriter w = new(summaryPath, false, Encoding.UTF8);
+        using StreamWriter w = new(summaryPath, false, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
 
         w.WriteLine("# QT3 conformance — parse-only (gate G1)");
         w.WriteLine();
         w.WriteLine("- Pinned commit: `201a6e466940cdfc727f4babfedcde5332b9f578`");
         w.WriteLine($"- Generated: {DateTime.UtcNow:yyyy-MM-ddTHH:mm:ssZ}");
-        w.WriteLine("- Expression harness: XPathParser.ParseExpression (all static errors count as expected XPST0003 match)");
+        w.WriteLine("- Expression harness: XPathParser.ParseExpression (parse succeeded == test does not expect XPST0003)");
         w.WriteLine();
         w.WriteLine("## Totals");
         w.WriteLine();
@@ -200,8 +205,28 @@ internal sealed class Qt3ConformanceTests
                 $"| {kvp.Key} | {s.InScope:N0} | {s.Passed:N0} | {s.Failed:N0} | {s.Skipped:N0} | {areaRate:F1}% |");
         }
 
+        // Also emit a machine-readable JSON summary for CI baseline checks.
+        string jsonPath = Path.Combine(artifactsDir, "qt3-summary.json");
+        using (StreamWriter jw = new(jsonPath, false, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false)))
+        {
+            jw.WriteLine("{");
+            jw.WriteLine("  \"gate\": \"G1\",");
+            jw.WriteLine("  \"suite\": \"QT3\",");
+            jw.WriteLine("  \"mode\": \"parse-only\",");
+            jw.WriteLine("  \"qt3Commit\": \"201a6e466940cdfc727f4babfedcde5332b9f578\",");
+            jw.WriteLine($"  \"generatedUtc\": \"{DateTime.UtcNow:yyyy-MM-ddTHH:mm:ssZ}\",");
+            jw.WriteLine($"  \"inScopeDiscovered\": {discoveredInScope},");
+            jw.WriteLine($"  \"inScopeExecuted\": {totalInScope},");
+            jw.WriteLine($"  \"passed\": {totalPassed},");
+            jw.WriteLine($"  \"failed\": {totalFailed},");
+            jw.WriteLine($"  \"skipped\": {totalSkipped},");
+            jw.WriteLine($"  \"passRate\": {passRate / 100.0:F4}");
+            jw.WriteLine("}");
+        }
+
         TestContext.Out.WriteLine($"[qt3-summary] In-scope discovered: {discoveredInScope}  Executed: {totalInScope}  Passed: {totalPassed}  Failed: {totalFailed}  Skipped: {totalSkipped}  Pass-rate: {passRate:F1}%");
         TestContext.Out.WriteLine($"[qt3-summary] Report: {summaryPath}");
+        TestContext.Out.WriteLine($"[qt3-summary] JSON: {jsonPath}");
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
