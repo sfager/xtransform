@@ -1,7 +1,6 @@
 // F&O §3.1.1 — fn:error; F&O §17.1.5 — fn:trace.
 
 using XTransform.Xdm;
-using XTransform.Xdm.Iterators;
 
 namespace XTransform.XPath.Functions;
 
