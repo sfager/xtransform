@@ -160,7 +160,7 @@ semantics and type coercion per XPath 2.0 §3.5.2) and `ValueComparisonNode`
 
 ## P2-06 Path expressions, axis steps, predicates
 
-- [ ] Done
+- [x] Done
 
 **Scope.** `PathNode` evaluates a RelativePathExpr by threading iterators
 through steps; each `AxisStepNode` delegates to `TinyTree.Iterate` with the
