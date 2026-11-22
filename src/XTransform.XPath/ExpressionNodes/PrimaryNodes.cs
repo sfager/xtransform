@@ -8,7 +8,6 @@ using XTransform.Xdm.Iterators;
 
 namespace XTransform.XPath.ExpressionNodes;
 
-// TODO (P2-04): implement Iterate for VariableRefNode
 // TODO (P2-08): implement Iterate for FunctionCallNode
 
 /// <summary>
@@ -245,8 +244,10 @@ internal sealed class VariableRefNode : ExpressionNode
     /// <inheritdoc/>
     public override IXdmIterator Iterate(DynamicContext context)
     {
-        // TODO (P2-03): implement Iterate
-        throw new NotImplementedException("Evaluation for VariableRefNode is implemented in P2-03.");
+        // Variable references read from the local-variable frame set up by the enclosing
+        // for / quantified clause (or by the caller for externally-bound variables).
+        // The compiler guarantees SlotIndex is in range.
+        return context.LocalFrame[SlotIndex].GetIterator();
     }
 
     /// <inheritdoc/>

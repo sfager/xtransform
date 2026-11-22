@@ -116,7 +116,7 @@ concat), `ContextItemNode`. ParenthesizedExpr is folded away by the compiler
 
 ## P2-04 Variable references, `for`, quantified, `if`
 
-- [ ] Done
+- [x] Done
 
 **Scope.** `VariableRefNode` reads from the local frame; `ForExprNode` and
 `QuantifiedExprNode` iterate their binding sequences and evaluate the return /
