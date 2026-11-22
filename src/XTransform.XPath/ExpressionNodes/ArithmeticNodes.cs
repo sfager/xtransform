@@ -266,8 +266,122 @@ internal sealed class SetOpNode : ExpressionNode
     /// <inheritdoc/>
     public override IXdmIterator Iterate(DynamicContext context)
     {
-        // TODO (P2-05): implement Iterate
-        throw new NotImplementedException("Evaluation for SetOpNode is implemented in P2-05.");
+        // XPath 2.0 §3.3.3 / F&O §15.3 — set operations on sequences of NODES.
+        // Collect both sides, verify all items are nodes (else XPTY0004), and perform the
+        // operation using node identity. Output is in document order with duplicates removed.
+        System.Collections.Generic.List<XdmNode> leftNodes = CollectNodes(Left, context);
+        System.Collections.Generic.List<XdmNode> rightNodes = CollectNodes(Right, context);
+
+        System.Collections.Generic.List<XdmNode> result = Op switch
+        {
+            SetOp.Union => Union(leftNodes, rightNodes),
+            SetOp.Intersect => Intersect(leftNodes, rightNodes),
+            SetOp.Except => Except(leftNodes, rightNodes),
+            _ => throw new InvalidOperationException($"Unknown set op {Op}"),
+        };
+
+        XdmItem[] asItems = new XdmItem[result.Count];
+        for (int i = 0; i < result.Count; i++)
+        {
+            asItems[i] = result[i];
+        }
+        return new ArrayIterator(asItems);
+    }
+
+    private System.Collections.Generic.List<XdmNode> CollectNodes(ExpressionNode expr, DynamicContext context)
+    {
+        System.Collections.Generic.List<XdmNode> nodes = new();
+        IXdmIterator iter = expr.Iterate(context);
+        while (true)
+        {
+            XdmItem? n = iter.Next();
+            if (n is null) { break; }
+            if (n is not XdmNode node)
+            {
+                throw new XPathDynamicException(
+                    XPathErrors.XPTY0004,
+                    $"{OpName(Op)} requires sequences of nodes; an atomic value was found",
+                    Location);
+            }
+            nodes.Add(node);
+        }
+        return nodes;
+    }
+
+    private static System.Collections.Generic.List<XdmNode> Union(
+        System.Collections.Generic.List<XdmNode> a,
+        System.Collections.Generic.List<XdmNode> b)
+    {
+        System.Collections.Generic.List<XdmNode> all = new(a.Count + b.Count);
+        all.AddRange(a);
+        all.AddRange(b);
+        return SortAndDeduplicate(all);
+    }
+
+    private static System.Collections.Generic.List<XdmNode> Intersect(
+        System.Collections.Generic.List<XdmNode> a,
+        System.Collections.Generic.List<XdmNode> b)
+    {
+        System.Collections.Generic.HashSet<XdmNode> bSet = new(b, XdmNodeIdentityComparer.Instance);
+        System.Collections.Generic.List<XdmNode> result = new();
+        foreach (XdmNode n in a)
+        {
+            if (bSet.Contains(n))
+            {
+                result.Add(n);
+            }
+        }
+        return SortAndDeduplicate(result);
+    }
+
+    private static System.Collections.Generic.List<XdmNode> Except(
+        System.Collections.Generic.List<XdmNode> a,
+        System.Collections.Generic.List<XdmNode> b)
+    {
+        System.Collections.Generic.HashSet<XdmNode> bSet = new(b, XdmNodeIdentityComparer.Instance);
+        System.Collections.Generic.List<XdmNode> result = new();
+        foreach (XdmNode n in a)
+        {
+            if (!bSet.Contains(n))
+            {
+                result.Add(n);
+            }
+        }
+        return SortAndDeduplicate(result);
+    }
+
+    private static System.Collections.Generic.List<XdmNode> SortAndDeduplicate(System.Collections.Generic.List<XdmNode> nodes)
+    {
+        if (nodes.Count <= 1)
+        {
+            return nodes;
+        }
+        nodes.Sort((x, y) => x.CompareDocumentOrder(y));
+        System.Collections.Generic.List<XdmNode> dedup = new(nodes.Count);
+        dedup.Add(nodes[0]);
+        for (int i = 1; i < nodes.Count; i++)
+        {
+            if (!nodes[i].Equals(nodes[i - 1]))
+            {
+                dedup.Add(nodes[i]);
+            }
+        }
+        return dedup;
+    }
+
+    private static string OpName(SetOp op) => op switch
+    {
+        SetOp.Union => "union",
+        SetOp.Intersect => "intersect",
+        SetOp.Except => "except",
+        _ => op.ToString(),
+    };
+
+    private sealed class XdmNodeIdentityComparer : System.Collections.Generic.IEqualityComparer<XdmNode>
+    {
+        internal static readonly XdmNodeIdentityComparer Instance = new();
+        public bool Equals(XdmNode? x, XdmNode? y) => x is null ? y is null : x.Equals(y);
+        public int GetHashCode(XdmNode obj) => obj.GetHashCode();
     }
 
     /// <inheritdoc/>
