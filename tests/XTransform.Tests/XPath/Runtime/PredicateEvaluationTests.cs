@@ -1,7 +1,6 @@
 // P2-06: Predicate evaluation tests.
 // XPath 2.0 §2.5.4 — predicates.
 
-using System;
 using System.Collections.Generic;
 using NUnit.Framework;
 using XTransform.Xdm;
