@@ -260,7 +260,7 @@ code-point iteration as a helper (`CodePointString`) shared across functions.
 
 ## P2-10 Numeric and math functions
 
-- [ ] Done
+- [x] Done
 
 **Scope.** F&O §6.4 and §15.4: `fn:abs`, `fn:ceiling`, `fn:floor`, `fn:round`,
 `fn:round-half-to-even`, `fn:sum`, `fn:avg`, `fn:min`, `fn:max`, `fn:count`,

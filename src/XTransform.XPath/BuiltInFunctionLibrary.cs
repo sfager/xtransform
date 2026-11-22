@@ -30,6 +30,7 @@ internal sealed class BuiltInFunctionLibrary : FunctionLibrary
         RegisterContext();
         RegisterErrors();
         RegisterStrings();
+        RegisterNumerics();
     }
 
     // ── FunctionLibrary contract ───────────────────────────────────────────────
@@ -400,5 +401,88 @@ internal sealed class BuiltInFunctionLibrary : FunctionLibrary
         Register("codepoint-equal", 2, ST_Boolean_ZeroOrOne,
             new[] { ST_String_ZeroOrOne, ST_String_ZeroOrOne },
             StringFunctions.FnCodepointEqual);
+    }
+
+    // ── Additional shorthands for numerics ─────────────────────────────────────
+
+    private static SequenceType ST_AnyAtomicType_ZeroOrMore =>
+        new SequenceType(ItemType.Atomic(XdmTypeCode.AnyAtomicType), Occurrence.ZeroOrMore);
+
+    private void RegisterNumerics()
+    {
+        // F&O §6.4.1 fn:abs($arg as xs:numeric?) as xs:numeric?
+        Register("abs", 1, ST_AnyAtomicType_ZeroOrOne, new[] { ST_AnyAtomicType_ZeroOrOne },
+            NumericFunctions.FnAbs);
+
+        // F&O §6.4.2 fn:ceiling($arg as xs:numeric?) as xs:numeric?
+        Register("ceiling", 1, ST_AnyAtomicType_ZeroOrOne, new[] { ST_AnyAtomicType_ZeroOrOne },
+            NumericFunctions.FnCeiling);
+
+        // F&O §6.4.3 fn:floor($arg as xs:numeric?) as xs:numeric?
+        Register("floor", 1, ST_AnyAtomicType_ZeroOrOne, new[] { ST_AnyAtomicType_ZeroOrOne },
+            NumericFunctions.FnFloor);
+
+        // F&O §6.4.4 fn:round($arg as xs:numeric?) as xs:numeric?
+        Register("round", 1, ST_AnyAtomicType_ZeroOrOne, new[] { ST_AnyAtomicType_ZeroOrOne },
+            NumericFunctions.FnRound);
+
+        // F&O §6.4.5 fn:round-half-to-even($arg as xs:numeric?) as xs:numeric?
+        Register("round-half-to-even", 1, ST_AnyAtomicType_ZeroOrOne,
+            new[] { ST_AnyAtomicType_ZeroOrOne },
+            NumericFunctions.FnRoundHalfToEven1);
+
+        // F&O §6.4.5 fn:round-half-to-even($arg as xs:numeric?, $precision as xs:integer) as xs:numeric?
+        Register("round-half-to-even", 2, ST_AnyAtomicType_ZeroOrOne,
+            new[] { ST_AnyAtomicType_ZeroOrOne, ST_Integer_ExactlyOne },
+            NumericFunctions.FnRoundHalfToEven2);
+
+        // F&O §15.4.9 fn:sum($arg as xs:anyAtomicType*) as xs:anyAtomicType
+        Register("sum", 1, ST_AnyAtomicType_ZeroOrOne,
+            new[] { ST_AnyAtomicType_ZeroOrMore },
+            NumericFunctions.FnSum1);
+
+        // F&O §15.4.9 fn:sum($arg as xs:anyAtomicType*, $zero as xs:anyAtomicType?) as xs:anyAtomicType?
+        Register("sum", 2, ST_AnyAtomicType_ZeroOrOne,
+            new[] { ST_AnyAtomicType_ZeroOrMore, ST_AnyAtomicType_ZeroOrOne },
+            NumericFunctions.FnSum2);
+
+        // F&O §15.4.4 fn:avg($arg as xs:anyAtomicType*) as xs:anyAtomicType?
+        Register("avg", 1, ST_AnyAtomicType_ZeroOrOne,
+            new[] { ST_AnyAtomicType_ZeroOrMore },
+            NumericFunctions.FnAvg);
+
+        // F&O §15.4.5 fn:min($arg as xs:anyAtomicType*) as xs:anyAtomicType?
+        Register("min", 1, ST_AnyAtomicType_ZeroOrOne,
+            new[] { ST_AnyAtomicType_ZeroOrMore },
+            NumericFunctions.FnMin1);
+
+        // F&O §15.4.5 fn:min($arg as xs:anyAtomicType*, $collation as xs:string) as xs:anyAtomicType?
+        Register("min", 2, ST_AnyAtomicType_ZeroOrOne,
+            new[] { ST_AnyAtomicType_ZeroOrMore, ST_String_ExactlyOne },
+            NumericFunctions.FnMin2);
+
+        // F&O §15.4.6 fn:max($arg as xs:anyAtomicType*) as xs:anyAtomicType?
+        Register("max", 1, ST_AnyAtomicType_ZeroOrOne,
+            new[] { ST_AnyAtomicType_ZeroOrMore },
+            NumericFunctions.FnMax1);
+
+        // F&O §15.4.6 fn:max($arg as xs:anyAtomicType*, $collation as xs:string) as xs:anyAtomicType?
+        Register("max", 2, ST_AnyAtomicType_ZeroOrOne,
+            new[] { ST_AnyAtomicType_ZeroOrMore, ST_String_ExactlyOne },
+            NumericFunctions.FnMax2);
+
+        // F&O §15.4.3 fn:count($arg as item()*) as xs:integer
+        Register("count", 1, ST_Integer_ExactlyOne,
+            new[] { ST_Item_Star },
+            NumericFunctions.FnCount);
+
+        // F&O §6.4.6 fn:number() as xs:double — uses context item
+        Register("number", 0, ST_Double_ExactlyOne, System.Array.Empty<SequenceType>(),
+            NumericFunctions.FnNumber0, ExpressionDependencies.ContextItem);
+
+        // F&O §6.4.6 fn:number($arg as xs:anyAtomicType?) as xs:double
+        Register("number", 1, ST_Double_ExactlyOne,
+            new[] { ST_AnyAtomicType_ZeroOrOne },
+            NumericFunctions.FnNumber1);
     }
 }
