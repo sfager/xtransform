@@ -24,11 +24,12 @@ internal sealed class BuiltInFunctionLibrary : FunctionLibrary
 
     private BuiltInFunctionLibrary()
     {
-        _byKey = new Dictionary<string, FunctionSignature>(64);
+        _byKey = new Dictionary<string, FunctionSignature>(128);
         RegisterAccessors();
         RegisterBooleans();
         RegisterContext();
         RegisterErrors();
+        RegisterStrings();
     }
 
     // ── FunctionLibrary contract ───────────────────────────────────────────────
@@ -212,6 +213,19 @@ internal sealed class BuiltInFunctionLibrary : FunctionLibrary
             ContextFunctions.FnDefaultCollation);
     }
 
+    private static SequenceType ST_String_ZeroOrOne =>
+        new SequenceType(ItemType.Atomic(XdmTypeCode.String), Occurrence.ZeroOrOne);
+    private static SequenceType ST_String_Star =>
+        new SequenceType(ItemType.Atomic(XdmTypeCode.String), Occurrence.ZeroOrMore);
+    private static SequenceType ST_Integer_ZeroOrOne =>
+        new SequenceType(ItemType.Atomic(XdmTypeCode.Integer), Occurrence.ZeroOrOne);
+    private static SequenceType ST_Integer_Star =>
+        new SequenceType(ItemType.Atomic(XdmTypeCode.Integer), Occurrence.ZeroOrMore);
+    private static SequenceType ST_Double_ExactlyOne =>
+        new SequenceType(ItemType.Atomic(XdmTypeCode.Double), Occurrence.ExactlyOne);
+    private static SequenceType ST_AnyAtomicType_ZeroOrOne =>
+        new SequenceType(ItemType.Atomic(XdmTypeCode.AnyAtomicType), Occurrence.ZeroOrOne);
+
     private void RegisterErrors()
     {
         // F&O §3.1.1 fn:error() — 0-arg
@@ -225,5 +239,166 @@ internal sealed class BuiltInFunctionLibrary : FunctionLibrary
         // F&O §17.1.5 fn:trace($value as item()*, $label as xs:string) as item()*
         Register("trace", 2, ST_Item_Star, new[] { ST_Item_Star, ST_String_ExactlyOne },
             ErrorFunctions.FnTrace);
+    }
+
+    private void RegisterStrings()
+    {
+        // F&O §7.4.1 fn:concat — variadic (arities 2..10)
+        // Each parameter: xs:anyAtomicType? per spec
+        Register("concat", 2, ST_String_ExactlyOne,
+            new[] { ST_AnyAtomicType_ZeroOrOne, ST_AnyAtomicType_ZeroOrOne },
+            StringFunctions.FnConcat2);
+        Register("concat", 3, ST_String_ExactlyOne,
+            new[] { ST_AnyAtomicType_ZeroOrOne, ST_AnyAtomicType_ZeroOrOne, ST_AnyAtomicType_ZeroOrOne },
+            StringFunctions.FnConcat3);
+        Register("concat", 4, ST_String_ExactlyOne,
+            new[] { ST_AnyAtomicType_ZeroOrOne, ST_AnyAtomicType_ZeroOrOne, ST_AnyAtomicType_ZeroOrOne, ST_AnyAtomicType_ZeroOrOne },
+            StringFunctions.FnConcat4);
+        Register("concat", 5, ST_String_ExactlyOne,
+            new[] { ST_AnyAtomicType_ZeroOrOne, ST_AnyAtomicType_ZeroOrOne, ST_AnyAtomicType_ZeroOrOne, ST_AnyAtomicType_ZeroOrOne, ST_AnyAtomicType_ZeroOrOne },
+            StringFunctions.FnConcat5);
+        Register("concat", 6, ST_String_ExactlyOne,
+            new[] { ST_AnyAtomicType_ZeroOrOne, ST_AnyAtomicType_ZeroOrOne, ST_AnyAtomicType_ZeroOrOne, ST_AnyAtomicType_ZeroOrOne, ST_AnyAtomicType_ZeroOrOne, ST_AnyAtomicType_ZeroOrOne },
+            StringFunctions.FnConcat6);
+        Register("concat", 7, ST_String_ExactlyOne,
+            new[] { ST_AnyAtomicType_ZeroOrOne, ST_AnyAtomicType_ZeroOrOne, ST_AnyAtomicType_ZeroOrOne, ST_AnyAtomicType_ZeroOrOne, ST_AnyAtomicType_ZeroOrOne, ST_AnyAtomicType_ZeroOrOne, ST_AnyAtomicType_ZeroOrOne },
+            StringFunctions.FnConcat7);
+        Register("concat", 8, ST_String_ExactlyOne,
+            new[] { ST_AnyAtomicType_ZeroOrOne, ST_AnyAtomicType_ZeroOrOne, ST_AnyAtomicType_ZeroOrOne, ST_AnyAtomicType_ZeroOrOne, ST_AnyAtomicType_ZeroOrOne, ST_AnyAtomicType_ZeroOrOne, ST_AnyAtomicType_ZeroOrOne, ST_AnyAtomicType_ZeroOrOne },
+            StringFunctions.FnConcat8);
+        Register("concat", 9, ST_String_ExactlyOne,
+            new[] { ST_AnyAtomicType_ZeroOrOne, ST_AnyAtomicType_ZeroOrOne, ST_AnyAtomicType_ZeroOrOne, ST_AnyAtomicType_ZeroOrOne, ST_AnyAtomicType_ZeroOrOne, ST_AnyAtomicType_ZeroOrOne, ST_AnyAtomicType_ZeroOrOne, ST_AnyAtomicType_ZeroOrOne, ST_AnyAtomicType_ZeroOrOne },
+            StringFunctions.FnConcat9);
+        Register("concat", 10, ST_String_ExactlyOne,
+            new[] { ST_AnyAtomicType_ZeroOrOne, ST_AnyAtomicType_ZeroOrOne, ST_AnyAtomicType_ZeroOrOne, ST_AnyAtomicType_ZeroOrOne, ST_AnyAtomicType_ZeroOrOne, ST_AnyAtomicType_ZeroOrOne, ST_AnyAtomicType_ZeroOrOne, ST_AnyAtomicType_ZeroOrOne, ST_AnyAtomicType_ZeroOrOne, ST_AnyAtomicType_ZeroOrOne },
+            StringFunctions.FnConcat10);
+
+        // F&O §7.4.2 fn:string-join($seq as xs:string*, $sep as xs:string) as xs:string
+        Register("string-join", 2, ST_String_ExactlyOne,
+            new[] { ST_String_Star, ST_String_ExactlyOne },
+            StringFunctions.FnStringJoin);
+
+        // F&O §7.4.3 fn:substring
+        Register("substring", 2, ST_String_ExactlyOne,
+            new[] { ST_String_ZeroOrOne, ST_Double_ExactlyOne },
+            StringFunctions.FnSubstring2);
+        Register("substring", 3, ST_String_ExactlyOne,
+            new[] { ST_String_ZeroOrOne, ST_Double_ExactlyOne, ST_Double_ExactlyOne },
+            StringFunctions.FnSubstring3);
+
+        // F&O §7.4.4 fn:string-length
+        Register("string-length", 0, ST_Integer_ExactlyOne, System.Array.Empty<SequenceType>(),
+            StringFunctions.FnStringLength0);
+        Register("string-length", 1, ST_Integer_ExactlyOne,
+            new[] { ST_String_ZeroOrOne },
+            StringFunctions.FnStringLength1);
+
+        // F&O §7.4.5 fn:normalize-space
+        Register("normalize-space", 0, ST_String_ExactlyOne, System.Array.Empty<SequenceType>(),
+            StringFunctions.FnNormalizeSpace0);
+        Register("normalize-space", 1, ST_String_ExactlyOne,
+            new[] { ST_String_ZeroOrOne },
+            StringFunctions.FnNormalizeSpace1);
+
+        // F&O §7.4.6 fn:normalize-unicode
+        Register("normalize-unicode", 1, ST_String_ExactlyOne,
+            new[] { ST_String_ZeroOrOne },
+            StringFunctions.FnNormalizeUnicode1);
+        Register("normalize-unicode", 2, ST_String_ExactlyOne,
+            new[] { ST_String_ZeroOrOne, ST_String_ZeroOrOne },
+            StringFunctions.FnNormalizeUnicode2);
+
+        // F&O §7.4.7 fn:upper-case
+        Register("upper-case", 1, ST_String_ExactlyOne,
+            new[] { ST_String_ZeroOrOne },
+            StringFunctions.FnUpperCase);
+
+        // F&O §7.4.8 fn:lower-case
+        Register("lower-case", 1, ST_String_ExactlyOne,
+            new[] { ST_String_ZeroOrOne },
+            StringFunctions.FnLowerCase);
+
+        // F&O §7.4.9 fn:translate
+        Register("translate", 3, ST_String_ExactlyOne,
+            new[] { ST_String_ZeroOrOne, ST_String_ExactlyOne, ST_String_ExactlyOne },
+            StringFunctions.FnTranslate);
+
+        // F&O §7.4.10 fn:encode-for-uri
+        Register("encode-for-uri", 1, ST_String_ExactlyOne,
+            new[] { ST_String_ZeroOrOne },
+            StringFunctions.FnEncodeForUri);
+
+        // F&O §7.4.11 fn:iri-to-uri
+        Register("iri-to-uri", 1, ST_String_ExactlyOne,
+            new[] { ST_String_ZeroOrOne },
+            StringFunctions.FnIriToUri);
+
+        // F&O §7.4.12 fn:escape-html-uri
+        Register("escape-html-uri", 1, ST_String_ExactlyOne,
+            new[] { ST_String_ZeroOrOne },
+            StringFunctions.FnEscapeHtmlUri);
+
+        // F&O §7.5.1 fn:contains
+        Register("contains", 2, ST_Boolean_ExactlyOne,
+            new[] { ST_String_ZeroOrOne, ST_String_ZeroOrOne },
+            StringFunctions.FnContains2);
+        Register("contains", 3, ST_Boolean_ExactlyOne,
+            new[] { ST_String_ZeroOrOne, ST_String_ZeroOrOne, ST_String_ExactlyOne },
+            StringFunctions.FnContains3);
+
+        // F&O §7.5.2 fn:starts-with
+        Register("starts-with", 2, ST_Boolean_ExactlyOne,
+            new[] { ST_String_ZeroOrOne, ST_String_ZeroOrOne },
+            StringFunctions.FnStartsWith2);
+        Register("starts-with", 3, ST_Boolean_ExactlyOne,
+            new[] { ST_String_ZeroOrOne, ST_String_ZeroOrOne, ST_String_ExactlyOne },
+            StringFunctions.FnStartsWith3);
+
+        // F&O §7.5.3 fn:ends-with
+        Register("ends-with", 2, ST_Boolean_ExactlyOne,
+            new[] { ST_String_ZeroOrOne, ST_String_ZeroOrOne },
+            StringFunctions.FnEndsWith2);
+        Register("ends-with", 3, ST_Boolean_ExactlyOne,
+            new[] { ST_String_ZeroOrOne, ST_String_ZeroOrOne, ST_String_ExactlyOne },
+            StringFunctions.FnEndsWith3);
+
+        // F&O §7.5.4 fn:substring-before
+        Register("substring-before", 2, ST_String_ExactlyOne,
+            new[] { ST_String_ZeroOrOne, ST_String_ZeroOrOne },
+            StringFunctions.FnSubstringBefore2);
+        Register("substring-before", 3, ST_String_ExactlyOne,
+            new[] { ST_String_ZeroOrOne, ST_String_ZeroOrOne, ST_String_ExactlyOne },
+            StringFunctions.FnSubstringBefore3);
+
+        // F&O §7.5.5 fn:substring-after
+        Register("substring-after", 2, ST_String_ExactlyOne,
+            new[] { ST_String_ZeroOrOne, ST_String_ZeroOrOne },
+            StringFunctions.FnSubstringAfter2);
+        Register("substring-after", 3, ST_String_ExactlyOne,
+            new[] { ST_String_ZeroOrOne, ST_String_ZeroOrOne, ST_String_ExactlyOne },
+            StringFunctions.FnSubstringAfter3);
+
+        // F&O §7.2.1 fn:string-to-codepoints
+        Register("string-to-codepoints", 1, ST_Integer_Star,
+            new[] { ST_String_ZeroOrOne },
+            StringFunctions.FnStringToCodepoints);
+
+        // F&O §7.2.2 fn:codepoints-to-string
+        Register("codepoints-to-string", 1, ST_String_ExactlyOne,
+            new[] { ST_Integer_Star },
+            StringFunctions.FnCodepointsToString);
+
+        // F&O §7.3.2 fn:compare
+        Register("compare", 2, ST_Integer_ZeroOrOne,
+            new[] { ST_String_ZeroOrOne, ST_String_ZeroOrOne },
+            StringFunctions.FnCompare2);
+        Register("compare", 3, ST_Integer_ZeroOrOne,
+            new[] { ST_String_ZeroOrOne, ST_String_ZeroOrOne, ST_String_ExactlyOne },
+            StringFunctions.FnCompare3);
+
+        // F&O §7.3.3 fn:codepoint-equal
+        Register("codepoint-equal", 2, ST_Boolean_ZeroOrOne,
+            new[] { ST_String_ZeroOrOne, ST_String_ZeroOrOne },
+            StringFunctions.FnCodepointEqual);
     }
 }

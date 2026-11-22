@@ -236,7 +236,7 @@ built-ins:
 
 ## P2-09 String functions
 
-- [ ] Done
+- [x] Done
 
 **Scope.** F&O §7: `concat`, `string-join`, `substring`, `string-length`,
 `normalize-space`, `normalize-unicode`, `upper-case`, `lower-case`, `translate`,
