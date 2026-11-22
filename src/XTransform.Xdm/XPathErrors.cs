@@ -105,4 +105,10 @@ public static class XPathErrors
     /// Raised when '$' in the replacement is not followed by a digit or another '$'.
     /// </summary>
     public static readonly QName FORX0004 = new QName("err", Namespace, "FORX0004");
+
+    /// <summary>
+    /// A prefix used in a QName has not been declared in the in-scope namespaces. (F&amp;O §16.1.11 FONS0004)
+    /// Raised by fn:resolve-QName when the prefix cannot be resolved.
+    /// </summary>
+    public static readonly QName FONS0004 = new QName("err", Namespace, "FONS0004");
 }
