@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using XTransform.Xdm;
+using XTransform.Xslt.Instructions;
 
 namespace XTransform.Xslt;
 
@@ -18,11 +19,13 @@ internal sealed class CompiledStylesheet
         StylesheetAssembly assembly,
         DeclarationTable declarations,
         IReadOnlyDictionary<QName, ModeTable> modes,
+        IReadOnlyDictionary<TemplateDecl, CompiledTemplate> compiledTemplates,
         IReadOnlyList<Diagnostic> warnings)
     {
         Assembly = assembly;
         Declarations = declarations;
         Modes = modes;
+        CompiledTemplates = compiledTemplates;
         Warnings = warnings;
     }
 
@@ -34,6 +37,9 @@ internal sealed class CompiledStylesheet
 
     /// <summary>Per-mode template-rule tables. Empty <see cref="QName"/> is the default mode.</summary>
     public IReadOnlyDictionary<QName, ModeTable> Modes { get; }
+
+    /// <summary>Compiled template bodies keyed by their source <see cref="TemplateDecl"/>.</summary>
+    public IReadOnlyDictionary<TemplateDecl, CompiledTemplate> CompiledTemplates { get; }
 
     /// <summary>Non-fatal warnings produced during compilation.</summary>
     public IReadOnlyList<Diagnostic> Warnings { get; }

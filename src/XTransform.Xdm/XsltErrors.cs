@@ -52,6 +52,12 @@ public static class XsltErrors
     /// <summary>It is a dynamic error if a global variable depends on itself. (XSLT 2.0 §9.3)</summary>
     public static readonly QName XTDE0640 = new QName("err", XPathErrors.Namespace, "XTDE0640");
 
+    /// <summary>It is a dynamic error if xsl:call-template is invoked without a value for a required xsl:param. (XSLT 2.0 §9.5)</summary>
+    public static readonly QName XTDE0700 = new QName("err", XPathErrors.Namespace, "XTDE0700");
+
+    /// <summary>Implementation-defined limit exceeded — recursion depth. (XSLT 2.0 §2.9)</summary>
+    public static readonly QName XTDE0810 = new QName("err", XPathErrors.Namespace, "XTDE0810");
+
     /// <summary>Raised by xsl:message with terminate="yes". (XSLT 2.0 §16)</summary>
     public static readonly QName XTMM9000 = new QName("err", XPathErrors.Namespace, "XTMM9000");
 }
