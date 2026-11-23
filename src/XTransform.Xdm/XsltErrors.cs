@@ -46,6 +46,12 @@ public static class XsltErrors
     /// <summary>It is a static error if an element from the XSLT namespace is used in a context where it is not permitted, or if a required attribute is missing, or if an unknown element is encountered outside forwards-compatible mode. (XSLT 2.0 §3.7)</summary>
     public static readonly QName XTSE0805 = new QName("err", XPathErrors.Namespace, "XTSE0805");
 
+    /// <summary>Recoverable dynamic error: attribute or namespace node emitted after a child node on the same element. (XSLT 2.0 §5.6.3)</summary>
+    public static readonly QName XTDE0410 = new QName("err", XPathErrors.Namespace, "XTDE0410");
+
+    /// <summary>Recoverable dynamic error: xsl:comment body contains a two-hyphen sequence or ends with a hyphen. (XSLT 2.0 §11.8)</summary>
+    public static readonly QName XTDE0450 = new QName("err", XPathErrors.Namespace, "XTDE0450");
+
     /// <summary>Recoverable dynamic error: multiple template rules match a node with equal import precedence and priority. (XSLT 2.0 §6.4)</summary>
     public static readonly QName XTRE0540 = new QName("err", XPathErrors.Namespace, "XTRE0540");
 
