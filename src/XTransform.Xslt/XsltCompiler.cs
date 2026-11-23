@@ -51,12 +51,23 @@ internal static class XsltCompiler
         DeclarationTable declarations = DeclarationCollector.Collect(assembly, bag);
         NameBindingValidator.Validate(declarations, bag);
         GlobalBindingValidator.Validate(declarations, bag);
+        IReadOnlyDictionary<QName, ModeTable> modes = ModeCompiler.Compile(declarations, bag);
 
         if (bag.HasErrors)
         {
             throw new XsltStaticException(bag.ToList());
         }
 
-        return new CompiledStylesheet(assembly, declarations, warnings);
+        // Promote any warnings collected during mode compilation (e.g. XTRE0540) onto the
+        // compiled stylesheet's warning list.
+        foreach (Diagnostic d in bag.ToList())
+        {
+            if (d.Severity == DiagnosticSeverity.Warning)
+            {
+                warnings.Add(d);
+            }
+        }
+
+        return new CompiledStylesheet(assembly, declarations, modes, warnings);
     }
 }
