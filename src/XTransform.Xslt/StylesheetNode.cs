@@ -70,6 +70,13 @@ internal sealed class StylesheetElement : StylesheetNode
     internal void AppendAttribute(StylesheetAttribute attribute) => _attributes.Add(attribute);
 
     internal void AppendChild(StylesheetNode child) => _children.Add(child);
+
+    /// <summary>Replace the children list wholesale (used by passes that filter or rewrite children).</summary>
+    internal void ReplaceChildren(IEnumerable<StylesheetNode> newChildren)
+    {
+        _children.Clear();
+        _children.AddRange(newChildren);
+    }
 }
 
 /// <summary>A text node (whitespace + content) child of an element.</summary>
@@ -123,4 +130,11 @@ internal sealed class StylesheetAttribute
 
     /// <summary>Source location (points at the element line/col; column precision is XmlReader-dependent).</summary>
     public SourceSpan Location { get; }
+
+    /// <summary>
+    /// The parsed attribute value template, when <see cref="StylesheetProcessor"/> has treated this
+    /// attribute as an AVT; <see langword="null"/> when the attribute's value should be taken verbatim
+    /// (e.g. <c>select</c>, <c>test</c>, <c>match</c>).
+    /// </summary>
+    public AttributeValueTemplate? ParsedTemplate { get; internal set; }
 }
