@@ -54,7 +54,7 @@ How to work through this list:
 
 ## P3-01 Stylesheet reader
 
-- [ ] Done
+- [x] Done
 
 **Scope.** `StylesheetReader.Read(XmlReader, Uri) → StylesheetModule`:
 load a stylesheet into a lightweight AST that keeps line/column info and the
