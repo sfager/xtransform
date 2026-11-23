@@ -8,4 +8,9 @@
     <ProjectReference Include="..\XTransform.Xdm\XTransform.Xdm.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- XTransform.Xslt uses SequenceNormalizer, XmlWriterReceiver, etc. -->
+    <InternalsVisibleTo Include="XTransform.Xslt" />
+  </ItemGroup>
+
 </Project>

@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Generic;
+using XTransform.Serialization;
 using XTransform.Xdm;
 using XTransform.Xslt.Instructions;
 using XTransform.XPath;
@@ -69,12 +70,13 @@ internal static class XsltRunner
         DynamicContext rootCtx = DynamicContext.Root(xpathRun).WithContextItem(input, position: 1, size: 1);
         GlobalVariableEvaluator.EvaluateAll(compiled, rootCtx, run);
 
-        receiver.StartDocument();
+        SequenceNormalizer normalizer = new SequenceNormalizer(receiver);
+        normalizer.StartDocument();
         try
         {
             ModeDispatcher.Dispatch(
                 rootCtx,
-                receiver,
+                normalizer,
                 run,
                 DeclarationCollector.DefaultMode,
                 System.Array.Empty<WithParamInstruction>(),
@@ -82,7 +84,13 @@ internal static class XsltRunner
         }
         finally
         {
-            receiver.EndDocument();
+            normalizer.EndDocument();
         }
+
+        // Promote any XTDE0410 warnings collected during the run.
+        LastRunDiagnostics = normalizer.Diagnostics;
     }
+
+    /// <summary>Diagnostics from the most recent <see cref="Transform"/> run (used by tests).</summary>
+    public static IReadOnlyList<Diagnostic> LastRunDiagnostics { get; private set; } = System.Array.Empty<Diagnostic>();
 }
