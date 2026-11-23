@@ -19,6 +19,12 @@ public static class XsltErrors
     /// <summary>A forwards-compatible processing warning: unknown construct accepted but ignored. (XSLT 2.0 §3.7)</summary>
     public static readonly QName XTSE0150 = new QName("err", XPathErrors.Namespace, "XTSE0150");
 
+    /// <summary>It is a static error if a stylesheet module referenced by xsl:include or xsl:import cannot be retrieved or is not a valid stylesheet module. (XSLT 2.0 §3.11)</summary>
+    public static readonly QName XTSE0165 = new QName("err", XPathErrors.Namespace, "XTSE0165");
+
+    /// <summary>It is a static error if a stylesheet module directly or indirectly includes or imports itself. (XSLT 2.0 §3.11)</summary>
+    public static readonly QName XTSE0210 = new QName("err", XPathErrors.Namespace, "XTSE0210");
+
     /// <summary>It is a static error if the pattern contains a construct that is not allowed in a pattern. (XSLT 2.0 §5.5.2)</summary>
     public static readonly QName XTSE0340 = new QName("err", XPathErrors.Namespace, "XTSE0340");
 

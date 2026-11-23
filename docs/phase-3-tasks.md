@@ -103,7 +103,7 @@ preserves it).
 
 ## P3-03 Import / include resolution
 
-- [ ] Done
+- [x] Done
 
 **Scope.** Recursively resolve `xsl:include` (same precedence as parent) and
 `xsl:import` (new, lower precedence) through `IResourceResolver`. Detect
