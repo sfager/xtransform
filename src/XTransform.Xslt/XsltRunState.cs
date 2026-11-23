@@ -1,9 +1,13 @@
 // XSLT-specific run state layered over the XPath RunState: template call stack,
 // recursion-depth counter, link to the CompiledStylesheet.
 
+using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Xml;
 using XTransform.Xdm;
 using XTransform.XPath;
+using XTransform.XPath.Ast;
 
 namespace XTransform.Xslt;
 
@@ -119,6 +123,138 @@ internal sealed class XsltRunState
     /// <summary>External parameter overrides supplied by the caller (consumed by the global evaluator).</summary>
     public Dictionary<QName, XdmSequence> ExternalParameters { get; } = new Dictionary<QName, XdmSequence>();
 
+    // ── Documents and resolver ─────────────────────────────────────────────
+
+    /// <summary>Resource resolver used by fn:document / fn:doc. Nullable — falls back to the default file-system resolver.</summary>
+    public IResourceResolver? Resolver { get; set; }
+
+    /// <summary>Document cache keyed by resolved absolute URI string.</summary>
+    public Dictionary<string, XdmNode> DocumentCache { get; } =
+        new Dictionary<string, XdmNode>(System.StringComparer.Ordinal);
+
+    /// <summary>
+    /// Loads the document at <paramref name="uriString"/> via <see cref="Resolver"/>, caching
+    /// the result. Returns <see langword="null"/> when the resource cannot be retrieved —
+    /// callers must decide whether that's an error (fn:document / fn:doc) or a false result
+    /// (fn:doc-available).
+    /// </summary>
+    public XdmNode? LoadDocument(string uriString)
+    {
+        if (string.IsNullOrEmpty(uriString))
+        {
+            return null;
+        }
+
+        if (DocumentCache.TryGetValue(uriString, out XdmNode? cached))
+        {
+            return cached;
+        }
+
+        Uri uri;
+        try
+        {
+            uri = new Uri(uriString, UriKind.Absolute);
+        }
+        catch
+        {
+            return null;
+        }
+
+        IResourceResolver resolver = Resolver ?? FileSystemResourceResolver.Instance;
+        Stream? stream;
+        try
+        {
+            stream = resolver.Open(uri);
+        }
+        catch
+        {
+            return null;
+        }
+
+        if (stream is null)
+        {
+            return null;
+        }
+
+        try
+        {
+            using (stream)
+            using (XmlReader reader = XmlReader.Create(stream, new XmlReaderSettings
+            {
+                DtdProcessing = DtdProcessing.Ignore,
+                XmlResolver = null,
+            }))
+            {
+                TinyTree tree = TinyTreeBuilder.Load(reader, NamePool);
+                XdmNode doc = new XdmNode(NodeHandle.ForNode(tree, 0));
+                DocumentCache[uriString] = doc;
+                return doc;
+            }
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    // ── Keys ────────────────────────────────────────────────────────────────
+
+    private readonly Dictionary<KeyIndexKey, KeyIndex> _keyIndexes =
+        new Dictionary<KeyIndexKey, KeyIndex>();
+
+    /// <summary>
+    /// Returns the per-document key index for <paramref name="keyName"/>, building it on first
+    /// access. The index is scoped to the document that owns <paramref name="tree"/>.
+    /// </summary>
+    public KeyIndex GetOrBuildKeyIndex(TinyTree tree, QName keyName, KeyDecl decl, DynamicContext context)
+    {
+        KeyIndexKey key = new KeyIndexKey(tree.TreeId, keyName);
+        if (_keyIndexes.TryGetValue(key, out KeyIndex? existing))
+        {
+            return existing;
+        }
+
+        KeyIndex index = BuildKeyIndex(tree, decl, context);
+        _keyIndexes[key] = index;
+        return index;
+    }
+
+    private static KeyIndex BuildKeyIndex(TinyTree tree, KeyDecl decl, DynamicContext context)
+    {
+        KeyIndex index = new KeyIndex();
+
+        NamespaceBindingsResolver resolver = new NamespaceBindingsResolver(
+            decl.Element.InScopeNamespaces,
+            defaultElementNamespace: string.Empty,
+            defaultFunctionNamespace: BuiltInFunctionLibrary.FnNamespace);
+
+        PatternAst pattern = XPathParser.ParsePattern(decl.MatchPattern, decl.Location, resolver);
+        CompiledExpression useExpr = XPathCompiler.ParseAndCompile(
+            decl.UseExpression, decl.Location, resolver, BuiltInFunctionLibrary.Instance);
+
+        // Walk every node in the tree; nodes matching the pattern contribute to the index.
+        for (int i = 0; i < tree.NodeCount; i++)
+        {
+            XdmNode node = new XdmNode(NodeHandle.ForNode(tree, i));
+            if (!PatternMatcher.Matches(pattern, node, context))
+            {
+                continue;
+            }
+
+            DynamicContext itemCtx = context.WithContextItem(node, 1, 1).WithFrame(useExpr.SlotCount);
+            IXdmIterator iter = useExpr.Root.Iterate(itemCtx);
+            XdmItem? value;
+            while ((value = iter.Next()) is not null)
+            {
+                index.Add(value.GetStringValue(), node);
+            }
+        }
+
+        return index;
+    }
+
+    // ── Variable lookup ────────────────────────────────────────────────────
+
     /// <summary>
     /// Looks up the current value of a variable. Searches the local scope stack top-down
     /// first, then falls back to <see cref="Globals"/>. Returns <see cref="XdmSequence.Empty"/>
@@ -141,6 +277,38 @@ internal sealed class XsltRunState
         }
 
         return XdmSequence.Empty;
+    }
+}
+
+/// <summary>Composite key for the per-(document, name) key-index cache.</summary>
+internal readonly struct KeyIndexKey : System.IEquatable<KeyIndexKey>
+{
+    /// <summary>Initializes the key.</summary>
+    public KeyIndexKey(long treeId, QName name)
+    {
+        TreeId = treeId;
+        Name = name;
+    }
+
+    /// <summary>Document identity.</summary>
+    public long TreeId { get; }
+
+    /// <summary>Key name.</summary>
+    public QName Name { get; }
+
+    /// <inheritdoc/>
+    public bool Equals(KeyIndexKey other) => TreeId == other.TreeId && Name.Equals(other.Name);
+
+    /// <inheritdoc/>
+    public override bool Equals(object? obj) => obj is KeyIndexKey other && Equals(other);
+
+    /// <inheritdoc/>
+    public override int GetHashCode()
+    {
+        unchecked
+        {
+            return (TreeId.GetHashCode() * 397) ^ Name.GetHashCode();
+        }
     }
 }
 
