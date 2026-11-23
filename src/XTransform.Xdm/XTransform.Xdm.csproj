@@ -7,6 +7,8 @@
   <ItemGroup>
     <!-- XTransform.XPath directly accesses CastTable and other internals -->
     <InternalsVisibleTo Include="XTransform.XPath" />
+    <!-- XTransform.Xslt uses DiagnosticBag and other internals when reading/compiling stylesheets -->
+    <InternalsVisibleTo Include="XTransform.Xslt" />
   </ItemGroup>
 
 </Project>
