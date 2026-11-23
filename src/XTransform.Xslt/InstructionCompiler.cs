@@ -75,16 +75,21 @@ internal static class InstructionCompiler
 
     private static XsltInstruction? CompileNode(StylesheetNode node, DiagnosticBag bag)
     {
+        if (node is StylesheetText text)
+        {
+            // Bare text nodes inside a template body (xml:space="preserve" or survivors of
+            // whitespace stripping) become literal text instructions.
+            return text.Text.Length == 0 ? null : new TextInstruction(text.Text, text.Location);
+        }
+
         if (node is not StylesheetElement element)
         {
-            // Text nodes land in P3-07b; drop for now.
             return null;
         }
 
         if (!element.IsXsltElement)
         {
-            // Literal result elements land in P3-07b.
-            return null;
+            return CompileLiteralResultElement(element, bag);
         }
 
         return element.Name.LocalName switch
@@ -94,14 +99,117 @@ internal static class InstructionCompiler
             "for-each" => CompileForEach(element, bag),
             "apply-templates" => CompileApplyTemplates(element, bag),
             "call-template" => CompileCallTemplate(element, bag),
+            "value-of" => CompileValueOf(element, bag),
+            "text" => CompileText(element, bag),
             // Deferred to later tasks:
-            "variable" or "value-of" or "text" or "element" or "attribute" or
+            "variable" or "element" or "attribute" or
             "copy" or "copy-of" or "sequence" or "comment" or "processing-instruction" or
             "document" or "message" or "number" or "result-document" or
             "analyze-string" or "for-each-group" or "next-match" or "fallback" or
             "apply-imports" or "perform-sort" => null,
             _ => null,
         };
+    }
+
+    // ── Content-producing instructions ─────────────────────────────────────
+
+    private static XsltInstruction? CompileValueOf(StylesheetElement element, DiagnosticBag bag)
+    {
+        string? selectAttr = GetAttribute(element, "select");
+        if (selectAttr is null)
+        {
+            // XSLT 2.0 allows a body providing the value too; P3-07b scope only supports @select.
+            bag.Error(XsltErrors.XTSE0010, "xsl:value-of requires a select attribute (body form is deferred)", element.Location);
+            return null;
+        }
+
+        if (!TryCompileXPath(selectAttr, element, bag, out ExpressionNode? select))
+        {
+            return null;
+        }
+
+        string separator = GetAttribute(element, "separator") ?? " ";
+        return new ValueOfInstruction(select!, separator, element.Location);
+    }
+
+    private static XsltInstruction? CompileText(StylesheetElement element, DiagnosticBag bag)
+    {
+        // xsl:text content is the concatenated text of its children (child text nodes only).
+        string literal = ConcatTextChildren(element);
+        _ = bag;
+        return new TextInstruction(literal, element.Location);
+    }
+
+    private static string ConcatTextChildren(StylesheetElement element)
+    {
+        if (element.Children.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        System.Text.StringBuilder sb = new System.Text.StringBuilder();
+        for (int i = 0; i < element.Children.Count; i++)
+        {
+            if (element.Children[i] is StylesheetText t)
+            {
+                sb.Append(t.Text);
+            }
+        }
+
+        return sb.ToString();
+    }
+
+    // ── Literal result elements ────────────────────────────────────────────
+
+    private static XsltInstruction? CompileLiteralResultElement(StylesheetElement element, DiagnosticBag bag)
+    {
+        List<LiteralAttributeInstruction> attributes = new List<LiteralAttributeInstruction>();
+        for (int i = 0; i < element.Attributes.Count; i++)
+        {
+            StylesheetAttribute attr = element.Attributes[i];
+            // Skip xsl: control attributes on LREs (xsl:version, xsl:use-attribute-sets, etc.).
+            if (string.Equals(attr.Name.NamespaceUri, XsltNamespace.Uri, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            CompiledAvt? avt = CompileAvt(attr, element, bag);
+            if (avt is null)
+            {
+                continue;
+            }
+
+            attributes.Add(new LiteralAttributeInstruction(attr.Name, avt, attr.Location));
+        }
+
+        XsltInstruction body = CompileChildren(element, bag);
+        return new LiteralResultElementInstruction(element.Name, attributes, body, element.Location);
+    }
+
+    private static CompiledAvt? CompileAvt(StylesheetAttribute attr, StylesheetElement scope, DiagnosticBag bag)
+    {
+        AttributeValueTemplate? avt = attr.ParsedTemplate ?? AttributeValueTemplate.Parse(attr.Value, attr.Location);
+        List<CompiledAvtPart> parts = new List<CompiledAvtPart>(avt.Parts.Count);
+        foreach (AvtPart part in avt.Parts)
+        {
+            switch (part)
+            {
+                case AvtLiteral literal:
+                    parts.Add(CompiledAvtPart.Literal_(literal.Text));
+                    break;
+
+                case AvtExpression expr:
+                    if (!TryCompileXPath(expr.ExpressionText, scope, bag, out ExpressionNode? compiled))
+                    {
+                        return null;
+                    }
+
+                    parts.Add(CompiledAvtPart.Expression_(compiled!));
+                    break;
+            }
+        }
+
+        return new CompiledAvt(parts.ToArray());
     }
 
     // ── Params ─────────────────────────────────────────────────────────────

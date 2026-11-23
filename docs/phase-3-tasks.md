@@ -183,7 +183,7 @@ variable bodies and parameter values of type `node()`).
 
 ## P3-07 Core control-flow instructions
 
-- [ ] Done
+- [x] Done
 
 **Scope.** `xsl:template`, `xsl:apply-templates`, `xsl:call-template` (with
 `<xsl:with-param>`), `xsl:if`, `xsl:choose` / `xsl:when` / `xsl:otherwise`,
