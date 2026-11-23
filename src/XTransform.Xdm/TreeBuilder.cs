@@ -74,7 +74,24 @@ internal sealed class TreeBuilder : IResultReceiver
     }
 
     /// <inheritdoc/>
-    public void Append(XdmItem item) => _builder.Append(item);
+    public void Append(XdmItem item)
+    {
+        EnsureDocument();
+        if (item is XdmNode node)
+        {
+            // Walk the node's subtree and emit its events into this builder — the receiver
+            // chain treats Append on a node as a serialisation-visible deep copy.
+            TinyTreeEmitter.EmitSubtree(node.Handle.Tree, node.Handle.Index, this);
+            return;
+        }
+
+        if (item is XdmAtomicValue atomic)
+        {
+            // Atomics contribute their string value.
+            _builder.Text(atomic.GetStringValue());
+            return;
+        }
+    }
 
     /// <summary>
     /// Finalises the captured events into a <see cref="TinyTree"/> and returns the root

@@ -96,9 +96,15 @@ internal sealed class XmlWriterReceiver : IResultReceiver, IDisposable
     /// <inheritdoc/>
     public void Append(XdmItem item)
     {
-        if (item is XdmAtomicValue atomic)
+        switch (item)
         {
-            _writer.WriteString(atomic.GetStringValue());
+            case XdmAtomicValue atomic:
+                _writer.WriteString(atomic.GetStringValue());
+                return;
+
+            case XdmNode node:
+                TinyTreeEmitter.EmitSubtree(node.Handle.Tree, node.Handle.Index, this);
+                return;
         }
     }
 
