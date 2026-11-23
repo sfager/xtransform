@@ -9,6 +9,8 @@
     <InternalsVisibleTo Include="XTransform.XPath" />
     <!-- XTransform.Xslt uses DiagnosticBag and other internals when reading/compiling stylesheets -->
     <InternalsVisibleTo Include="XTransform.Xslt" />
+    <!-- XTransform.Serialization uses IResultReceiver and related internals for emitters / normalizer -->
+    <InternalsVisibleTo Include="XTransform.Serialization" />
   </ItemGroup>
 
 </Project>

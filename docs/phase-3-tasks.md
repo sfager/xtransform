@@ -164,7 +164,7 @@ bottom-up (test the node, then its parent) per design.md.
 
 ## P3-06 `IResultReceiver` chain and temporary trees
 
-- [ ] Done
+- [x] Done
 
 **Scope.** Finalise the `IResultReceiver` interface already used by
 `TinyTreeBuilder` (P1-08). Add `SequenceNormalizer` scaffolding (full rules in
