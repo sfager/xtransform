@@ -17,10 +17,12 @@ internal sealed class CompiledStylesheet
     public CompiledStylesheet(
         StylesheetAssembly assembly,
         DeclarationTable declarations,
+        IReadOnlyDictionary<QName, ModeTable> modes,
         IReadOnlyList<Diagnostic> warnings)
     {
         Assembly = assembly;
         Declarations = declarations;
+        Modes = modes;
         Warnings = warnings;
     }
 
@@ -29,6 +31,9 @@ internal sealed class CompiledStylesheet
 
     /// <summary>The collected top-level declarations.</summary>
     public DeclarationTable Declarations { get; }
+
+    /// <summary>Per-mode template-rule tables. Empty <see cref="QName"/> is the default mode.</summary>
+    public IReadOnlyDictionary<QName, ModeTable> Modes { get; }
 
     /// <summary>Non-fatal warnings produced during compilation.</summary>
     public IReadOnlyList<Diagnostic> Warnings { get; }

@@ -141,7 +141,7 @@ Bind every `QName` reference to a declaration or raise the appropriate
 
 ## P3-05 Mode table and template-rule compilation
 
-- [ ] Done
+- [x] Done
 
 **Scope.** For each mode, compile every matching `xsl:template` into a
 `TemplateRule` (pattern, body, params, priority, precedence). Split union
