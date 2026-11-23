@@ -25,6 +25,7 @@ internal static class XsltRunner
         CompiledStylesheet compiled,
         XdmNode input,
         IResultReceiver receiver,
+        NamePool? namePool = null,
         int maxRecursionDepth = XsltRunState.DefaultMaxRecursionDepth)
     {
 #pragma warning disable CA1510 // ArgumentNullException.ThrowIfNull not available on netstandard2.0
@@ -45,7 +46,8 @@ internal static class XsltRunner
 #pragma warning restore CA1510
 
         RunState xpathRun = new RunState();
-        XsltRunState run = new XsltRunState(compiled, xpathRun, maxRecursionDepth);
+        NamePool effectivePool = namePool ?? new NamePool();
+        XsltRunState run = new XsltRunState(compiled, xpathRun, effectivePool, maxRecursionDepth);
 
         receiver.StartDocument();
         try

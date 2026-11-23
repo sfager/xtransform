@@ -21,15 +21,23 @@ internal sealed class XsltRunState
     private QName _currentMode = DeclarationCollector.DefaultMode;
 
     /// <summary>Initializes a run state.</summary>
-    public XsltRunState(CompiledStylesheet stylesheet, RunState xpathRun, int maxRecursionDepth = DefaultMaxRecursionDepth)
+    public XsltRunState(
+        CompiledStylesheet stylesheet,
+        RunState xpathRun,
+        NamePool namePool,
+        int maxRecursionDepth = DefaultMaxRecursionDepth)
     {
         Stylesheet = stylesheet;
         XPathRun = xpathRun;
+        NamePool = namePool;
         MaxRecursionDepth = maxRecursionDepth;
     }
 
     /// <summary>The compiled stylesheet being executed.</summary>
     public CompiledStylesheet Stylesheet { get; }
+
+    /// <summary>Name pool shared with the receiver chain; used by output instructions to allocate name codes.</summary>
+    public NamePool NamePool { get; }
 
     /// <summary>The underlying XPath run state (current-dateTime, cancellation, timezone).</summary>
     public RunState XPathRun { get; }
