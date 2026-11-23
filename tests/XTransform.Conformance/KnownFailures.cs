@@ -80,4 +80,31 @@ internal sealed class KnownFailures
         string path = Path.Combine(conformanceOutputDir, "known-failures", "g1.txt");
         return new KnownFailures(path);
     }
+
+    /// <summary>
+    /// Loads both g1.txt and g2.txt (if present) for full-evaluation mode.
+    /// </summary>
+    public static KnownFailures LoadForG2(string conformanceOutputDir)
+    {
+        string g1 = Path.Combine(conformanceOutputDir, "known-failures", "g1.txt");
+        string g2 = Path.Combine(conformanceOutputDir, "known-failures", "g2.txt");
+
+        KnownFailures combined = new KnownFailures(null);
+
+        // Merge g1
+        KnownFailures g1Failures = new KnownFailures(g1);
+        foreach (KeyValuePair<string, string> kv in g1Failures._entries)
+        {
+            combined._entries[kv.Key] = kv.Value;
+        }
+
+        // Merge g2
+        KnownFailures g2Failures = new KnownFailures(g2);
+        foreach (KeyValuePair<string, string> kv in g2Failures._entries)
+        {
+            combined._entries[kv.Key] = kv.Value;
+        }
+
+        return combined;
+    }
 }

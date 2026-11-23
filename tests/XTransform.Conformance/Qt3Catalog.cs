@@ -15,10 +15,15 @@ internal sealed class Qt3Catalog
     /// <summary>All test-set references found in the catalog.</summary>
     public IReadOnlyList<Qt3TestSetRef> TestSetRefs { get; }
 
-    private Qt3Catalog(string qt3Root, IReadOnlyList<Qt3TestSetRef> testSetRefs)
+    /// <summary>Global environments declared in the catalog, keyed by name.</summary>
+    public IReadOnlyDictionary<string, Qt3Environment> GlobalEnvironments { get; }
+
+    private Qt3Catalog(string qt3Root, IReadOnlyList<Qt3TestSetRef> testSetRefs,
+                       IReadOnlyDictionary<string, Qt3Environment> globalEnvironments)
     {
         Qt3Root = qt3Root;
         TestSetRefs = testSetRefs;
+        GlobalEnvironments = globalEnvironments;
     }
 
     /// <summary>Loads the catalog from the given QT3 root directory.</summary>
@@ -27,6 +32,17 @@ internal sealed class Qt3Catalog
         string catalogPath = Path.Combine(qt3Root, "catalog.xml");
         XDocument doc = XDocument.Load(catalogPath);
         XElement root = doc.Root!;
+
+        // Load global environments from the catalog root
+        Dictionary<string, Qt3Environment> globalEnvs = new Dictionary<string, Qt3Environment>(System.StringComparer.Ordinal);
+        foreach (XElement envEl in root.Elements(Ns + "environment"))
+        {
+            Qt3Environment env = Qt3Environment.FromXml(envEl, qt3Root);
+            if (env.Name.Length > 0)
+            {
+                globalEnvs[env.Name] = env;
+            }
+        }
 
         List<Qt3TestSetRef> refs = new();
         foreach (XElement el in root.Elements(Ns + "test-set"))
@@ -39,7 +55,7 @@ internal sealed class Qt3Catalog
             }
         }
 
-        return new Qt3Catalog(qt3Root, refs);
+        return new Qt3Catalog(qt3Root, refs, globalEnvs);
     }
 }
 
