@@ -25,6 +25,18 @@ public static class XsltErrors
     /// <summary>It is a static error if a stylesheet module directly or indirectly includes or imports itself. (XSLT 2.0 §3.11)</summary>
     public static readonly QName XTSE0210 = new QName("err", XPathErrors.Namespace, "XTSE0210");
 
+    /// <summary>It is a static error if a stylesheet contains more than one binding of a global variable with the same name and the same import precedence. (XSLT 2.0 §9.3)</summary>
+    public static readonly QName XTSE0630 = new QName("err", XPathErrors.Namespace, "XTSE0630");
+
+    /// <summary>It is a static error if a stylesheet contains more than one template with the same name and the same import precedence. (XSLT 2.0 §6.2)</summary>
+    public static readonly QName XTSE0660 = new QName("err", XPathErrors.Namespace, "XTSE0660");
+
+    /// <summary>It is a static error if a stylesheet contains an xsl:apply-templates whose mode attribute refers to a mode that is not used by any template rule. (XSLT 2.0 §6.4)</summary>
+    public static readonly QName XTSE0680 = new QName("err", XPathErrors.Namespace, "XTSE0680");
+
+    /// <summary>It is a static error if the name attribute of an xsl:function element does not have a prefix (functions must live in a namespace). (XSLT 2.0 §10.3)</summary>
+    public static readonly QName XTSE0740 = new QName("err", XPathErrors.Namespace, "XTSE0740");
+
     /// <summary>It is a static error if the pattern contains a construct that is not allowed in a pattern. (XSLT 2.0 §5.5.2)</summary>
     public static readonly QName XTSE0340 = new QName("err", XPathErrors.Namespace, "XTSE0340");
 

@@ -119,7 +119,7 @@ module a precedence number used in P3-04.
 
 ## P3-04 Declaration collection and name binding
 
-- [ ] Done
+- [x] Done
 
 **Scope.** First compiler pass over the merged module tree: collect every
 top-level declaration (templates, named templates, modes, global variables and
