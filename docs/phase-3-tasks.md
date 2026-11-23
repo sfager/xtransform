@@ -228,7 +228,7 @@ set via `XsltTransformer.SetParameter` override the default.
 
 ## P3-09 Content-producing instructions
 
-- [ ] Done
+- [x] Done
 
 **Scope.** `xsl:value-of` (string value of sequence, separated by
 `@separator` default single space), `xsl:text` (literal with `@disable-output-escaping`

@@ -107,14 +107,59 @@ internal static class InstructionCompiler
             "value-of" => CompileValueOf(element, scope, bag),
             "text" => CompileText(element, bag),
             "variable" => CompileLocalVariable(element, scope, bag),
+            "sequence" => CompileXslSequence(element, scope, bag),
+            "copy" => CompileCopy(element, scope, bag),
+            "copy-of" => CompileCopyOf(element, scope, bag),
             // Deferred to later tasks:
             "element" or "attribute" or
-            "copy" or "copy-of" or "sequence" or "comment" or "processing-instruction" or
+            "comment" or "processing-instruction" or
             "document" or "message" or "number" or "result-document" or
             "analyze-string" or "for-each-group" or "next-match" or "fallback" or
             "apply-imports" or "perform-sort" => null,
             _ => null,
         };
+    }
+
+    // ── xsl:sequence / xsl:copy / xsl:copy-of ──────────────────────────────
+
+    private static XsltInstruction? CompileXslSequence(StylesheetElement element, XsltCompileScope scope, DiagnosticBag bag)
+    {
+        string? selectAttr = GetAttribute(element, "select");
+        if (selectAttr is null)
+        {
+            bag.Error(XsltErrors.XTSE0010, "xsl:sequence requires a select attribute (body form is deferred)", element.Location);
+            return null;
+        }
+
+        if (!TryCompileXPath(selectAttr, element, scope, bag, out BoundExpression? select))
+        {
+            return null;
+        }
+
+        return new XslSequenceInstruction(select!, element.Location);
+    }
+
+    private static XsltInstruction? CompileCopy(StylesheetElement element, XsltCompileScope scope, DiagnosticBag bag)
+    {
+        XsltInstruction body = CompileChildren(element, scope, bag);
+        return new CopyInstruction(body, element.Location);
+    }
+
+    private static XsltInstruction? CompileCopyOf(StylesheetElement element, XsltCompileScope scope, DiagnosticBag bag)
+    {
+        string? selectAttr = GetAttribute(element, "select");
+        if (selectAttr is null)
+        {
+            bag.Error(XsltErrors.XTSE0010, "xsl:copy-of requires a select attribute", element.Location);
+            return null;
+        }
+
+        if (!TryCompileXPath(selectAttr, element, scope, bag, out BoundExpression? select))
+        {
+            return null;
+        }
+
+        return new CopyOfInstruction(select!, element.Location);
     }
 
     // ── Content-producing instructions ─────────────────────────────────────
@@ -140,7 +185,18 @@ internal static class InstructionCompiler
     private static XsltInstruction? CompileText(StylesheetElement element, DiagnosticBag bag)
     {
         string literal = ConcatTextChildren(element);
-        _ = bag;
+
+        // XSLT 2.0 §12.1 — @disable-output-escaping. We don't honour it in v1; warn when it
+        // is set to "yes" so users know their intent is being ignored.
+        string? doe = GetAttribute(element, "disable-output-escaping");
+        if (string.Equals(doe, "yes", StringComparison.Ordinal))
+        {
+            bag.Warning(
+                XsltErrors.XTSE0150,
+                "xsl:text @disable-output-escaping is not honoured by this processor; output will be escaped normally",
+                element.Location);
+        }
+
         return new TextInstruction(literal, element.Location);
     }
 
