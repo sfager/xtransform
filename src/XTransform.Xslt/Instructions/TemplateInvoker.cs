@@ -1,6 +1,6 @@
 // Helper shared by CallTemplateInstruction and ApplyTemplatesInstruction: binds
 // xsl:with-param values to the invoked template's xsl:param slots, honours "required",
-// and runs the body in a fresh local frame.
+// pushes them onto the variable scope stack, and runs the body.
 
 using System.Collections.Generic;
 using XTransform.Xdm;
@@ -21,20 +21,21 @@ internal static class TemplateInvoker
         SourceSpan callSite)
     {
         run.EnterTemplate(source, callSite);
+        int varMarker = run.VariableScopeMarker;
         try
         {
-            DynamicContext frameCtx = context.WithFrame(compiled.SlotCount);
-            BindParameters(frameCtx, run, compiled, withParams, callSite);
-            compiled.Body.Execute(frameCtx, receiver, run);
+            BindParameters(context, run, compiled, withParams, callSite);
+            compiled.Body.Execute(context, receiver, run);
         }
         finally
         {
+            run.RestoreVariablesTo(varMarker);
             run.LeaveTemplate();
         }
     }
 
     private static void BindParameters(
-        DynamicContext frameCtx,
+        DynamicContext context,
         XsltRunState run,
         CompiledTemplate compiled,
         IReadOnlyList<WithParamInstruction> withParams,
@@ -45,7 +46,7 @@ internal static class TemplateInvoker
             WithParamInstruction? supplied = FindWithParam(withParams, slot.Name);
             if (supplied is not null)
             {
-                frameCtx.LocalFrame[slot.SlotIndex] = supplied.Evaluate(frameCtx);
+                run.PushVariable(slot.Name, supplied.Evaluate(context, run));
                 continue;
             }
 
@@ -59,9 +60,12 @@ internal static class TemplateInvoker
 
             if (slot.DefaultSelect is not null)
             {
-                frameCtx.LocalFrame[slot.SlotIndex] = MaterialiseIterator(slot.DefaultSelect, frameCtx);
+                run.PushVariable(slot.Name, slot.DefaultSelect.Evaluate(context, run));
             }
-            // else: implicit empty sequence — frame is pre-initialised to Empty by WithFrame.
+            else
+            {
+                run.PushVariable(slot.Name, XdmSequence.Empty);
+            }
         }
     }
 
@@ -78,18 +82,5 @@ internal static class TemplateInvoker
         }
 
         return null;
-    }
-
-    private static XdmSequence MaterialiseIterator(ExpressionNode expression, DynamicContext context)
-    {
-        List<XdmItem> items = new List<XdmItem>();
-        IXdmIterator iter = expression.Iterate(context);
-        XdmItem? item;
-        while ((item = iter.Next()) is not null)
-        {
-            items.Add(item);
-        }
-
-        return XdmSequence.From(items);
     }
 }

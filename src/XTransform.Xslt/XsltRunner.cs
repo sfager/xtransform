@@ -25,6 +25,8 @@ internal static class XsltRunner
         CompiledStylesheet compiled,
         XdmNode input,
         IResultReceiver receiver,
+        NamePool? namePool = null,
+        IReadOnlyDictionary<QName, XdmSequence>? parameters = null,
         int maxRecursionDepth = XsltRunState.DefaultMaxRecursionDepth)
     {
 #pragma warning disable CA1510 // ArgumentNullException.ThrowIfNull not available on netstandard2.0
@@ -45,12 +47,31 @@ internal static class XsltRunner
 #pragma warning restore CA1510
 
         RunState xpathRun = new RunState();
-        XsltRunState run = new XsltRunState(compiled, xpathRun, maxRecursionDepth);
+        NamePool effectivePool = namePool ?? new NamePool();
+        XsltRunState run = new XsltRunState(compiled, xpathRun, effectivePool, maxRecursionDepth);
+
+        if (parameters is not null)
+        {
+            foreach (KeyValuePair<QName, XdmSequence> kv in parameters)
+            {
+                if (!compiled.Declarations.GlobalVariables.TryGetValue(kv.Key, out GlobalVariableDecl? decl)
+                    || !decl.IsParam)
+                {
+                    throw new System.ArgumentException(
+                        $"No global xsl:param named '{kv.Key.ClarkName}' is declared in this stylesheet",
+                        nameof(parameters));
+                }
+
+                run.ExternalParameters[kv.Key] = kv.Value;
+            }
+        }
+
+        DynamicContext rootCtx = DynamicContext.Root(xpathRun).WithContextItem(input, position: 1, size: 1);
+        GlobalVariableEvaluator.EvaluateAll(compiled, rootCtx, run);
 
         receiver.StartDocument();
         try
         {
-            DynamicContext rootCtx = DynamicContext.Root(xpathRun).WithContextItem(input, position: 1, size: 1);
             ModeDispatcher.Dispatch(
                 rootCtx,
                 receiver,

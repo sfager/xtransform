@@ -34,7 +34,7 @@ internal sealed class ChooseInstruction : XsltInstruction
         for (int i = 0; i < Whens.Count; i++)
         {
             ChooseBranch branch = Whens[i];
-            if (branch.Test.EffectiveBooleanValue(context))
+            if (branch.Test.EffectiveBooleanValue(context, run))
             {
                 branch.Body.Execute(context, receiver, run);
                 return;
@@ -49,14 +49,14 @@ internal sealed class ChooseInstruction : XsltInstruction
 internal sealed class ChooseBranch
 {
     /// <summary>Initializes an xsl:when branch.</summary>
-    public ChooseBranch(ExpressionNode test, XsltInstruction body)
+    public ChooseBranch(BoundExpression test, XsltInstruction body)
     {
         Test = test;
         Body = body;
     }
 
     /// <summary>The compiled <c>@test</c> expression.</summary>
-    public ExpressionNode Test { get; }
+    public BoundExpression Test { get; }
 
     /// <summary>The body to execute when the test passes.</summary>
     public XsltInstruction Body { get; }

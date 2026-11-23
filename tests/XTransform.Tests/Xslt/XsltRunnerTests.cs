@@ -318,7 +318,6 @@ internal sealed class XsltRunnerTests
                 CompiledTemplate withRecorder = new CompiledTemplate(
                     kv.Value.Source,
                     kv.Value.Parameters,
-                    kv.Value.SlotCount,
                     new SequenceInstruction(new XsltInstruction[]
                     {
                         new RecorderInstruction(tag!),

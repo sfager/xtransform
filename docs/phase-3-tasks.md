@@ -183,7 +183,7 @@ variable bodies and parameter values of type `node()`).
 
 ## P3-07 Core control-flow instructions
 
-- [ ] Done
+- [x] Done
 
 **Scope.** `xsl:template`, `xsl:apply-templates`, `xsl:call-template` (with
 `<xsl:with-param>`), `xsl:if`, `xsl:choose` / `xsl:when` / `xsl:otherwise`,
@@ -208,7 +208,7 @@ attribute → copy string value; comment / PI / document → recurse.
 
 ## P3-08 Variables, params, globals
 
-- [ ] Done
+- [x] Done
 
 **Scope.** `xsl:variable` and `xsl:param` at every level: when `select` is
 present, evaluate lazily; when a body is present, build a temporary tree
@@ -228,7 +228,7 @@ set via `XsltTransformer.SetParameter` override the default.
 
 ## P3-09 Content-producing instructions
 
-- [ ] Done
+- [x] Done
 
 **Scope.** `xsl:value-of` (string value of sequence, separated by
 `@separator` default single space), `xsl:text` (literal with `@disable-output-escaping`

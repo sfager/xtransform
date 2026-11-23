@@ -23,9 +23,20 @@ internal sealed class SequenceInstruction : XsltInstruction
     /// <inheritdoc/>
     public override void Execute(DynamicContext context, IResultReceiver receiver, XsltRunState run)
     {
-        for (int i = 0; i < Children.Count; i++)
+        // Variables declared via xsl:variable have the lexical extent of their enclosing
+        // sibling list (XSLT 2.0 §9.2); snapshot the variable scope on entry and restore
+        // it on exit so nested declarations don't leak out.
+        int marker = run.VariableScopeMarker;
+        try
         {
-            Children[i].Execute(context, receiver, run);
+            for (int i = 0; i < Children.Count; i++)
+            {
+                Children[i].Execute(context, receiver, run);
+            }
+        }
+        finally
+        {
+            run.RestoreVariablesTo(marker);
         }
     }
 

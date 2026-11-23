@@ -1,6 +1,6 @@
 // Compiles the body of an xsl:template / xsl:function / etc. to an XsltInstruction tree.
-// P3-07 implements control-flow + apply-templates/call-template; content instructions
-// (xsl:value-of / xsl:text / LRE / xsl:element / …) land in P3-07b and P3-09+.
+// P3-07 landed control-flow + output instructions; P3-08 threads the XsltCompileScope
+// through compilation so XPath expressions see xsl:variable / xsl:param / global bindings.
 
 // Compile methods intentionally return the abstract XsltInstruction (or null) so the
 // per-node dispatch in CompileNode composes cleanly, even though individual methods
@@ -23,10 +23,15 @@ internal static class InstructionCompiler
     /// <see langword="null"/> when the template body references constructs that this phase of
     /// the compiler doesn't yet support (reported as diagnostics).
     /// </summary>
-    public static CompiledTemplate? CompileTemplate(TemplateDecl decl, DiagnosticBag bag)
+    public static CompiledTemplate? CompileTemplate(
+        TemplateDecl decl,
+        DeclarationTable declarations,
+        DiagnosticBag bag)
     {
-        // Pass 1: collect xsl:param children at the start of the template body and assign
-        // slot indices. Instructions appear after the last param (XSLT 2.0 §9.5).
+        XsltCompileScope scope = XsltCompileScope.WithGlobals(declarations.GlobalVariables.Keys);
+
+        // Pass 1: collect xsl:param children at the start of the template body. XSLT 2.0
+        // §9.5 — params must precede every other sibling.
         List<ParamSlot> paramSlots = new List<ParamSlot>();
         int firstNonParam = 0;
         for (int i = 0; i < decl.Element.Children.Count; i++)
@@ -42,12 +47,13 @@ internal static class InstructionCompiler
                 break;
             }
 
-            if (!TryCompileParam(child, paramSlots.Count, bag, out ParamSlot? slot))
+            if (!TryCompileParam(child, scope, bag, out ParamSlot? slot))
             {
                 return null;
             }
 
             paramSlots.Add(slot!);
+            scope.Declare(slot!.Name, SequenceType.AnySequence);
             firstNonParam = i + 1;
         }
 
@@ -55,7 +61,7 @@ internal static class InstructionCompiler
         List<XsltInstruction> bodyInstructions = new List<XsltInstruction>();
         for (int i = firstNonParam; i < decl.Element.Children.Count; i++)
         {
-            XsltInstruction? compiled = CompileNode(decl.Element.Children[i], bag);
+            XsltInstruction? compiled = CompileNode(decl.Element.Children[i], scope, bag);
             if (compiled is not null)
             {
                 bodyInstructions.Add(compiled);
@@ -66,37 +72,47 @@ internal static class InstructionCompiler
             ? bodyInstructions[0]
             : new SequenceInstruction(bodyInstructions, decl.Location);
 
-        // P3-07 scope: the slot count equals the parameter count. Local variables (P3-08) and
-        // XPath-internal slots (currently allocated per-expression in fresh frames) don't
-        // contribute to the shared template frame yet.
-        int slotCount = paramSlots.Count;
-        return new CompiledTemplate(decl, paramSlots, slotCount, body);
+        return new CompiledTemplate(decl, paramSlots, body);
     }
 
-    private static XsltInstruction? CompileNode(StylesheetNode node, DiagnosticBag bag)
+    private static XsltInstruction? CompileNode(
+        StylesheetNode node,
+        XsltCompileScope scope,
+        DiagnosticBag bag)
     {
+        if (node is StylesheetText text)
+        {
+            // Bare text nodes inside a template body (xml:space="preserve" or survivors of
+            // whitespace stripping) become literal text instructions.
+            return text.Text.Length == 0 ? null : new TextInstruction(text.Text, text.Location);
+        }
+
         if (node is not StylesheetElement element)
         {
-            // Text nodes land in P3-07b; drop for now.
             return null;
         }
 
         if (!element.IsXsltElement)
         {
-            // Literal result elements land in P3-07b.
-            return null;
+            return CompileLiteralResultElement(element, scope, bag);
         }
 
         return element.Name.LocalName switch
         {
-            "if" => CompileIf(element, bag),
-            "choose" => CompileChoose(element, bag),
-            "for-each" => CompileForEach(element, bag),
-            "apply-templates" => CompileApplyTemplates(element, bag),
-            "call-template" => CompileCallTemplate(element, bag),
+            "if" => CompileIf(element, scope, bag),
+            "choose" => CompileChoose(element, scope, bag),
+            "for-each" => CompileForEach(element, scope, bag),
+            "apply-templates" => CompileApplyTemplates(element, scope, bag),
+            "call-template" => CompileCallTemplate(element, scope, bag),
+            "value-of" => CompileValueOf(element, scope, bag),
+            "text" => CompileText(element, bag),
+            "variable" => CompileLocalVariable(element, scope, bag),
+            "sequence" => CompileXslSequence(element, scope, bag),
+            "copy" => CompileCopy(element, scope, bag),
+            "copy-of" => CompileCopyOf(element, scope, bag),
             // Deferred to later tasks:
-            "variable" or "value-of" or "text" or "element" or "attribute" or
-            "copy" or "copy-of" or "sequence" or "comment" or "processing-instruction" or
+            "element" or "attribute" or
+            "comment" or "processing-instruction" or
             "document" or "message" or "number" or "result-document" or
             "analyze-string" or "for-each-group" or "next-match" or "fallback" or
             "apply-imports" or "perform-sort" => null,
@@ -104,9 +120,193 @@ internal static class InstructionCompiler
         };
     }
 
+    // ── xsl:sequence / xsl:copy / xsl:copy-of ──────────────────────────────
+
+    private static XsltInstruction? CompileXslSequence(StylesheetElement element, XsltCompileScope scope, DiagnosticBag bag)
+    {
+        string? selectAttr = GetAttribute(element, "select");
+        if (selectAttr is null)
+        {
+            bag.Error(XsltErrors.XTSE0010, "xsl:sequence requires a select attribute (body form is deferred)", element.Location);
+            return null;
+        }
+
+        if (!TryCompileXPath(selectAttr, element, scope, bag, out BoundExpression? select))
+        {
+            return null;
+        }
+
+        return new XslSequenceInstruction(select!, element.Location);
+    }
+
+    private static XsltInstruction? CompileCopy(StylesheetElement element, XsltCompileScope scope, DiagnosticBag bag)
+    {
+        XsltInstruction body = CompileChildren(element, scope, bag);
+        return new CopyInstruction(body, element.Location);
+    }
+
+    private static XsltInstruction? CompileCopyOf(StylesheetElement element, XsltCompileScope scope, DiagnosticBag bag)
+    {
+        string? selectAttr = GetAttribute(element, "select");
+        if (selectAttr is null)
+        {
+            bag.Error(XsltErrors.XTSE0010, "xsl:copy-of requires a select attribute", element.Location);
+            return null;
+        }
+
+        if (!TryCompileXPath(selectAttr, element, scope, bag, out BoundExpression? select))
+        {
+            return null;
+        }
+
+        return new CopyOfInstruction(select!, element.Location);
+    }
+
+    // ── Content-producing instructions ─────────────────────────────────────
+
+    private static XsltInstruction? CompileValueOf(StylesheetElement element, XsltCompileScope scope, DiagnosticBag bag)
+    {
+        string? selectAttr = GetAttribute(element, "select");
+        if (selectAttr is null)
+        {
+            bag.Error(XsltErrors.XTSE0010, "xsl:value-of requires a select attribute (body form is deferred)", element.Location);
+            return null;
+        }
+
+        if (!TryCompileXPath(selectAttr, element, scope, bag, out BoundExpression? select))
+        {
+            return null;
+        }
+
+        string separator = GetAttribute(element, "separator") ?? " ";
+        return new ValueOfInstruction(select!, separator, element.Location);
+    }
+
+    private static XsltInstruction? CompileText(StylesheetElement element, DiagnosticBag bag)
+    {
+        string literal = ConcatTextChildren(element);
+
+        // XSLT 2.0 §12.1 — @disable-output-escaping. We don't honour it in v1; warn when it
+        // is set to "yes" so users know their intent is being ignored.
+        string? doe = GetAttribute(element, "disable-output-escaping");
+        if (string.Equals(doe, "yes", StringComparison.Ordinal))
+        {
+            bag.Warning(
+                XsltErrors.XTSE0150,
+                "xsl:text @disable-output-escaping is not honoured by this processor; output will be escaped normally",
+                element.Location);
+        }
+
+        return new TextInstruction(literal, element.Location);
+    }
+
+    private static string ConcatTextChildren(StylesheetElement element)
+    {
+        if (element.Children.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        System.Text.StringBuilder sb = new System.Text.StringBuilder();
+        for (int i = 0; i < element.Children.Count; i++)
+        {
+            if (element.Children[i] is StylesheetText t)
+            {
+                sb.Append(t.Text);
+            }
+        }
+
+        return sb.ToString();
+    }
+
+    // ── xsl:variable (local) ───────────────────────────────────────────────
+
+    private static XsltInstruction? CompileLocalVariable(StylesheetElement element, XsltCompileScope scope, DiagnosticBag bag)
+    {
+        string? nameAttr = GetAttribute(element, "name");
+        if (nameAttr is null)
+        {
+            bag.Error(XsltErrors.XTSE0010, "xsl:variable requires a name attribute", element.Location);
+            return null;
+        }
+
+        if (!LexicalQNameParser.TryResolve(nameAttr, element.InScopeNamespaces, out QName name, out string? why))
+        {
+            bag.Error(XsltErrors.XTSE0010, $"Invalid variable name '{nameAttr}': {why}", element.Location);
+            return null;
+        }
+
+        string? selectExpr = GetAttribute(element, "select");
+        BoundExpression? select = null;
+        if (!string.IsNullOrEmpty(selectExpr))
+        {
+            if (!TryCompileXPath(selectExpr!, element, scope, bag, out select))
+            {
+                return null;
+            }
+        }
+
+        // Add to scope so subsequent siblings see $name. Lexical extent is the enclosing
+        // SequenceInstruction (restored by its finally block at runtime).
+        scope.Declare(name, SequenceType.AnySequence);
+        return new VariableInstruction(name, select, element.Location);
+    }
+
+    // ── Literal result elements ────────────────────────────────────────────
+
+    private static XsltInstruction? CompileLiteralResultElement(StylesheetElement element, XsltCompileScope scope, DiagnosticBag bag)
+    {
+        List<LiteralAttributeInstruction> attributes = new List<LiteralAttributeInstruction>();
+        for (int i = 0; i < element.Attributes.Count; i++)
+        {
+            StylesheetAttribute attr = element.Attributes[i];
+            if (string.Equals(attr.Name.NamespaceUri, XsltNamespace.Uri, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            CompiledAvt? avt = CompileAvt(attr, element, scope, bag);
+            if (avt is null)
+            {
+                continue;
+            }
+
+            attributes.Add(new LiteralAttributeInstruction(attr.Name, avt, attr.Location));
+        }
+
+        XsltInstruction body = CompileChildren(element, scope, bag);
+        return new LiteralResultElementInstruction(element.Name, attributes, body, element.Location);
+    }
+
+    private static CompiledAvt? CompileAvt(StylesheetAttribute attr, StylesheetElement scopeElement, XsltCompileScope scope, DiagnosticBag bag)
+    {
+        AttributeValueTemplate? avt = attr.ParsedTemplate ?? AttributeValueTemplate.Parse(attr.Value, attr.Location);
+        List<CompiledAvtPart> parts = new List<CompiledAvtPart>(avt.Parts.Count);
+        foreach (AvtPart part in avt.Parts)
+        {
+            switch (part)
+            {
+                case AvtLiteral literal:
+                    parts.Add(CompiledAvtPart.Literal_(literal.Text));
+                    break;
+
+                case AvtExpression expr:
+                    if (!TryCompileXPath(expr.ExpressionText, scopeElement, scope, bag, out BoundExpression? compiled))
+                    {
+                        return null;
+                    }
+
+                    parts.Add(CompiledAvtPart.Expression_(compiled!));
+                    break;
+            }
+        }
+
+        return new CompiledAvt(parts.ToArray());
+    }
+
     // ── Params ─────────────────────────────────────────────────────────────
 
-    private static bool TryCompileParam(StylesheetElement element, int slotIndex, DiagnosticBag bag, out ParamSlot? slot)
+    private static bool TryCompileParam(StylesheetElement element, XsltCompileScope scope, DiagnosticBag bag, out ParamSlot? slot)
     {
         slot = null;
         string? nameAttr = GetAttribute(element, "name");
@@ -124,22 +324,22 @@ internal static class InstructionCompiler
 
         bool required = string.Equals(GetAttribute(element, "required"), "yes", StringComparison.Ordinal);
         string? selectExpr = GetAttribute(element, "select");
-        ExpressionNode? defaultSelect = null;
+        BoundExpression? defaultSelect = null;
         if (!string.IsNullOrEmpty(selectExpr))
         {
-            if (!TryCompileXPath(selectExpr!, element, bag, out defaultSelect))
+            if (!TryCompileXPath(selectExpr!, element, scope, bag, out defaultSelect))
             {
                 return false;
             }
         }
 
-        slot = new ParamSlot(name, slotIndex, defaultSelect, required, element.Location);
+        slot = new ParamSlot(name, defaultSelect, required, element.Location);
         return true;
     }
 
     // ── Control flow ───────────────────────────────────────────────────────
 
-    private static XsltInstruction? CompileIf(StylesheetElement element, DiagnosticBag bag)
+    private static XsltInstruction? CompileIf(StylesheetElement element, XsltCompileScope scope, DiagnosticBag bag)
     {
         string? testAttr = GetAttribute(element, "test");
         if (testAttr is null)
@@ -148,16 +348,16 @@ internal static class InstructionCompiler
             return null;
         }
 
-        if (!TryCompileXPath(testAttr, element, bag, out ExpressionNode? test))
+        if (!TryCompileXPath(testAttr, element, scope, bag, out BoundExpression? test))
         {
             return null;
         }
 
-        XsltInstruction body = CompileChildren(element, bag);
+        XsltInstruction body = CompileChildren(element, scope, bag);
         return new IfInstruction(test!, body, element.Location);
     }
 
-    private static XsltInstruction? CompileChoose(StylesheetElement element, DiagnosticBag bag)
+    private static XsltInstruction? CompileChoose(StylesheetElement element, XsltCompileScope scope, DiagnosticBag bag)
     {
         List<ChooseBranch> whens = new List<ChooseBranch>();
         XsltInstruction? otherwise = null;
@@ -179,16 +379,16 @@ internal static class InstructionCompiler
                         continue;
                     }
 
-                    if (!TryCompileXPath(testAttr, child, bag, out ExpressionNode? test))
+                    if (!TryCompileXPath(testAttr, child, scope, bag, out BoundExpression? test))
                     {
                         continue;
                     }
 
-                    whens.Add(new ChooseBranch(test!, CompileChildren(child, bag)));
+                    whens.Add(new ChooseBranch(test!, CompileChildren(child, scope, bag)));
                     break;
 
                 case "otherwise":
-                    otherwise = CompileChildren(child, bag);
+                    otherwise = CompileChildren(child, scope, bag);
                     break;
             }
         }
@@ -196,7 +396,7 @@ internal static class InstructionCompiler
         return new ChooseInstruction(whens, otherwise, element.Location);
     }
 
-    private static XsltInstruction? CompileForEach(StylesheetElement element, DiagnosticBag bag)
+    private static XsltInstruction? CompileForEach(StylesheetElement element, XsltCompileScope scope, DiagnosticBag bag)
     {
         string? selectAttr = GetAttribute(element, "select");
         if (selectAttr is null)
@@ -205,21 +405,21 @@ internal static class InstructionCompiler
             return null;
         }
 
-        if (!TryCompileXPath(selectAttr, element, bag, out ExpressionNode? select))
+        if (!TryCompileXPath(selectAttr, element, scope, bag, out BoundExpression? select))
         {
             return null;
         }
 
-        XsltInstruction body = CompileChildren(element, bag);
+        XsltInstruction body = CompileChildren(element, scope, bag);
         return new ForEachInstruction(select!, body, element.Location);
     }
 
     // ── apply-templates / call-template ────────────────────────────────────
 
-    private static XsltInstruction? CompileApplyTemplates(StylesheetElement element, DiagnosticBag bag)
+    private static XsltInstruction? CompileApplyTemplates(StylesheetElement element, XsltCompileScope scope, DiagnosticBag bag)
     {
         string selectAttr = GetAttribute(element, "select") ?? "child::node()";
-        if (!TryCompileXPath(selectAttr, element, bag, out ExpressionNode? select))
+        if (!TryCompileXPath(selectAttr, element, scope, bag, out BoundExpression? select))
         {
             return null;
         }
@@ -245,11 +445,11 @@ internal static class InstructionCompiler
             modeSpec = ApplyTemplatesMode.Named;
         }
 
-        List<WithParamInstruction> withParams = CollectWithParams(element, bag);
+        List<WithParamInstruction> withParams = CollectWithParams(element, scope, bag);
         return new ApplyTemplatesInstruction(select!, modeSpec, mode, withParams, element.Location);
     }
 
-    private static XsltInstruction? CompileCallTemplate(StylesheetElement element, DiagnosticBag bag)
+    private static XsltInstruction? CompileCallTemplate(StylesheetElement element, XsltCompileScope scope, DiagnosticBag bag)
     {
         string? nameAttr = GetAttribute(element, "name");
         if (nameAttr is null)
@@ -264,11 +464,11 @@ internal static class InstructionCompiler
             return null;
         }
 
-        List<WithParamInstruction> withParams = CollectWithParams(element, bag);
+        List<WithParamInstruction> withParams = CollectWithParams(element, scope, bag);
         return new CallTemplateInstruction(name, withParams, element.Location);
     }
 
-    private static List<WithParamInstruction> CollectWithParams(StylesheetElement parent, DiagnosticBag bag)
+    private static List<WithParamInstruction> CollectWithParams(StylesheetElement parent, XsltCompileScope scope, DiagnosticBag bag)
     {
         List<WithParamInstruction> list = new List<WithParamInstruction>();
         for (int i = 0; i < parent.Children.Count; i++)
@@ -297,10 +497,10 @@ internal static class InstructionCompiler
             }
 
             string? select = GetAttribute(child, "select");
-            ExpressionNode? expr = null;
+            BoundExpression? expr = null;
             if (!string.IsNullOrEmpty(select))
             {
-                if (!TryCompileXPath(select!, child, bag, out expr))
+                if (!TryCompileXPath(select!, child, scope, bag, out expr))
                 {
                     continue;
                 }
@@ -314,12 +514,14 @@ internal static class InstructionCompiler
 
     // ── Helpers ────────────────────────────────────────────────────────────
 
-    private static XsltInstruction CompileChildren(StylesheetElement element, DiagnosticBag bag)
+    private static XsltInstruction CompileChildren(StylesheetElement element, XsltCompileScope parentScope, DiagnosticBag bag)
     {
+        // Nested bodies get their own scope so xsl:variable declarations don't leak upward.
+        XsltCompileScope scope = parentScope.Enter();
         List<XsltInstruction> children = new List<XsltInstruction>();
         for (int i = 0; i < element.Children.Count; i++)
         {
-            XsltInstruction? instr = CompileNode(element.Children[i], bag);
+            XsltInstruction? instr = CompileNode(element.Children[i], scope, bag);
             if (instr is not null)
             {
                 children.Add(instr);
@@ -329,34 +531,34 @@ internal static class InstructionCompiler
         return children.Count switch
         {
             0 => SequenceInstruction.Empty,
-            1 => children[0],
+            1 => new SequenceInstruction(new XsltInstruction[] { children[0] }, element.Location),
             _ => new SequenceInstruction(children, element.Location),
         };
     }
 
-    private static bool TryCompileXPath(
+    internal static bool TryCompileXPath(
         string expression,
-        StylesheetElement scope,
+        StylesheetElement scopeElement,
+        XsltCompileScope scope,
         DiagnosticBag bag,
-        out ExpressionNode? compiled)
+        out BoundExpression? compiled)
     {
         try
         {
             NamespaceBindingsResolver resolver = new NamespaceBindingsResolver(
-                scope.InScopeNamespaces,
+                scopeElement.InScopeNamespaces,
                 defaultElementNamespace: string.Empty,
                 defaultFunctionNamespace: BuiltInFunctionLibrary.FnNamespace);
 
-            // P3-07 scope: no external variables are visible to the compiled expression; the
-            // globals + xsl:param plumbing lands in P3-08.
+            Dictionary<QName, SequenceType> externals = scope.AsExternalVariables();
             CompiledExpression ce = XPathCompiler.ParseAndCompile(
-                expression, scope.Location, resolver, BuiltInFunctionLibrary.Instance);
-            compiled = ce.Root;
+                expression, scopeElement.Location, resolver, BuiltInFunctionLibrary.Instance, externals);
+            compiled = new BoundExpression(ce.Root, ce.SlotCount, new List<QName>(scope.Names));
             return true;
         }
         catch (XTransformException ex)
         {
-            bag.Error(ex.ErrorCode, ex.Message, scope.Location);
+            bag.Error(ex.ErrorCode, ex.Message, scopeElement.Location);
             compiled = null;
             return false;
         }

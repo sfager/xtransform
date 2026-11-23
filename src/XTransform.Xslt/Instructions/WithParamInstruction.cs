@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using XTransform.Xdm;
 using XTransform.XPath;
 
@@ -11,7 +10,7 @@ namespace XTransform.Xslt.Instructions;
 internal sealed class WithParamInstruction
 {
     /// <summary>Initializes a with-param binding.</summary>
-    public WithParamInstruction(QName name, ExpressionNode? select, SourceSpan location)
+    public WithParamInstruction(QName name, BoundExpression? select, SourceSpan location)
     {
         Name = name;
         Select = select;
@@ -21,30 +20,22 @@ internal sealed class WithParamInstruction
     /// <summary>The parameter name.</summary>
     public QName Name { get; }
 
-    /// <summary>The compiled <c>@select</c> expression. <see langword="null"/> when a body produces the value (P3-08 scope).</summary>
-    public ExpressionNode? Select { get; }
+    /// <summary>The compiled <c>@select</c> expression. <see langword="null"/> when a body produces the value.</summary>
+    public BoundExpression? Select { get; }
 
     /// <summary>Source location.</summary>
     public SourceSpan Location { get; }
 
     /// <summary>Evaluates the with-param binding in the given context.</summary>
-    public XdmSequence Evaluate(DynamicContext context)
+    public XdmSequence Evaluate(DynamicContext context, XsltRunState run)
     {
         if (Select is null)
         {
-            // Body-provided parameter values land in P3-08 (temporary trees). For now,
-            // treat missing @select as the empty sequence.
+            // Body-provided parameter values land with xsl:variable body support; for now
+            // treat a missing @select as the empty sequence.
             return XdmSequence.Empty;
         }
 
-        List<XdmItem> items = new List<XdmItem>();
-        IXdmIterator iter = Select.Iterate(context);
-        XdmItem? item;
-        while ((item = iter.Next()) is not null)
-        {
-            items.Add(item);
-        }
-
-        return XdmSequence.From(items);
+        return Select.Evaluate(context, run);
     }
 }

@@ -19,17 +19,26 @@ internal sealed class XsltRunState
 
     private int _depth;
     private QName _currentMode = DeclarationCollector.DefaultMode;
+    private readonly List<KeyValuePair<QName, XdmSequence>> _variableStack = new List<KeyValuePair<QName, XdmSequence>>();
 
     /// <summary>Initializes a run state.</summary>
-    public XsltRunState(CompiledStylesheet stylesheet, RunState xpathRun, int maxRecursionDepth = DefaultMaxRecursionDepth)
+    public XsltRunState(
+        CompiledStylesheet stylesheet,
+        RunState xpathRun,
+        NamePool namePool,
+        int maxRecursionDepth = DefaultMaxRecursionDepth)
     {
         Stylesheet = stylesheet;
         XPathRun = xpathRun;
+        NamePool = namePool;
         MaxRecursionDepth = maxRecursionDepth;
     }
 
     /// <summary>The compiled stylesheet being executed.</summary>
     public CompiledStylesheet Stylesheet { get; }
+
+    /// <summary>Name pool shared with the receiver chain; used by output instructions to allocate name codes.</summary>
+    public NamePool NamePool { get; }
 
     /// <summary>The underlying XPath run state (current-dateTime, cancellation, timezone).</summary>
     public RunState XPathRun { get; }
@@ -79,6 +88,59 @@ internal sealed class XsltRunState
         {
             _depth--;
         }
+    }
+
+    // ── Variable scope ─────────────────────────────────────────────────────
+
+    /// <summary>Marker used by <see cref="PushVariable"/>/<see cref="RestoreVariablesTo"/> to bound a scope.</summary>
+    public int VariableScopeMarker => _variableStack.Count;
+
+    /// <summary>Pushes a variable binding onto the stack. Later lookups see this value until it is popped.</summary>
+    public void PushVariable(QName name, XdmSequence value)
+    {
+        _variableStack.Add(new KeyValuePair<QName, XdmSequence>(name, value));
+    }
+
+    /// <summary>Pops every binding added after <paramref name="marker"/>.</summary>
+    public void RestoreVariablesTo(int marker)
+    {
+        while (_variableStack.Count > marker)
+        {
+            _variableStack.RemoveAt(_variableStack.Count - 1);
+        }
+    }
+
+    /// <summary>Lazily-cached global variable values, keyed by expanded name.</summary>
+    public Dictionary<QName, XdmSequence> Globals { get; } = new Dictionary<QName, XdmSequence>();
+
+    /// <summary>Global variables currently being evaluated; used for XTDE0640 cycle detection.</summary>
+    public HashSet<QName> GlobalsInProgress { get; } = new HashSet<QName>();
+
+    /// <summary>External parameter overrides supplied by the caller (consumed by the global evaluator).</summary>
+    public Dictionary<QName, XdmSequence> ExternalParameters { get; } = new Dictionary<QName, XdmSequence>();
+
+    /// <summary>
+    /// Looks up the current value of a variable. Searches the local scope stack top-down
+    /// first, then falls back to <see cref="Globals"/>. Returns <see cref="XdmSequence.Empty"/>
+    /// when nothing is bound — the compiler would have caught undeclared references via
+    /// XPST0008 in P3-04, so the empty fallback is only hit during bootstrap (initial globals).
+    /// </summary>
+    public XdmSequence LookupVariable(QName name)
+    {
+        for (int i = _variableStack.Count - 1; i >= 0; i--)
+        {
+            if (_variableStack[i].Key.Equals(name))
+            {
+                return _variableStack[i].Value;
+            }
+        }
+
+        if (Globals.TryGetValue(name, out XdmSequence? value))
+        {
+            return value;
+        }
+
+        return XdmSequence.Empty;
     }
 }
 
