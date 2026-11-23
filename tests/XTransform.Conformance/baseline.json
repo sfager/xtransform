@@ -1,12 +1,12 @@
 {
-  "description": "Pass-rate floor for the QT3 parse-only harness. CI fails the conformance job if the measured pass-rate drops below 'minimumPassRate' or the in-scope count changes by more than 1%. Update this file only in a dedicated commit that explains the change (parser improvement, test-suite pin bump, filter revision).",
-  "gate": "G1",
+  "description": "Pass-rate floor for the QT3 full-evaluation harness. CI fails the conformance job if the measured pass-rate drops below 'minimumPassRate' or the in-scope count changes by more than 1%. Update this file only in a dedicated commit that explains the change (evaluator improvement, test-suite pin bump, filter revision).",
+  "gate": "G2",
   "suite": "QT3",
-  "mode": "parse-only",
+  "mode": "full-evaluation",
   "qt3Commit": "201a6e466940cdfc727f4babfedcde5332b9f578",
-  "measuredAt": "2026-11-21",
+  "measuredAt": "2026-11-23",
   "inScopeCount": 15326,
-  "passed": 15258,
-  "knownFailures": 68,
-  "minimumPassRate": 0.995
+  "passed": 13916,
+  "knownFailures": 1410,
+  "minimumPassRate": 0.85
 }

@@ -9,7 +9,9 @@ using NUnit.Framework;
 namespace XTransform.Conformance;
 
 /// <summary>
-/// QT3 conformance tests running in parse-only mode (gate G1).
+/// QT3 conformance tests.
+/// Default mode: full evaluation (gate G2).
+/// Set XTRANSFORM_CONFORMANCE_MODE=parse to run parse-only (gate G1).
 /// All tests in this class are tagged [Category("Conformance")] and are skipped when the
 /// QT3 test suite directory is absent.
 /// </summary>
@@ -17,13 +19,23 @@ namespace XTransform.Conformance;
 [Category("Conformance")]
 internal sealed class Qt3ConformanceTests
 {
+    // ── Mode ──────────────────────────────────────────────────────────────────
+
+    private static readonly string s_mode =
+        Environment.GetEnvironmentVariable("XTRANSFORM_CONFORMANCE_MODE") ?? "full";
+
+    private static bool IsFullEvalMode =>
+        !string.Equals(s_mode, "parse", StringComparison.OrdinalIgnoreCase);
+
     // ── Static discovery (must run before TestCaseSource is evaluated) ────────
 
     private static readonly Lazy<DiscoveryState> s_state = new(DiscoverLazy);
 
     private sealed record DiscoveryState(
         string? Qt3Root,
+        Qt3Catalog? Catalog,
         IReadOnlyList<Qt3TestInstance> Cases,
+        IReadOnlyList<Qt3TestSet> TestSets,
         KnownFailures KnownFailures);
 
     private static DiscoveryState DiscoverLazy()
@@ -31,16 +43,20 @@ internal sealed class Qt3ConformanceTests
         string? root = Qt3TestSuiteLocator.FindQt3Root();
         if (root is null)
         {
-            return new DiscoveryState(null, Array.Empty<Qt3TestInstance>(), new KnownFailures(null));
+            return new DiscoveryState(null, null, Array.Empty<Qt3TestInstance>(),
+                Array.Empty<Qt3TestSet>(), new KnownFailures(null));
         }
 
         Qt3Catalog catalog = Qt3Catalog.Load(root);
 
         // Known failures are loaded relative to the test output dir; during discovery
         // TestContext.CurrentContext.TestDirectory is available.
-        KnownFailures known = KnownFailures.LoadForG1(TestContext.CurrentContext.TestDirectory);
+        KnownFailures known = IsFullEvalMode
+            ? KnownFailures.LoadForG2(TestContext.CurrentContext.TestDirectory)
+            : KnownFailures.LoadForG1(TestContext.CurrentContext.TestDirectory);
 
         List<Qt3TestInstance> cases = new();
+        List<Qt3TestSet> sets = new();
 
         foreach (Qt3TestSetRef setRef in catalog.TestSetRefs)
         {
@@ -51,6 +67,7 @@ internal sealed class Qt3ConformanceTests
             }
 
             Qt3TestSet set = Qt3TestSet.Load(setFilePath);
+            sets.Add(set);
             string area = DeriveArea(setRef.File);
 
             foreach (Qt3TestCase tc in set.TestCases)
@@ -60,11 +77,11 @@ internal sealed class Qt3ConformanceTests
                     continue;
                 }
 
-                cases.Add(new Qt3TestInstance(setRef.Name, tc, area));
+                cases.Add(new Qt3TestInstance(setRef.Name, tc, area, set));
             }
         }
 
-        return new DiscoveryState(root, cases, known);
+        return new DiscoveryState(root, catalog, cases, sets, known);
     }
 
     // ── Per-test result tracking for the summary report ───────────────────────
@@ -93,7 +110,7 @@ internal sealed class Qt3ConformanceTests
     // ── Test method ───────────────────────────────────────────────────────────
 
     [TestCaseSource(nameof(DiscoverCases))]
-    public void ParseOnly(Qt3TestInstance? instance)
+    public void Evaluate(Qt3TestInstance? instance)
     {
         if (instance is null)
         {
@@ -110,20 +127,47 @@ internal sealed class Qt3ConformanceTests
             return;
         }
 
-        // Parse-only agreement: phase-1-tasks.md P1-14 says "checks only parses vs
-        // expects XPST0003". We are strict: parser must throw iff XPST0003 is one of the
-        // expected error codes. Other XPST*/XPTY*/XPDY*/FORG*/etc. codes are runtime
-        // concerns and the parser should accept the expression for parse-only purposes.
-        bool expectsXpst0003 = instance.Case.Result.ExpectedErrorCodes.Contains(
-            "XPST0003", StringComparer.Ordinal);
-        Qt3ParseOnlyRunner.Result result = Qt3ParseOnlyRunner.Run(
-            instance.Case.TestExpression, expectsXpst0003);
-
-        RecordOutcome(instance.Area, result.Outcome);
-
-        if (result.Outcome == Qt3ParseOnlyRunner.Outcome.Fail)
+        if (!IsFullEvalMode)
         {
-            Assert.Fail(result.Detail ?? "Parse-only check failed.");
+            // Parse-only agreement: phase-1-tasks.md P1-14 says "checks only parses vs
+            // expects XPST0003". We are strict: parser must throw iff XPST0003 is one of the
+            // expected error codes. Other XPST*/XPTY*/XPDY*/FORG*/etc. codes are runtime
+            // concerns and the parser should accept the expression for parse-only purposes.
+            bool expectsXpst0003 = instance.Case.Result.ExpectedErrorCodes.Contains(
+                "XPST0003", StringComparer.Ordinal);
+            Qt3ParseOnlyRunner.Result parseResult = Qt3ParseOnlyRunner.Run(
+                instance.Case.TestExpression, expectsXpst0003);
+
+            RecordOutcome(instance.Area, parseResult.Outcome);
+
+            if (parseResult.Outcome == Qt3ParseOnlyRunner.Outcome.Fail)
+            {
+                Assert.Fail(parseResult.Detail ?? "Parse-only check failed.");
+            }
+
+            return;
+        }
+
+        // Full evaluation mode (G2)
+        Qt3EvaluationResult result = Qt3FullEvaluationRunner.Run(
+            instance, state.Catalog!, instance.TestSet);
+
+        switch (result.Outcome)
+        {
+            case EvaluationOutcome.Pass:
+                RecordOutcome(instance.Area, Qt3ParseOnlyRunner.Outcome.Pass);
+                break;
+
+            case EvaluationOutcome.Skip:
+                RecordOutcome(instance.Area, Qt3ParseOnlyRunner.Outcome.Skipped);
+                Assert.Ignore(result.Detail ?? "Skipped.");
+                break;
+
+            case EvaluationOutcome.Fail:
+            default:
+                RecordOutcome(instance.Area, Qt3ParseOnlyRunner.Outcome.Fail);
+                Assert.Fail(result.Detail ?? "Full-evaluation check failed.");
+                break;
         }
     }
 
@@ -166,13 +210,15 @@ internal sealed class Qt3ConformanceTests
         // count as in-scope without results — ensure we reflect total discovery count.
         long discoveredInScope = state.Cases.Count;
 
+        string modeLabel = IsFullEvalMode ? "full-evaluation (gate G2)" : "parse-only (gate G1)";
+
         using StreamWriter w = new(summaryPath, false, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
 
-        w.WriteLine("# QT3 conformance — parse-only (gate G1)");
+        w.WriteLine($"# QT3 conformance — {modeLabel}");
         w.WriteLine();
         w.WriteLine("- Pinned commit: `201a6e466940cdfc727f4babfedcde5332b9f578`");
         w.WriteLine($"- Generated: {DateTime.UtcNow:yyyy-MM-ddTHH:mm:ssZ}");
-        w.WriteLine("- Expression harness: XPathParser.ParseExpression (parse succeeded == test does not expect XPST0003)");
+        w.WriteLine($"- Mode: {modeLabel}");
         w.WriteLine();
         w.WriteLine("## Totals");
         w.WriteLine();
@@ -209,10 +255,12 @@ internal sealed class Qt3ConformanceTests
         string jsonPath = Path.Combine(artifactsDir, "qt3-summary.json");
         using (StreamWriter jw = new(jsonPath, false, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false)))
         {
+            string gate = IsFullEvalMode ? "G2" : "G1";
+            string modeName = IsFullEvalMode ? "full-evaluation" : "parse-only";
             jw.WriteLine("{");
-            jw.WriteLine("  \"gate\": \"G1\",");
+            jw.WriteLine($"  \"gate\": \"{gate}\",");
             jw.WriteLine("  \"suite\": \"QT3\",");
-            jw.WriteLine("  \"mode\": \"parse-only\",");
+            jw.WriteLine($"  \"mode\": \"{modeName}\",");
             jw.WriteLine("  \"qt3Commit\": \"201a6e466940cdfc727f4babfedcde5332b9f578\",");
             jw.WriteLine($"  \"generatedUtc\": \"{DateTime.UtcNow:yyyy-MM-ddTHH:mm:ssZ}\",");
             jw.WriteLine($"  \"inScopeDiscovered\": {discoveredInScope},");
@@ -271,7 +319,7 @@ internal sealed class Qt3ConformanceTests
 }
 
 /// <summary>A fully-resolved test instance ready for execution.</summary>
-internal sealed record Qt3TestInstance(string TestSetName, Qt3TestCase Case, string Area)
+internal sealed record Qt3TestInstance(string TestSetName, Qt3TestCase Case, string Area, Qt3TestSet TestSet)
 {
     /// <summary>The short key used in the known-failures file: <c>setName/caseName</c>.</summary>
     public string FullName => $"{TestSetName}/{Case.Name}";

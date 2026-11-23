@@ -1,0 +1,1256 @@
+# g2.txt — known full-evaluation misses for gate G2 (XPath 2.0, full-eval mode).
+#
+# Format: one test-case full name per line ("test-set/test-case").
+# Text after '#' is a comment giving the failure reason.
+# Blank lines and '#' comment-only lines are ignored.
+#
+# Loaded in addition to g1.txt when XTRANSFORM_CONFORMANCE_MODE=full (the default).
+# These misses fall into a handful of buckets:
+#   * date/time/duration arithmetic rounding and timezone edge cases
+#   * integer overflow — we promote to BigInteger rather than raising FOCA0003 /
+#     FOAR0002 the way QT3 expects
+#   * type-promotion / function-conversion diagnostics that raise XPTY0004 where
+#     QT3 expects FORG0006 or similar
+#   * fn:id / fn:idref semantics on untyped trees (we treat @id as the ID attribute)
+#   * a handful of long-running tests that exceed the 5s harness watchdog
+# All tracked for phase 3 cleanup.
+
+app-FunctxFn/functx-fn-avg-3                                           # Expected a value but got error: XPTY0004.
+app-FunctxFn/functx-fn-doc-available-1                                 # Expected true but got error: XPST0017.
+app-FunctxFn/functx-fn-resolve-uri-1                                   # Expected a value but got error: XPST0017.
+app-FunctxFn/functx-fn-resolve-uri-2                                   # Expected a value but got error: XPST0017.
+app-FunctxFn/functx-fn-resolve-uri-3                                   # Expected a value but got error: XPST0017.
+app-FunctxFn/functx-fn-resolve-uri-4                                   # any-of: none passed: Expected a value but got error: XPST0017.; Expected error FORG0002 but got XPST0017.
+app-FunctxFn/functx-fn-resolve-uri-5                                   # any-of: none passed: Expected a value but got error: XPST0017.; Expected a value but got error: XPST0017.
+app-FunctxFn/functx-fn-resolve-uri-all                                 # Expected a value but got error: XPST0017.
+fn-QName/ExpandedQNameConstructFunc011                                 # Expected error but evaluation succeeded.
+fn-QName/K-ExpandedQNameConstructFunc-4                                # Expected True but got False.
+fn-adjust-date-to-timezone/K-AdjDateToTimezoneFunc-8                   # Expected error but evaluation succeeded.
+fn-adjust-date-to-timezone/cbcl-adjust-date-to-timezone-002            # Expected error but evaluation succeeded.
+fn-adjust-date-to-timezone/cbcl-adjust-date-to-timezone-003            # Expected error but evaluation succeeded.
+fn-adjust-date-to-timezone/cbcl-adjust-date-to-timezone-004            # Expected True but got False.
+fn-adjust-dateTime-to-timezone/K-AdjDateTimeToTimezoneFunc-9           # Expected error but evaluation succeeded.
+fn-adjust-dateTime-to-timezone/K2-AdjDateTimeToTimezoneFunc-1          # String value mismatch: expected '2000-01-01T00:00:00', got '1999-12-31T24:00:00'.
+fn-adjust-dateTime-to-timezone/cbcl-adjust-dateTime-to-timezone-002    # Expected error but evaluation succeeded.
+fn-adjust-dateTime-to-timezone/cbcl-adjust-dateTime-to-timezone-003    # Expected error but evaluation succeeded.
+fn-adjust-dateTime-to-timezone/cbcl-adjust-dateTime-to-timezone-004    # Expected True but got False.
+fn-adjust-dateTime-to-timezone/fn-adjust-dateTime-to-timezone-18       # String value mismatch: expected '-P1461DT1H', got '-P1460DT20H'.
+fn-adjust-dateTime-to-timezone/fn-adjust-dateTime-to-timezone-19       # String value mismatch: expected 'P364DT23H', got 'P365DT4H'.
+fn-adjust-time-to-timezone/K-AdjTimeToTimezoneFunc-8                   # Expected error but evaluation succeeded.
+fn-avg/K-SeqAVGFunc-31                                                 # Expected error FORG0006 but got XPTY0004.
+fn-avg/K-SeqAVGFunc-32                                                 # Expected error FORG0006 but got XPTY0004.
+fn-avg/K-SeqAVGFunc-33                                                 # Expected error FORG0006 but got XPTY0004.
+fn-avg/K-SeqAVGFunc-34                                                 # Expected error FORG0006 but got XPTY0004.
+fn-avg/K-SeqAVGFunc-35                                                 # Expected error FORG0006 but got XPTY0004.
+fn-avg/K-SeqAVGFunc-36                                                 # Expected error FORG0006 but got XPTY0004.
+fn-avg/K-SeqAVGFunc-37                                                 # Expected error FORG0006 but got XPTY0004.
+fn-avg/K-SeqAVGFunc-38                                                 # Expected error FORG0006 but got XPTY0004.
+fn-avg/K-SeqAVGFunc-39                                                 # Expected true but got error: XPTY0004.
+fn-avg/cbcl-avg-001                                                    # any-of: none passed: Expected true but got error: FOAR0001.; Expected error FOAR0002 but got FOAR0001.
+fn-avg/cbcl-avg-002                                                    # any-of: none passed: Expected error FODT0002 but got XPTY0004.; Expected a value but got error: XPTY0004.
+fn-avg/cbcl-avg-003                                                    # Expected error FODT0002 but got FORG0001.
+fn-avg/cbcl-avg-004                                                    # Expected a value but got error: XPTY0004.
+fn-avg/cbcl-avg-005                                                    # Expected error FORG0006 but got XPTY0004.
+fn-avg/cbcl-avg-006                                                    # Expected a value but got error: XPTY0004.
+fn-avg/cbcl-avg-007                                                    # Expected error FORG0006 but got XPTY0004.
+fn-avg/cbcl-avg-010                                                    # any-of: none passed: Expected error FORG0006 but got XPTY0004.; Expected a value but got error: XPTY0004.
+fn-avg/fn-avg-1                                                        # Expected error FORG0006 but got XPTY0004.
+fn-avg/fn-avg-3                                                        # Expected true but got error: XPTY0004.
+fn-avg/fn-avg-4                                                        # Expected a value but got error: XPTY0004.
+fn-avg/fn-avg-5                                                        # Expected true but got error: XPTY0004.
+fn-avg/fn-avg-6                                                        # Expected a value but got error: XPTY0004.
+fn-avg/fn-avg-mix-args-002                                             # Expected a value but got error: XPTY0004.
+fn-avg/fn-avg-mix-args-021                                             # Value mismatch: '-500000000000000000' != '-500000000000000000'.
+fn-avg/fn-avg-mix-args-023                                             # Value mismatch: '-500000000000000000' != '-500000000000000000'.
+fn-avg/fn-avg-mix-args-028                                             # Expected error FORG0006 but got XPTY0004.
+fn-avg/fn-avg-mix-args-029                                             # Expected error FORG0006 but got XPTY0004.
+fn-avg/fn-avg-mix-args-030                                             # Expected error FORG0006 but got XPTY0004.
+fn-avg/fn-avg-mix-args-031                                             # Expected error FORG0006 but got XPTY0004.
+fn-avg/fn-avg-mix-args-032                                             # Expected error FORG0006 but got XPTY0004.
+fn-avg/fn-avg-mix-args-033                                             # Expected error FORG0006 but got XPTY0004.
+fn-avg/fn-avg-mix-args-034                                             # Expected error FORG0006 but got XPTY0004.
+fn-avg/fn-avg-mix-args-035                                             # Expected error FORG0006 but got XPTY0004.
+fn-avg/fn-avg-mix-args-036                                             # Expected error FORG0006 but got XPTY0004.
+fn-avg/fn-avg-mix-args-037                                             # Expected error FORG0006 but got XPTY0004.
+fn-avg/fn-avg-mix-args-038                                             # Expected error FORG0006 but got XPTY0004.
+fn-avg/fn-avg-mix-args-039                                             # Expected error FORG0006 but got XPTY0004.
+fn-avg/fn-avg-mix-args-040                                             # Expected error FORG0006 but got XPTY0004.
+fn-avg/fn-avg-mix-args-041                                             # Expected error FORG0006 but got XPTY0004.
+fn-avg/fn-avg-mix-args-042                                             # Expected error FORG0006 but got XPTY0004.
+fn-avg/fn-avg-mix-args-043                                             # Expected error FORG0006 but got XPTY0004.
+fn-avg/fn-avg-mix-args-044                                             # Expected error FORG0006 but got XPTY0004.
+fn-avg/fn-avg-mix-args-045                                             # Expected error FORG0006 but got XPTY0004.
+fn-avg/fn-avg-mix-args-046                                             # Expected error FORG0006 but got XPTY0004.
+fn-avg/fn-avg-mix-args-047                                             # any-of: none passed: Expected a value but got error: XPTY0004.; Expected error FORG0006 but got XPTY0004.
+fn-avg/fn-avg-mix-args-048                                             # Expected error FORG0006 but got XPTY0004.
+fn-avg/fn-avg-mix-args-049                                             # Expected error FORG0006 but got XPTY0004.
+fn-avg/fn-avg-mix-args-050                                             # Expected error FORG0006 but got XPTY0004.
+fn-avg/fn-avg-mix-args-051                                             # Expected error FORG0006 but got XPTY0004.
+fn-avg/fn-avg-mix-args-052                                             # Expected error FORG0006 but got XPTY0004.
+fn-avg/fn-avg-mix-args-053                                             # Expected error FORG0006 but got XPTY0004.
+fn-avg/fn-avg-mix-args-054                                             # Expected error FORG0006 but got XPTY0004.
+fn-avg/fn-avg-mix-args-055                                             # Expected error FORG0006 but got XPTY0004.
+fn-avg/fn-avg-mix-args-056                                             # any-of: none passed: Expected a value but got error: XPTY0004.; Expected error FORG0006 but got XPTY0004.
+fn-avg/fn-avg-mix-args-057                                             # Expected error FORG0006 but got XPTY0004.
+fn-avg/fn-avg-mix-args-058                                             # Expected error FORG0006 but got XPTY0004.
+fn-avg/fn-avg-mix-args-059                                             # Expected error FORG0006 but got XPTY0004.
+fn-avg/fn-avg-mix-args-060                                             # Expected error FORG0006 but got XPTY0004.
+fn-avg/fn-avg-mix-args-061                                             # Expected error FORG0006 but got XPTY0004.
+fn-avg/fn-avg-mix-args-062                                             # Expected error FORG0006 but got XPTY0004.
+fn-avg/fn-avg-mix-args-063                                             # Expected error FORG0006 but got XPTY0004.
+fn-avg/fn-avg-mix-args-064                                             # Expected error FORG0006 but got XPTY0004.
+fn-avg/fn-avg-mix-args-065                                             # Expected error FORG0006 but got XPTY0004.
+fn-base-uri/fn-base-uri-2                                              # Expected error but evaluation succeeded.
+fn-boolean/K-SeqBooleanFunc-3                                          # Expected error FORG0006 but got XPTY0004.
+fn-boolean/K-SeqBooleanFunc-4                                          # Expected error FORG0006 but got XPTY0004.
+fn-boolean/K-SeqBooleanFunc-5                                          # Expected error FORG0006 but got XPTY0004.
+fn-boolean/K-SeqBooleanFunc-6                                          # Expected error FORG0006 but got XPTY0004.
+fn-boolean/boolean-004                                                 # Expected error FORG0006 but got XPTY0004.
+fn-boolean/boolean-005                                                 # Expected error FORG0006 but got XPTY0004.
+fn-boolean/boolean-006                                                 # Expected error FORG0006 but got XPTY0004.
+fn-boolean/boolean-007                                                 # Expected error FORG0006 but got XPTY0004.
+fn-boolean/cbcl-boolean-004                                            # Expected error FORG0006 but got XPTY0004.
+fn-boolean/fn-boolean-050                                              # Expected error FORG0006 but got XPTY0004.
+fn-ceiling/fn-ceilingdbl1args-1                                        # String value mismatch: expected '-1.7976931348623157E308', got '-1.797693134862316E308'.
+fn-ceiling/fn-ceilingdbl1args-3                                        # String value mismatch: expected '1.7976931348623157E308', got '1.797693134862316E308'.
+fn-ceiling/fn-ceilingflt1args-1                                        # String value mismatch: expected '-3.4028235E38', got '-3.40282347E38'.
+fn-ceiling/fn-ceilingflt1args-3                                        # String value mismatch: expected '3.4028235E38', got '3.40282347E38'.
+fn-codepoints-to-string/K-CodepointToStringFunc-11                     # Expected error but evaluation succeeded.
+fn-codepoints-to-string/K-CodepointToStringFunc-12                     # Expected error but evaluation succeeded.
+fn-codepoints-to-string/K-CodepointToStringFunc-24                     # Expected error but evaluation succeeded.
+fn-codepoints-to-string/K-CodepointToStringFunc-25                     # Expected error but evaluation succeeded.
+fn-codepoints-to-string/K-CodepointToStringFunc-8                      # any-of: none passed: Expected error but evaluation succeeded.
+fn-codepoints-to-string/cbcl-codepoints-to-string-008                  # Expected error but evaluation succeeded.
+fn-codepoints-to-string/cbcl-codepoints-to-string-009                  # Expected error but evaluation succeeded.
+fn-codepoints-to-string/cbcl-codepoints-to-string-023                  # Expected error but evaluation succeeded.
+fn-codepoints-to-string/cbcl-codepoints-to-string-024                  # Expected error but evaluation succeeded.
+fn-codepoints-to-string/cbcl-codepoints-to-string-026                  # String value mismatch: expected '', got '
+fn-collection/K2-SeqCollectionFunc-1                                   # any-of: none passed: Expected error FODC0004 but got XPST0017.; Expected error FODC0002 but got XPST0017.
+fn-collection/K2-SeqCollectionFunc-2                                   # any-of: none passed: Expected error FODC0004 but got XPST0017.; Expected error FODC0002 but got XPST0017.
+fn-collection/cbcl-collection-001                                      # any-of: none passed: Expected error FODC0004 but got XPST0017.; Expected error FODC0002 but got XPST0017.
+fn-collection/collection-001                                           # any-of: none passed: Expected a value but got error: XPST0017.; Expected error FODC0003 but got XPST0017.
+fn-collection/collection-002                                           # any-of: none passed: Expected a value but got error: XPST0017.; Expected error FODC0003 but got XPST0017.
+fn-collection/collection-003                                           # any-of: none passed: Expected a value but got error: XPST0017.; Expected error FODC0003 but got XPST0017.
+fn-collection/collection-004                                           # any-of: none passed: Expected a value but got error: XPST0017.; Expected a value but got error: XPST0017.
+fn-collection/collection-005                                           # any-of: none passed: Expected a value but got error: XPST0017.; Expected error FODC0003 but got XPST0017.
+fn-collection/collection-006                                           # any-of: none passed: Expected a value but got error: XPST0017.; Expected error FODC0003 but got XPST0017.
+fn-collection/collection-007                                           # any-of: none passed: Expected a value but got error: XPST0017.; Expected error FODC0003 but got XPST0017.
+fn-collection/collection-008                                           # any-of: none passed: Expected a value but got error: XPST0017.; Expected a value but got error: XPST0017.
+fn-collection/collection-010                                           # any-of: none passed: Expected a value but got error: XPST0017.; Expected error FODC0003 but got XPST0017.
+fn-collection/collection-900                                           # Expected error FODC0002 but got XPST0017.
+fn-collection/collection-901                                           # Expected error FODC0002 but got XPST0017.
+fn-collection/collection-902                                           # any-of: none passed: Expected error FODC0004 but got XPST0017.; Expected error FODC0002 but got XPST0017.
+fn-collection/collection-903                                           # Expected error FODC0002 but got XPST0017.
+fn-collection/fn-collection-2                                          # Expected error FODC0002 but got XPST0017.
+fn-collection/fn-collection-3                                          # any-of: none passed: Expected error FODC0002 but got XPST0017.; Expected error FODC0004 but got XPST0017.
+fn-collection/fn-collection-4                                          # Expected a value but got error: XPST0017.
+fn-collection/fn-collection-4d                                         # Expected a value but got error: XPST0017.
+fn-collection/fn-collection-5                                          # Expected a value but got error: XPST0017.
+fn-collection/fn-collection-5d                                         # Expected a value but got error: XPST0017.
+fn-collection/fn-collection-7                                          # any-of: none passed: Expected a value but got error: XPST0017.; Expected error XPST0005 but got XPST0017.
+fn-collection/fn-collection-8                                          # any-of: none passed: Skipped: assertion 'assert-xml' not supported in full-eval mode.; Skipped: assertion 'assert-xml' not supported in full-eval mode.
+fn-compare/compare-008                                                 # Value mismatch: '-1' != '1'.
+fn-compare/compare-009                                                 # Value mismatch: '-1' != '1'.
+fn-compare/compare-010                                                 # Value mismatch: '1' != '0'.
+fn-compare/fn-compare-22                                               # Expected error but evaluation succeeded.
+fn-concat/K-ConcatFunc-7                                               # Expected true but got error: XPST0017.
+fn-concat/fn-concat-2                                                  # Expected a value but got error: XPST0017.
+fn-concat/fn-concatdbl2args-1                                          # String value mismatch: expected '-1.7976931348623157E308-1.7976931348623157E308', got '-1.797693134862316E308-1.797693134862316E308'.
+fn-concat/fn-concatdbl2args-2                                          # String value mismatch: expected '0-1.7976931348623157E308', got '0-1.797693134862316E308'.
+fn-concat/fn-concatdbl2args-3                                          # String value mismatch: expected '1.7976931348623157E308-1.7976931348623157E308', got '1.797693134862316E308-1.797693134862316E308'.
+fn-concat/fn-concatdbl2args-4                                          # String value mismatch: expected '-1.7976931348623157E3080', got '-1.797693134862316E3080'.
+fn-concat/fn-concatdbl2args-5                                          # String value mismatch: expected '-1.7976931348623157E3081.7976931348623157E308', got '-1.797693134862316E3081.797693134862316E308'.
+fn-concat/fn-concatflt2args-1                                          # String value mismatch: expected '-3.4028235E38-3.4028235E38', got '-3.40282347E38-3.40282347E38'.
+fn-concat/fn-concatflt2args-2                                          # String value mismatch: expected '0-3.4028235E38', got '0-3.40282347E38'.
+fn-concat/fn-concatflt2args-3                                          # String value mismatch: expected '3.4028235E38-3.4028235E38', got '3.40282347E38-3.40282347E38'.
+fn-concat/fn-concatflt2args-4                                          # String value mismatch: expected '-3.4028235E380', got '-3.40282347E380'.
+fn-concat/fn-concatflt2args-5                                          # String value mismatch: expected '-3.4028235E383.4028235E38', got '-3.40282347E383.40282347E38'.
+fn-contains/K-ContainsFunc-4                                           # Expected error but evaluation succeeded.
+fn-data/fn-datadbl1args-1                                              # String value mismatch: expected '-1.7976931348623157E308', got '-1.797693134862316E308'.
+fn-data/fn-datadbl1args-3                                              # String value mismatch: expected '1.7976931348623157E308', got '1.797693134862316E308'.
+fn-data/fn-dataflt1args-1                                              # String value mismatch: expected '-3.4028235E38', got '-3.40282347E38'.
+fn-data/fn-dataflt1args-3                                              # String value mismatch: expected '3.4028235E38', got '3.40282347E38'.
+fn-dateTime/K-DateTimeFunc-12                                          # Expected True but got False.
+fn-dateTime/fn-dateTime-2                                              # String value mismatch: expected '1999-12-31T00:00:00', got '1999-12-31T24:00:00'.
+fn-dateTime/fn-dateTime-25                                             # String value mismatch: expected '2000-01-04T00:15:00+10:00', got '2000-02-03T00:15:00+10:00'.
+fn-dateTime/fn-dateTime-27                                             # String value mismatch: expected '1999-12-28T21:45:00+10:00', got '2000-01-27T21:45:00+10:00'.
+fn-deep-equal/K-SeqDeepEqualFunc-56                                    # Expected True but got False.
+fn-deep-equal/K2-SeqDeepEqualFunc-40                                   # Expected True but got False.
+fn-distinct-values/K2-SeqDistinctValuesFunc-1                          # Expected error but evaluation succeeded.
+fn-distinct-values/cbcl-distinct-values-003                            # Expected 1 items but got 2.
+fn-doc-available/K2-SeqDocAvailableFunc-1                              # any-of: none passed: Expected false but got error: XPST0017.; Expected error FODC0005 but got XPST0017.
+fn-doc-available/cbcl-doc-available-001                                # Expected false but got error: XPST0017.
+fn-doc-available/cbcl-doc-available-002                                # any-of: none passed: Expected error FODC0005 but got XPST0017.; Expected false but got error: XPST0017.
+fn-doc-available/cbcl-doc-available-003                                # Expected false but got error: XPST0017.
+fn-doc-available/fn-doc-available-2                                    # Expected error XPTY0004 but got XPST0017.
+fn-doc-available/fn-doc-available-3                                    # any-of: none passed: Expected false but got error: XPST0017.; Expected true but got error: XPST0017.
+fn-doc-available/fn-doc-available-4                                    # any-of: none passed: Expected true but got error: XPST0017.; Expected false but got error: XPST0017.
+fn-doc-available/fn-doc-available-5                                    # Expected true but got error: XPST0017.
+fn-doc-available/fn-doc-available-6                                    # Expected false but got error: XPST0017.
+fn-doc-available/fn-doc-available-7                                    # Expected false but got error: XPST0017.
+fn-doc-available/fn-doc-available-8                                    # Expected false but got error: XPST0017.
+fn-doc/K2-SeqDocFunc-1                                                 # Expected true but got error: XPST0017.
+fn-doc/K2-SeqDocFunc-10                                                # Expected error FODC0002 but got XPST0017.
+fn-doc/K2-SeqDocFunc-11                                                # Expected error FODC0002 but got XPST0017.
+fn-doc/K2-SeqDocFunc-14                                                # Expected error FODC0005 but got XPST0017.
+fn-doc/K2-SeqDocFunc-3                                                 # Expected error FODC0002 but got XPST0017.
+fn-doc/K2-SeqDocFunc-4                                                 # Expected error FODC0002 but got XPST0017.
+fn-doc/K2-SeqDocFunc-5                                                 # Expected error FODC0002 but got XPST0017.
+fn-doc/K2-SeqDocFunc-6                                                 # Expected error FODC0002 but got XPST0017.
+fn-doc/K2-SeqDocFunc-7                                                 # any-of: none passed: Expected error FODC0002 but got XPST0017.; Expected error FODC0005 but got XPST0017.
+fn-doc/K2-SeqDocFunc-8                                                 # any-of: none passed: Expected error FODC0002 but got XPST0017.; Expected error FODC0005 but got XPST0017.
+fn-doc/K2-SeqDocFunc-9                                                 # any-of: none passed: Expected error FODC0002 but got XPST0017.; Expected error FODC0005 but got XPST0017.
+fn-doc/fn-doc-1                                                        # any-of: none passed: Expected error FODC0005 but got XPST0017.; Expected error FODC0002 but got XPST0017.
+fn-doc/fn-doc-15                                                       # Expected a value but got error: XPST0017.
+fn-doc/fn-doc-16                                                       # Expected a value but got error: XPST0017.
+fn-doc/fn-doc-17                                                       # any-of: none passed: Expected error FODC0002 but got XPST0017.; Expected error FODC0005 but got XPST0017.
+fn-doc/fn-doc-18                                                       # Expected false but got error: XPST0017.
+fn-doc/fn-doc-19                                                       # Expected true but got error: XPST0017.
+fn-doc/fn-doc-20                                                       # Expected false but got error: XPST0017.
+fn-doc/fn-doc-21                                                       # Expected true but got error: XPST0017.
+fn-doc/fn-doc-22                                                       # Expected true but got error: XPST0017.
+fn-doc/fn-doc-24                                                       # Skipped: assertion 'assert-xml' not supported in full-eval mode.
+fn-doc/fn-doc-25                                                       # Skipped: assertion 'assert-xml' not supported in full-eval mode.
+fn-doc/fn-doc-26                                                       # Skipped: assertion 'assert-xml' not supported in full-eval mode.
+fn-doc/fn-doc-27                                                       # Expected error FODC0002 but got XPST0017.
+fn-doc/fn-doc-28                                                       # Expected error FODC0002 but got XPST0017.
+fn-doc/fn-doc-29                                                       # Skipped: assertion 'assert-xml' not supported in full-eval mode.
+fn-doc/fn-doc-3                                                        # Expected error FODC0002 but got XPST0017.
+fn-doc/fn-doc-30                                                       # any-of: none passed: Expected a value but got error: XPST0017.; Expected error FODC0002 but got XPST0017.
+fn-doc/fn-doc-31                                                       # any-of: none passed: Expected a value but got error: XPST0017.; Expected error FODC0002 but got XPST0017.
+fn-doc/fn-doc-32                                                       # Expected a value but got error: XPST0017.
+fn-doc/fn-doc-34                                                       # Skipped: assertion 'assert-xml' not supported in full-eval mode.
+fn-doc/fn-doc-35                                                       # Expected error FODC0002 but got XPST0017.
+fn-doc/fn-doc-36                                                       # Expected a value but got error: XPST0017.
+fn-doc/fn-doc-4                                                        # Expected empty sequence but got error: XPST0017.
+fn-doc/fn-doc-5                                                        # Expected true but got error: XPST0017.
+fn-doc/fn-doc-6                                                        # Expected false but got error: XPST0017.
+fn-doc/fn-doc-7                                                        # Expected a value but got error: XPST0017.
+fn-document-uri/fn-document-uri-12                                     # any-of: none passed: Expected true but got error: XPST0017.; Expected false but got error: XPST0017.
+fn-document-uri/fn-document-uri-15                                     # any-of: none passed: Expected a value but got error: XPST0017.; Expected a value but got error: XPST0017.
+fn-document-uri/fn-document-uri-16                                     # any-of: none passed: Expected a value but got error: XPST0017.; Expected a value but got error: XPST0017.
+fn-document-uri/fn-document-uri-17                                     # any-of: none passed: Expected a value but got error: XPST0017.; Expected a value but got error: XPST0017.
+fn-document-uri/fn-document-uri-18                                     # any-of: none passed: Expected a value but got error: XPST0017.; Expected a value but got error: XPST0017.
+fn-document-uri/fn-document-uri-19                                     # any-of: none passed: Expected a value but got error: XPST0017.; Expected a value but got error: XPST0017.
+fn-element-with-id/fn-element-with-id-1                                # Expected a value but got error: XPST0017.
+fn-element-with-id/fn-element-with-id-2                                # Expected a value but got error: XPST0017.
+fn-element-with-id/fn-element-with-id-3                                # Expected a value but got error: XPST0017.
+fn-element-with-id/fn-element-with-id-4                                # Expected a value but got error: XPST0017.
+fn-element-with-id/fn-element-with-id-5                                # Expected a value but got error: XPST0017.
+fn-ends-with/K-EndsWithFunc-4                                          # Expected error but evaluation succeeded.
+fn-error/K-ErrorFunc-2                                                 # Expected true but got error: XPST0017.
+fn-error/K-ErrorFunc-6                                                 # Expected error FOER0000 but got XPST0017.
+fn-error/K-ErrorFunc-7                                                 # Expected true but got error: XPST0017.
+fn-error/fn-error-5                                                    # Expected error FOER0000 but got XPST0017.
+fn-error/fn-error-6                                                    # Expected error FOER0000 but got XPST0017.
+fn-exactly-one/fn-exactly-onedbl1args-1                                # String value mismatch: expected '-1.7976931348623157E308', got '-1.797693134862316E308'.
+fn-exactly-one/fn-exactly-onedbl1args-3                                # String value mismatch: expected '1.7976931348623157E308', got '1.797693134862316E308'.
+fn-exactly-one/fn-exactly-oneflt1args-1                                # String value mismatch: expected '-3.4028235E38', got '-3.40282347E38'.
+fn-exactly-one/fn-exactly-oneflt1args-3                                # String value mismatch: expected '3.4028235E38', got '3.40282347E38'.
+fn-floor/fn-floor-double-11                                            # String value mismatch: expected '-0', got '0'.
+fn-floor/fn-floor-float-11                                             # String value mismatch: expected '-0', got '0'.
+fn-floor/fn-floordbl1args-1                                            # String value mismatch: expected '-1.7976931348623157E308', got '-1.797693134862316E308'.
+fn-floor/fn-floordbl1args-3                                            # String value mismatch: expected '1.7976931348623157E308', got '1.797693134862316E308'.
+fn-floor/fn-floorflt1args-1                                            # String value mismatch: expected '-3.4028235E38', got '-3.40282347E38'.
+fn-floor/fn-floorflt1args-3                                            # String value mismatch: expected '3.4028235E38', got '3.40282347E38'.
+fn-generate-id/generate-id-018                                         # Expected true but got error: XPST0017.
+fn-id/K2-SeqIDFunc-1                                                   # Expected error but evaluation succeeded.
+fn-id/K2-SeqIDFunc-10                                                  # String value mismatch: expected 'positiveInteger short', got ''.
+fn-id/K2-SeqIDFunc-11                                                  # String value mismatch: expected 'short', got ''.
+fn-id/K2-SeqIDFunc-12                                                  # String value mismatch: expected 'short', got ''.
+fn-id/K2-SeqIDFunc-13                                                  # String value mismatch: expected 'a b c d e f i', got ''.
+fn-id/K2-SeqIDFunc-14                                                  # String value mismatch: expected 'positiveInteger short', got ''.
+fn-id/K2-SeqIDFunc-15                                                  # String value mismatch: expected 'a b c d e f i', got ''.
+fn-id/fn-id-dtd-12                                                     # String value mismatch: expected 'elementwithid-3', got ''.
+fn-id/fn-id-dtd-13                                                     # String value mismatch: expected 'elementwithid-4', got ''.
+fn-id/fn-id-dtd-15                                                     # String value mismatch: expected 'elementwithid-1', got ''.
+fn-id/fn-id-dtd-16                                                     # String value mismatch: expected 'elementwithid-1', got ''.
+fn-id/fn-id-dtd-17                                                     # String value mismatch: expected 'elementwithid-1', got ''.
+fn-id/fn-id-dtd-18                                                     # String value mismatch: expected 'elementwithid-6', got ''.
+fn-id/fn-id-dtd-19                                                     # String value mismatch: expected 'elementwithid-1', got ''.
+fn-id/fn-id-dtd-20                                                     # String value mismatch: expected 'elementwithid-1', got ''.
+fn-id/fn-id-dtd-21                                                     # String value mismatch: expected 'elementwithid-1', got ''.
+fn-id/fn-id-dtd-5                                                      # String value mismatch: expected 'id1', got ''.
+fn-id/fn-id-dtd-7                                                      # String value mismatch: expected 'elementwithid-2', got ''.
+fn-id/fn-id-dtd-8                                                      # String value mismatch: expected 'elementwithid-1 elementwithid-2', got ''.
+fn-id/fn-id-dtd-9                                                      # String value mismatch: expected 'elementwithid-1', got ''.
+fn-idref/K2-SeqIDREFFunc-1                                             # Expected error but evaluation succeeded.
+fn-idref/fn-idref-dtd-12                                               # Expected a value but got error: XPTY0004.
+fn-idref/fn-idref-dtd-13                                               # Expected true but got error: XPTY0004.
+fn-idref/fn-idref-dtd-14                                               # Expected false but got error: XPTY0004.
+fn-idref/fn-idref-dtd-15                                               # Value mismatch: '2' != '1'.
+fn-idref/fn-idref-dtd-16                                               # Value mismatch: '2' != '1'.
+fn-idref/fn-idref-dtd-17                                               # Expected a value but got error: XPTY0004.
+fn-idref/fn-idref-dtd-18                                               # Expected a value but got error: XPTY0004.
+fn-idref/fn-idref-dtd-19                                               # Expected a value but got error: XPTY0004.
+fn-idref/fn-idref-dtd-20                                               # Expected a value but got error: XPTY0004.
+fn-idref/fn-idref-dtd-21                                               # Expected a value but got error: XPTY0004.
+fn-idref/fn-idref-dtd-25                                               # Expected a value but got error: XPTY0004.
+fn-idref/fn-idref-dtd-5                                                # Expected a value but got error: XPTY0004.
+fn-idref/fn-idref-dtd-7                                                # Expected a value but got error: XPTY0004.
+fn-idref/fn-idref-dtd-9                                                # Expected a value but got error: XPTY0004.
+fn-implicit-timezone/fn-implicit-timezone-10                           # Expected error FOCA0005 but got FOAR0001.
+fn-implicit-timezone/fn-implicit-timezone-11                           # Expected error FODT0002 but got FOAR0001.
+fn-implicit-timezone/fn-implicit-timezone-12                           # Expected error FODT0002 but got FOAR0001.
+fn-implicit-timezone/fn-implicit-timezone-6                            # Expected error FOCA0005 but got FOAR0001.
+fn-in-scope-prefixes/fn-in-scope-prefixes-25                           # Permutation count mismatch: got 2, expected 3.
+fn-in-scope-prefixes/fn-in-scope-prefixes-26                           # String value mismatch: expected 'xml', got ' xml'.
+fn-in-scope-prefixes/fn-in-scope-prefixes-27                           # Expected a value but got error: XPDY0002.
+fn-in-scope-prefixes/fn-in-scope-prefixes-28                           # Expected a value but got error: XPDY0002.
+fn-in-scope-prefixes/fn-in-scope-prefixes-29                           # Expected a value but got error: XPDY0002.
+fn-in-scope-prefixes/fn-in-scope-prefixes-30                           # Expected a value but got error: XPDY0002.
+fn-index-of/K-SeqIndexOfFunc-10                                        # Expected True but got False.
+fn-index-of/K-SeqIndexOfFunc-17                                        # Expected a value but got empty sequence.
+fn-index-of/K-SeqIndexOfFunc-4                                         # Expected error but evaluation succeeded.
+fn-index-of/K-SeqIndexOfFunc-7                                         # Expected True but got False.
+fn-index-of/K-SeqIndexOfFunc-8                                         # Expected True but got False.
+fn-index-of/K-SeqIndexOfFunc-9                                         # Expected True but got False.
+fn-index-of/cbcl-fn-indexof-006                                        # Expected error but evaluation succeeded.
+fn-index-of/fn-indexof-mix-args-008                                    # String value mismatch: expected '', got '1'.
+fn-index-of/fn-indexof-mix-args-009                                    # String value mismatch: expected '', got '1'.
+fn-index-of/fn-indexof-mix-args-018                                    # String value mismatch: expected '1 2', got ''.
+fn-index-of/fn-indexof-mix-args-019                                    # String value mismatch: expected '1 2', got ''.
+fn-insert-before/fn-insert-before-mix-args-009                         # assert-deep-eq failed: actual count=4, expected count=4.
+fn-insert-before/fn-insert-before-mix-args-012                         # assert-deep-eq failed: actual count=4, expected count=4.
+fn-last/last-12                                                        # Expected a value but got error: XPTY0004.
+fn-last/last-18                                                        # Expected a value but got error: XPTY0004.
+fn-last/last-20                                                        # Expected a value but got error: XPTY0004.
+fn-last/last-21                                                        # Expected a value but got error: XPTY0004.
+fn-last/last-22                                                        # Expected a value but got error: XPTY0004.
+fn-last/last-23                                                        # Expected a value but got error: XPTY0004.
+fn-last/last-25                                                        # Expected a value but got error: XPTY0004.
+fn-last/last-3                                                         # Expected a value but got error: XPTY0004.
+fn-last/last-8                                                         # Expected a value but got error: XPTY0004.
+fn-local-name-from-QName/LocalNameFromQNameFunc001                     # Expected a value but got error: FORG0005.
+fn-local-name-from-QName/LocalNameFromQNameFunc002                     # Expected a value but got error: FORG0005.
+fn-local-name-from-QName/LocalNameFromQNameFunc003                     # Expected a value but got error: FORG0005.
+fn-local-name-from-QName/LocalNameFromQNameFunc004                     # Expected a value but got error: FORG0005.
+fn-local-name-from-QName/LocalNameFromQNameFunc005                     # Expected true but got error: FORG0005.
+fn-local-name-from-QName/LocalNameFromQNameFunc010                     # Expected error but evaluation succeeded.
+fn-local-name-from-QName/LocalNameFromQNameFunc015                     # Evaluation exceeded 5s watchdog timeout.
+fn-local-name-from-QName/LocalNameFromQNameFunc018                     # Expected a value but got error: FORG0005.
+fn-local-name-from-QName/LocalNameFromQNameFunc019                     # Expected a value but got error: FORG0005.
+fn-local-name-from-QName/LocalNameFromQNameFunc020                     # Expected a value but got error: FORG0005.
+fn-local-name-from-QName/fn-local-name-from-qname-022                  # Value does not match type 'xs:NCName'.
+fn-local-name-from-QName/fn-local-name-from-qname-023                  # Value does not match type 'xs:NCName'.
+fn-local-name/fn-local-name-2                                          # Expected error but evaluation succeeded.
+fn-local-name/fn-local-name-74                                         # String value mismatch: expected 'ma:AuctionWatchList', got 'AuctionWatchList'.
+fn-local-name/fn-local-name-75                                         # String value mismatch: expected 'ma:currency', got 'currency'.
+fn-lower-case/fn-lower-case-19                                         # assert-deep-eq failed: actual count=144, expected count=144.
+fn-lower-case/fn-lower-case-21                                         # assert-deep-eq failed: actual count=1, expected count=2.
+fn-matches/K2-MatchesFunc-1                                            # Expected True but got False.
+fn-matches/K2-MatchesFunc-11                                           # Expected error but evaluation succeeded.
+fn-matches/K2-MatchesFunc-12                                           # Expected error but evaluation succeeded.
+fn-matches/K2-MatchesFunc-16a                                          # Expected error but evaluation succeeded.
+fn-matches/K2-MatchesFunc-5                                            # Expected true but got error: FORX0002.
+fn-matches/K2-MatchesFunc-6                                            # Expected true but got error: FORX0002.
+fn-matches/caselessmatch14                                             # Expected False but got True.
+fn-matches/caselessmatch15                                             # Expected True but got False.
+fn-matches/cbcl-matches-039                                            # Expected True but got False.
+fn-matches/fn-matches-26                                               # Expected False but got True.
+fn-matches/fn-matches-29                                               # Expected True but got False.
+fn-matches/fn-matches-37                                               # Expected error but evaluation succeeded.
+fn-matches/fn-matches-38                                               # Expected error but evaluation succeeded.
+fn-matches/fn-matches-39                                               # Expected error but evaluation succeeded.
+fn-matches/fn-matches-40                                               # Expected error but evaluation succeeded.
+fn-matches/fn-matches-41                                               # Expected False but got True.
+fn-matches/fn-matches-42                                               # Expected False but got True.
+fn-matches/fn-matches-47                                               # Expected False but got True.
+fn-matches/fn-matchesErr-2                                             # Expected error but evaluation succeeded.
+fn-matches/fn-matchesErr-4                                             # Expected error but evaluation succeeded.
+fn-matches/fn-matchesErr-5                                             # Expected error but evaluation succeeded.
+fn-max/K-SeqMAXFunc-16                                                 # Expected True but got False.
+fn-max/K-SeqMAXFunc-17                                                 # Expected True but got False.
+fn-max/K-SeqMAXFunc-21                                                 # Expected error FORG0006 but got XPTY0004.
+fn-max/K-SeqMAXFunc-22                                                 # Expected error FORG0006 but got XPTY0004.
+fn-max/K-SeqMAXFunc-27                                                 # Expected True but got False.
+fn-max/K-SeqMAXFunc-28                                                 # Expected True but got False.
+fn-max/K-SeqMAXFunc-31                                                 # Expected True but got False.
+fn-max/K-SeqMAXFunc-36                                                 # Expected error FORG0006 but got XPTY0004.
+fn-max/K-SeqMAXFunc-37                                                 # Expected error FORG0006 but got XPTY0004.
+fn-max/K-SeqMAXFunc-38                                                 # Expected error FORG0006 but got XPTY0004.
+fn-max/K-SeqMAXFunc-39                                                 # Expected true but got error: XPTY0004.
+fn-max/K-SeqMAXFunc-40                                                 # Expected true but got error: XPTY0004.
+fn-max/K-SeqMAXFunc-41                                                 # Expected true but got error: XPTY0004.
+fn-max/K-SeqMAXFunc-42                                                 # Expected error FORG0006 but got XPTY0004.
+fn-max/K-SeqMAXFunc-55                                                 # Expected true but got error: XPTY0004.
+fn-max/K-SeqMAXFunc-58                                                 # Expected error FORG0006 but got XPTY0004.
+fn-max/K-SeqMAXFunc-59                                                 # Expected true but got error: XPTY0004.
+fn-max/K2-SeqMAXFunc-1                                                 # Expected true but got error: XPTY0004.
+fn-max/K2-SeqMAXFunc-2                                                 # Expected true but got error: XPTY0004.
+fn-max/K2-SeqMAXFunc-3                                                 # Expected true but got error: XPTY0004.
+fn-max/K2-SeqMAXFunc-4                                                 # Expected error FOCH0002 but got XPTY0004.
+fn-max/K2-SeqMAXFunc-6                                                 # any-of: none passed: Expected a value but got error: XPTY0004.; Expected error FOCH0002 but got XPTY0004.
+fn-max/cbcl-max-019                                                    # Expected true but got error: XPTY0004.
+fn-max/fn-max-1                                                        # Expected error FORG0006 but got XPTY0004.
+fn-max/fn-max-11                                                       # Expected a value but got error: XPTY0004.
+fn-max/fn-max-12                                                       # Expected a value but got error: XPTY0004.
+fn-max/fn-max-13                                                       # Expected a value but got error: XPTY0004.
+fn-max/fn-max-14                                                       # Value does not match type 'xs:nonNegativeInteger'.
+fn-max/fn-max-16                                                       # Expected a value but got error: XPTY0004.
+fn-max/fn-max-17                                                       # Expected a value but got error: XPTY0004.
+fn-max/fn-max-18                                                       # Expected a value but got error: XPTY0004.
+fn-max/fn-max-4                                                        # Expected true but got error: XPTY0004.
+fn-max/fn-max-5                                                        # Expected a value but got error: XPTY0004.
+fn-max/fn-max-6                                                        # Expected true but got error: XPTY0004.
+fn-max/fn-max-7                                                        # Expected a value but got error: XPTY0004.
+fn-min/K-SeqMINFunc-21                                                 # Expected error FORG0006 but got XPTY0004.
+fn-min/K-SeqMINFunc-22                                                 # Expected error FORG0006 but got XPTY0004.
+fn-min/K-SeqMINFunc-36                                                 # Expected error FORG0006 but got XPTY0004.
+fn-min/K-SeqMINFunc-37                                                 # Expected error FORG0006 but got XPTY0004.
+fn-min/K-SeqMINFunc-38                                                 # Expected error FORG0006 but got XPTY0004.
+fn-min/K-SeqMINFunc-39                                                 # Expected true but got error: XPTY0004.
+fn-min/K-SeqMINFunc-40                                                 # Expected true but got error: XPTY0004.
+fn-min/K-SeqMINFunc-41                                                 # Expected true but got error: XPTY0004.
+fn-min/K-SeqMINFunc-42                                                 # Expected error FORG0006 but got XPTY0004.
+fn-min/K-SeqMINFunc-47                                                 # Expected true but got error: XPTY0004.
+fn-min/K-SeqMINFunc-50                                                 # Expected error FORG0006 but got XPTY0004.
+fn-min/K2-SeqMINFunc-1                                                 # Expected true but got error: XPTY0004.
+fn-min/K2-SeqMINFunc-14                                                # Expected true but got error: XPTY0004.
+fn-min/K2-SeqMINFunc-2                                                 # Expected true but got error: XPTY0004.
+fn-min/K2-SeqMINFunc-3                                                 # Expected true but got error: XPTY0004.
+fn-min/K2-SeqMINFunc-4                                                 # Expected error FOCH0002 but got XPTY0004.
+fn-min/K2-SeqMINFunc-5                                                 # any-of: none passed: Expected a value but got error: XPTY0004.; Expected error FOCH0002 but got XPTY0004.
+fn-min/fn-min-1                                                        # Expected error FORG0006 but got XPTY0004.
+fn-min/fn-min-11                                                       # Expected a value but got error: XPTY0004.
+fn-min/fn-min-12                                                       # Expected a value but got error: XPTY0004.
+fn-min/fn-min-13                                                       # Expected a value but got error: XPTY0004.
+fn-min/fn-min-14                                                       # Value does not match type 'xs:nonNegativeInteger'.
+fn-min/fn-min-16                                                       # Expected a value but got error: XPTY0004.
+fn-min/fn-min-17                                                       # Expected a value but got error: XPTY0004.
+fn-min/fn-min-18                                                       # Expected a value but got error: XPTY0004.
+fn-min/fn-min-4                                                        # Expected true but got error: XPTY0004.
+fn-min/fn-min-5                                                        # Expected a value but got error: XPTY0004.
+fn-min/fn-min-6                                                        # Expected true but got error: XPTY0004.
+fn-min/fn-min-7                                                        # Expected a value but got error: XPTY0004.
+fn-name/fn-name-24                                                     # String value mismatch: expected 'ma:AuctionWatchList', got 'AuctionWatchList'.
+fn-name/fn-name-25                                                     # String value mismatch: expected 'ma:currency', got 'currency'.
+fn-namespace-uri-from-QName/NamespaceURIFromQNameFunc001               # Expected a value but got error: FORG0005.
+fn-namespace-uri-from-QName/NamespaceURIFromQNameFunc002               # Expected a value but got error: FORG0005.
+fn-namespace-uri-from-QName/NamespaceURIFromQNameFunc003               # Expected a value but got error: FORG0005.
+fn-namespace-uri-from-QName/NamespaceURIFromQNameFunc004               # Expected a value but got error: FORG0005.
+fn-namespace-uri-from-QName/NamespaceURIFromQNameFunc005               # Expected true but got error: FORG0005.
+fn-namespace-uri-from-QName/NamespaceURIFromQNameFunc010               # Expected error but evaluation succeeded.
+fn-namespace-uri-from-QName/NamespaceURIFromQNameFunc015               # Evaluation exceeded 5s watchdog timeout.
+fn-namespace-uri-from-QName/NamespaceURIFromQNameFunc018               # Expected a value but got error: FORG0005.
+fn-namespace-uri-from-QName/NamespaceURIFromQNameFunc019               # Expected a value but got error: FORG0005.
+fn-namespace-uri-from-QName/NamespaceURIFromQNameFunc020               # Expected a value but got error: FORG0005.
+fn-namespace-uri/fn-namespace-uri-3                                    # Expected error but evaluation succeeded.
+fn-nilled/K-NilledFunc-1                                               # Expected error XPST0017 but got XPDY0002.
+fn-nilled/fn-nilled-2                                                  # String value mismatch: expected '0', got '1'.
+fn-node-name/K-NodeNameFunc-1                                          # Expected error XPST0017 but got XPDY0002.
+fn-normalize-unicode/cbcl-fn-normalize-unicode-001a                    # Expected error but evaluation succeeded.
+fn-normalize-unicode/cbcl-fn-normalize-unicode-006                     # String value mismatch: expected ' া', got 'া'.
+fn-normalize-unicode/cbcl-fn-normalize-unicode-006a                    # Expected error but evaluation succeeded.
+fn-normalize-unicode/fn-normalize-unicode2args-5                       # Expected error but evaluation succeeded.
+fn-not/fn-not-27                                                       # Expected error FORG0006 but got XPTY0004.
+fn-not/fn-not-28                                                       # Expected error FORG0006 but got XPTY0004.
+fn-number/fn-numberdbl1args-1                                          # String value mismatch: expected '-1.7976931348623157E308', got '-1.797693134862316E308'.
+fn-number/fn-numberdbl1args-3                                          # String value mismatch: expected '1.7976931348623157E308', got '1.797693134862316E308'.
+fn-number/fn-numberdec1args-1                                          # String value mismatch: expected '-1.0E18', got '-1000000000000000000'.
+fn-number/fn-numberdec1args-3                                          # String value mismatch: expected '1.0E18', got '1000000000000000000'.
+fn-number/fn-numberint1args-1                                          # String value mismatch: expected '-2.147483648E9', got '-2147483648'.
+fn-number/fn-numberint1args-2                                          # String value mismatch: expected '-1.87391441E9', got '-1873914410'.
+fn-number/fn-numberint1args-3                                          # String value mismatch: expected '2.147483647E9', got '2147483647'.
+fn-number/fn-numberintg1args-1                                         # String value mismatch: expected '-1.0E18', got '-1000000000000000000'.
+fn-number/fn-numberintg1args-3                                         # String value mismatch: expected '1.0E18', got '1000000000000000000'.
+fn-number/fn-numberlng1args-1                                          # String value mismatch: expected '-9.223372036854776E16', got '-92233720368547760'.
+fn-number/fn-numberlng1args-3                                          # String value mismatch: expected '9.223372036854776E16', got '92233720368547760'.
+fn-number/fn-numbernint1args-1                                         # String value mismatch: expected '-1.0E18', got '-1000000000000000000'.
+fn-number/fn-numbernni1args-3                                          # String value mismatch: expected '1.0E18', got '1000000000000000000'.
+fn-number/fn-numbernpi1args-1                                          # String value mismatch: expected '-1.0E18', got '-1000000000000000000'.
+fn-number/fn-numbernpi1args-2                                          # any-of: none passed: String value mismatch: expected '-4.7568843727187049E17', got '-475688437271870000'.; String value mismatch: expected '-4.756884372718705E17', got '-475688437271870000'.; String value mismatch: expected '-4.7568843727187046E17', got '-475688437271870000'.
+fn-number/fn-numberpint1args-3                                         # String value mismatch: expected '1.0E18', got '1000000000000000000'.
+fn-number/fn-numberulng1args-2                                         # any-of: none passed: String value mismatch: expected '1.3074710860767466E17', got '130747108607675000'.; String value mismatch: expected '1.30747108607674648E17', got '130747108607675000'.; String value mismatch: expected '1.30747108607674649E17', got '130747108607675000'.; String value mismatch: expected '1.3074710860767465E17', got '130747108607675000'.; String value mismatch: expected '1.30747108607674651E17', got '130747108607675000'.; String value mismatch: expected '1.30747108607674652E17', got '130747108607675000'.; String value mismatch: expected '1.30747108607674653E17', got '130747108607675000'.; String value mismatch: expected '1.30747108607674654E17', got '130747108607675000'.; String value mismatch: expected '1.30747108607674655E17', got '130747108607675000'.; String value mismatch: expected '1.30747108607674656E17', got '130747108607675000'.; String value mismatch: expected '1.30747108607674657E17', got '130747108607675000'.; String value mismatch: expected '1.30747108607674658E17', got '130747108607675000'.; String value mismatch: expected '1.30747108607674659E17', got '130747108607675000'.; String value mismatch: expected '1.30747108607674661E17', got '130747108607675000'.; String value mismatch: expected '1.30747108607674662E17', got '130747108607675000'.; String value mismatch: expected '1.30747108607674663E17', got '130747108607675000'.; String value mismatch: expected '1.30747108607674664E17', got '130747108607675000'.
+fn-one-or-more/cbcl-one-or-more-005                                    # Expected error FORG0006 but got XPTY0004.
+fn-one-or-more/fn-one-or-moredbl1args-1                                # String value mismatch: expected '-1.7976931348623157E308', got '-1.797693134862316E308'.
+fn-one-or-more/fn-one-or-moredbl1args-3                                # String value mismatch: expected '1.7976931348623157E308', got '1.797693134862316E308'.
+fn-one-or-more/fn-one-or-moreflt1args-1                                # String value mismatch: expected '-3.4028235E38', got '-3.40282347E38'.
+fn-one-or-more/fn-one-or-moreflt1args-3                                # String value mismatch: expected '3.4028235E38', got '3.40282347E38'.
+fn-position/position-12                                                # Expected a value but got error: XPTY0004.
+fn-position/position-18                                                # Expected a value but got error: XPTY0004.
+fn-position/position-20                                                # Expected a value but got error: XPTY0004.
+fn-position/position-21                                                # Expected a value but got error: XPTY0004.
+fn-position/position-22                                                # Expected a value but got error: XPTY0004.
+fn-position/position-24                                                # Expected a value but got error: XPTY0004.
+fn-position/position-8                                                 # Expected a value but got error: XPTY0004.
+fn-prefix-from-QName/fn-prefix-from-qname-21                           # String value mismatch: expected 'atomic', got ''.
+fn-prefix-from-QName/fn-prefix-from-qname-22                           # String value mismatch: expected 'atomic', got ''.
+fn-prefix-from-QName/fn-prefix-from-qname-8                            # Expected error but evaluation succeeded.
+fn-remove/fn-remove-mix-args-011                                       # assert-deep-eq failed: actual count=2, expected count=2.
+fn-remove/fn-remove-mix-args-015                                       # assert-deep-eq failed: actual count=2, expected count=2.
+fn-replace/K2-ReplaceFunc-3                                            # Expected error but evaluation succeeded.
+fn-replace/K2-ReplaceFunc-4                                            # Expected error but evaluation succeeded.
+fn-replace/K2-ReplaceFunc-5                                            # Expected error but evaluation succeeded.
+fn-replace/fn-replace-41                                               # String value mismatch: expected 'a20bra20ca20da20bra20', got '$1520br$1520c$1520d$1520br$1520'.
+fn-replace/fn-replace-42                                               # String value mismatch: expected '(ab.a.b.ab7)racad(ab.a.b.ab7)ra', got '(ab.a.b.$17)racad(ab.a.b.$17)ra'.
+fn-resolve-uri/K-ResolveURIFunc-3                                      # Expected true but got error: XPST0017.
+fn-resolve-uri/K-ResolveURIFunc-4                                      # Expected true but got error: XPST0017.
+fn-resolve-uri/K-ResolveURIFunc-5                                      # Expected true but got error: XPST0017.
+fn-resolve-uri/K-ResolveURIFunc-6                                      # Expected true but got error: XPST0017.
+fn-resolve-uri/cbcl-fn-resolve-uri-001                                 # Expected true but got error: XPST0017.
+fn-resolve-uri/fn-resolve-uri-1                                        # Expected a value but got error: XPST0017.
+fn-resolve-uri/fn-resolve-uri-10                                       # Expected a value but got error: XPST0017.
+fn-resolve-uri/fn-resolve-uri-11                                       # Expected a value but got error: XPST0017.
+fn-resolve-uri/fn-resolve-uri-12                                       # Expected a value but got error: XPST0017.
+fn-resolve-uri/fn-resolve-uri-13                                       # Expected a value but got error: XPST0017.
+fn-resolve-uri/fn-resolve-uri-14                                       # Expected a value but got error: XPST0017.
+fn-resolve-uri/fn-resolve-uri-15                                       # Expected a value but got error: XPST0017.
+fn-resolve-uri/fn-resolve-uri-16                                       # Expected a value but got error: XPST0017.
+fn-resolve-uri/fn-resolve-uri-17                                       # Expected a value but got error: XPST0017.
+fn-resolve-uri/fn-resolve-uri-18                                       # Expected a value but got error: XPST0017.
+fn-resolve-uri/fn-resolve-uri-19                                       # Expected a value but got error: XPST0017.
+fn-resolve-uri/fn-resolve-uri-20                                       # Expected a value but got error: XPST0017.
+fn-resolve-uri/fn-resolve-uri-21                                       # Expected a value but got error: XPST0017.
+fn-resolve-uri/fn-resolve-uri-22                                       # Expected a value but got error: XPST0017.
+fn-resolve-uri/fn-resolve-uri-23                                       # Expected a value but got error: XPST0017.
+fn-resolve-uri/fn-resolve-uri-24                                       # Expected error FORG0002 but got XPST0017.
+fn-resolve-uri/fn-resolve-uri-25                                       # Expected a value but got error: XPST0017.
+fn-resolve-uri/fn-resolve-uri-26                                       # Expected error FORG0002 but got XPST0017.
+fn-resolve-uri/fn-resolve-uri-27                                       # Expected a value but got error: XPST0017.
+fn-resolve-uri/fn-resolve-uri-29                                       # Expected a value but got error: XPST0017.
+fn-resolve-uri/fn-resolve-uri-3                                        # Expected error FORG0002 but got XPST0017.
+fn-resolve-uri/fn-resolve-uri-31                                       # Expected true but got error: XPST0017.
+fn-resolve-uri/fn-resolve-uri-32                                       # any-of: none passed: Expected a value but got error: XPST0017.; Expected error FORG0002 but got XPST0017.
+fn-resolve-uri/fn-resolve-uri-33                                       # any-of: none passed: Expected a value but got error: XPST0017.; Expected error FORG0002 but got XPST0017.
+fn-resolve-uri/fn-resolve-uri-4                                        # Expected error FORG0002 but got XPST0017.
+fn-resolve-uri/fn-resolve-uri-5                                        # Expected a value but got error: XPST0017.
+fn-resolve-uri/fn-resolve-uri-6                                        # Expected a value but got error: XPST0017.
+fn-resolve-uri/fn-resolve-uri-7                                        # Expected a value but got error: XPST0017.
+fn-resolve-uri/fn-resolve-uri-8                                        # Expected a value but got error: XPST0017.
+fn-resolve-uri/fn-resolve-uri-9                                        # any-of: none passed: Expected a value but got error: XPST0017.; Expected a value but got error: XPST0017.
+fn-reverse/reverse-003                                                 # Expected a value but got error: XPTY0004.
+fn-round-half-to-even/cbcl-round-half-to-even-001                      # String value mismatch: expected '3567.812', got '3568'.
+fn-round-half-to-even/cbcl-round-half-to-even-009                      # String value mismatch: expected '12300', got '12346'.
+fn-round-half-to-even/cbcl-round-half-to-even-012                      # String value mismatch: expected '3.567812', got '4'.
+fn-round-half-to-even/fn-round-half-to-even-8                          # Value mismatch: '4561' != '4600'.
+fn-round/K2-RoundFunc-117                                              # String value mismatch: expected '-0', got '0'.
+fn-round/K2-RoundFunc-118                                              # String value mismatch: expected '-0', got '0'.
+fn-round/K2-RoundFunc-16                                               # String value mismatch: expected '-0', got '0'.
+fn-round/K2-RoundFunc-169                                              # String value mismatch: expected '-0', got '0'.
+fn-round/K2-RoundFunc-170                                              # String value mismatch: expected '-0', got '0'.
+fn-round/K2-RoundFunc-173                                              # String value mismatch: expected '-0', got '0'.
+fn-round/K2-RoundFunc-174                                              # String value mismatch: expected '-0', got '0'.
+fn-round/K2-RoundFunc-177                                              # String value mismatch: expected '-0', got '0'.
+fn-round/K2-RoundFunc-178                                              # String value mismatch: expected '-0', got '0'.
+fn-round/K2-RoundFunc-181                                              # String value mismatch: expected '-0', got '0'.
+fn-round/K2-RoundFunc-182                                              # String value mismatch: expected '-0', got '0'.
+fn-round/K2-RoundFunc-185                                              # String value mismatch: expected '-0', got '0'.
+fn-round/K2-RoundFunc-186                                              # String value mismatch: expected '-0', got '0'.
+fn-round/K2-RoundFunc-189                                              # String value mismatch: expected '-0', got '0'.
+fn-round/K2-RoundFunc-190                                              # String value mismatch: expected '-0', got '0'.
+fn-round/K2-RoundFunc-20                                               # String value mismatch: expected '-0', got '0'.
+fn-round/K2-RoundFunc-26                                               # String value mismatch: expected '-0', got '0'.
+fn-round/K2-RoundFunc-29                                               # String value mismatch: expected '-0', got '0'.
+fn-round/K2-RoundFunc-30                                               # String value mismatch: expected '-0', got '0'.
+fn-round/K2-RoundFunc-33                                               # String value mismatch: expected '-0', got '0'.
+fn-round/K2-RoundFunc-34                                               # String value mismatch: expected '-0', got '0'.
+fn-round/K2-RoundFunc-37                                               # String value mismatch: expected '-0', got '0'.
+fn-round/K2-RoundFunc-38                                               # String value mismatch: expected '-0', got '0'.
+fn-round/K2-RoundFunc-41                                               # String value mismatch: expected '-0', got '0'.
+fn-round/K2-RoundFunc-42                                               # String value mismatch: expected '-0', got '0'.
+fn-round/K2-RoundFunc-45                                               # String value mismatch: expected '-0', got '0'.
+fn-round/K2-RoundFunc-46                                               # String value mismatch: expected '-0', got '0'.
+fn-round/K2-RoundFunc-49                                               # String value mismatch: expected '-0', got '0'.
+fn-round/K2-RoundFunc-50                                               # String value mismatch: expected '-0', got '0'.
+fn-round/K2-RoundFunc-53                                               # String value mismatch: expected '-0', got '0'.
+fn-round/K2-RoundFunc-54                                               # String value mismatch: expected '-0', got '0'.
+fn-round/K2-RoundFunc-57                                               # String value mismatch: expected '-0', got '0'.
+fn-round/K2-RoundFunc-58                                               # String value mismatch: expected '-0', got '0'.
+fn-round/K2-RoundFunc-61                                               # String value mismatch: expected '-0', got '0'.
+fn-round/K2-RoundFunc-62                                               # String value mismatch: expected '-0', got '0'.
+fn-round/K2-RoundFunc-65                                               # String value mismatch: expected '-0', got '0'.
+fn-round/K2-RoundFunc-66                                               # String value mismatch: expected '-0', got '0'.
+fn-round/K2-RoundFunc-69                                               # String value mismatch: expected '-0', got '0'.
+fn-round/K2-RoundFunc-70                                               # String value mismatch: expected '-0', got '0'.
+fn-round/K2-RoundFunc-73                                               # String value mismatch: expected '-0', got '0'.
+fn-round/K2-RoundFunc-74                                               # String value mismatch: expected '-0', got '0'.
+fn-round/K2-RoundFunc-77                                               # String value mismatch: expected '-0', got '0'.
+fn-round/K2-RoundFunc-78                                               # String value mismatch: expected '-0', got '0'.
+fn-round/K2-RoundFunc-81                                               # String value mismatch: expected '-0', got '0'.
+fn-round/K2-RoundFunc-82                                               # String value mismatch: expected '-0', got '0'.
+fn-round/K2-RoundFunc-85                                               # String value mismatch: expected '-0', got '0'.
+fn-round/K2-RoundFunc-86                                               # String value mismatch: expected '-0', got '0'.
+fn-round/K2-RoundFunc-89                                               # String value mismatch: expected '-0', got '0'.
+fn-round/K2-RoundFunc-90                                               # String value mismatch: expected '-0', got '0'.
+fn-round/K2-RoundFunc-93                                               # String value mismatch: expected '-0', got '0'.
+fn-round/K2-RoundFunc-94                                               # String value mismatch: expected '-0', got '0'.
+fn-starts-with/K-StartsWithFunc-4                                      # Expected error but evaluation succeeded.
+fn-static-base-uri/K-StaticBaseURIFunc-3                               # Expected true but got error: XPST0017.
+fn-static-base-uri/fn-static-base-15                                   # any-of: none passed: Expected a value but got error: XPST0017.; Expected a value but got error: XPST0017.
+fn-string/fn-string-5                                                  # Value mismatch: '24:00:00' != '00:00:00'.
+fn-string/fn-string-6                                                  # Value mismatch: '2011-06-29T24:00:00' != '2011-06-29T00:00:00'.
+fn-string/fn-stringdbl1args-1                                          # String value mismatch: expected '-1.7976931348623157E308', got '-1.797693134862316E308'.
+fn-string/fn-stringdbl1args-3                                          # String value mismatch: expected '1.7976931348623157E308', got '1.797693134862316E308'.
+fn-string/fn-stringflt1args-1                                          # String value mismatch: expected '-3.4028235E38', got '-3.40282347E38'.
+fn-string/fn-stringflt1args-3                                          # String value mismatch: expected '3.4028235E38', got '3.40282347E38'.
+fn-subsequence/cbcl-subsequence-001                                    # String value mismatch: expected '0', got '10'.
+fn-subsequence/cbcl-subsequence-010                                    # Evaluation exceeded 5s watchdog timeout.
+fn-subsequence/cbcl-subsequence-011                                    # Evaluation exceeded 5s watchdog timeout.
+fn-subsequence/cbcl-subsequence-012                                    # Evaluation exceeded 5s watchdog timeout.
+fn-subsequence/cbcl-subsequence-013                                    # Evaluation exceeded 5s watchdog timeout.
+fn-subsequence/cbcl-subsequence-014                                    # Evaluation exceeded 5s watchdog timeout.
+fn-subsequence/fn-subsequence-mix-args-013                             # assert-deep-eq failed: actual count=3, expected count=3.
+fn-subsequence/fn-subsequence-mix-args-024                             # Expected empty sequence but got 10 items.
+fn-substring-after/K-SubstringAfterFunc-4                              # Expected error but evaluation succeeded.
+fn-substring-after/fn-substring-after-24                               # Value mismatch: '' != 'nana'.
+fn-substring-before/K-SubstringBeforeFunc-4                            # Expected error but evaluation succeeded.
+fn-substring-before/fn-substring-before-24                             # Value mismatch: '' != 'b'.
+fn-substring/K-SubstringFunc-14                                        # Expected True but got False.
+fn-sum/K-SeqSUMFunc-23                                                 # Expected error FORG0006 but got XPTY0004.
+fn-sum/K-SeqSUMFunc-24                                                 # Expected error FORG0006 but got XPTY0004.
+fn-sum/K-SeqSUMFunc-25                                                 # Expected error FORG0006 but got XPTY0004.
+fn-sum/K-SeqSUMFunc-26                                                 # Expected error FORG0006 but got XPTY0004.
+fn-sum/K-SeqSUMFunc-30                                                 # Expected true but got error: XPTY0004.
+fn-sum/K-SeqSUMFunc-33                                                 # Expected error FORG0006 but got XPTY0004.
+fn-sum/fn-sum-1                                                        # Expected true but got error: XPTY0004.
+fn-sum/fn-sum-3                                                        # Expected a value but got error: XPTY0004.
+fn-sum/fn-sum-4                                                        # Expected true but got error: XPTY0004.
+fn-sum/fn-sum-5                                                        # String value mismatch: expected 'P0M', got 'PT0S'.
+fn-sum/fn-sum-6                                                        # Expected a value but got error: XPTY0004.
+fn-timezone-from-dateTime/fn-timezone-from-dateTimealt-10              # Expected a value but got error: XPTY0004.
+fn-timezone-from-dateTime/fn-timezone-from-dateTimealt-13              # Expected a value but got error: XPTY0004.
+fn-tokenize/K2-TokenizeFunc-3                                          # String value mismatch: expected 'r', got 'a'.
+fn-tokenize/K2-TokenizeFunc-4                                          # String value mismatch: expected 'c', got 'ab'.
+fn-tokenize/fn-tokenize-9                                              # String value mismatch: expected '#r#c#d#r#', got '#ab#r#a#c#a#d#ab#r#a#'.
+fn-unordered/fn-unordered-mix-args-011                                 # Permutation check: could not find matching item for expected[1].
+fn-unordered/fn-unordered-mix-args-013                                 # Permutation check: could not find matching item for expected[1].
+fn-upper-case/fn-upper-case-19                                         # assert-deep-eq failed: actual count=144, expected count=148.
+fn-upper-case/fn-upper-case-22                                         # assert-deep-eq failed: actual count=1, expected count=2.
+fn-zero-or-one/fn-zero-or-onedbl1args-1                                # String value mismatch: expected '-1.7976931348623157E308', got '-1.797693134862316E308'.
+fn-zero-or-one/fn-zero-or-onedbl1args-3                                # String value mismatch: expected '1.7976931348623157E308', got '1.797693134862316E308'.
+fn-zero-or-one/fn-zero-or-oneflt1args-1                                # String value mismatch: expected '-3.4028235E38', got '-3.40282347E38'.
+fn-zero-or-one/fn-zero-or-oneflt1args-3                                # String value mismatch: expected '3.4028235E38', got '3.40282347E38'.
+misc-CombinedErrorCodes/XPTY0004_45                                    # any-of: none passed: Expected error but evaluation succeeded.; Expected error but evaluation succeeded.
+misc-ErrorsAndOptimization/errors-and-optimization-1                   # Expected a value but got error: XPST0017.
+misc-Surrogates/surrogates12a                                          # Expected true but got error: FORX0002.
+misc-Surrogates/surrogates13a                                          # Expected True but got False.
+misc-Surrogates/surrogates14a                                          # Expected a value but got error: FORX0002.
+misc-Surrogates/surrogates15a                                          # String value mismatch: expected 'abc###def', got 'abc######def'.
+op-add-dayTimeDuration-to-date/K-DateAddDTD-1                          # Expected True but got False.
+op-add-dayTimeDuration-to-date/K-DateAddDTD-2                          # Expected True but got False.
+op-add-dayTimeDuration-to-date/op-add-dayTimeDuration-to-date-1        # String value mismatch: expected '2004-11-01Z', got '2004-11-30Z'.
+op-add-dayTimeDuration-to-date/op-add-dayTimeDuration-to-date-7        # String value mismatch: expected '1989-07-06Z', got '1989-07-10Z'.
+op-add-dayTimeDuration-to-dateTime/op-add-dayTimeDuration-to-dateTime-1 # String value mismatch: expected '2000-11-02T12:27:00', got '2000-12-01T12:27:00'.
+op-add-dayTimeDuration-to-dateTime/op-add-dayTimeDuration-to-dateTime-7 # String value mismatch: expected '1989-07-06T19:12:10Z', got '1989-07-10T19:12:10Z'.
+op-add-dayTimeDuration-to-time/K-TimeAddDTD-1                          # Expected True but got False.
+op-add-dayTimeDuration-to-time/K-TimeAddDTD-2                          # Expected True but got False.
+op-add-yearMonthDurations/op-add-yearMonthDurations2args-1             # String value mismatch: expected 'P0M', got 'PT0S'.
+op-anyURI-greater-than/K2-AnyURILeGe-10                                # Expected true but got error: XPTY0004.
+op-anyURI-greater-than/K2-AnyURILeGe-7                                 # Expected true but got error: XPTY0004.
+op-anyURI-greater-than/K2-AnyURILeGe-8                                 # Expected true but got error: XPTY0004.
+op-anyURI-greater-than/K2-AnyURILeGe-9                                 # Expected true but got error: XPTY0004.
+op-anyURI-less-than/K2-AnyURILtGt-3                                    # Expected true but got error: XPTY0004.
+op-anyURI-less-than/K2-AnyURILtGt-4                                    # Expected true but got error: XPTY0004.
+op-anyURI-less-than/K2-AnyURILtGt-6                                    # Expected true but got error: XPTY0004.
+op-anyURI-less-than/K2-AnyURILtGt-8                                    # Expected true but got error: XPTY0004.
+op-concatenate/sequenceexpressionhc9                                   # Skipped: assertion 'assert-xml' not supported in full-eval mode.
+op-date-greater-than/cbcl-date-greater-equal-005                       # Expected True but got False.
+op-date-greater-than/cbcl-date-greater-equal-010                       # Expected False but got True.
+op-date-greater-than/op-date-greater-than-1                            # Expected True but got False.
+op-date-less-than/cbcl-date-less-than-005                              # Expected True but got False.
+op-date-less-than/cbcl-date-less-than-009                              # Expected False but got True.
+op-date-less-than/op-date-less-than-1                                  # Expected True but got False.
+op-dateTime-greater-than/cbcl-dateTime-greater-than-004                # Expected True but got False.
+op-dateTime-greater-than/cbcl-dateTime-greater-than-010                # Expected False but got True.
+op-dateTime-less-than/cbcl-dateTime-less-than-005                      # Expected True but got False.
+op-dateTime-less-than/cbcl-dateTime-less-than-009                      # Expected False but got True.
+op-divide-dayTimeDuration-by-dayTimeDuration/cbcl-divide-dayTimeDuration-by-dayTimeDuration-002 # any-of: none passed: Expected error FOAR0002 but got UNEXPECTED:OverflowException.; Expected error FODT0002 but got UNEXPECTED:OverflowException.; Expected a value but got error: UNEXPECTED:OverflowException.
+op-divide-dayTimeDuration/K-DayTimeDurationDivide-2                    # Expected true but got error: UNEXPECTED:OverflowException.
+op-divide-dayTimeDuration/K-DayTimeDurationDivide-3                    # Expected true but got error: UNEXPECTED:OverflowException.
+op-divide-dayTimeDuration/K-DayTimeDurationDivide-4                    # Expected error FODT0002 but got FOAR0001.
+op-divide-dayTimeDuration/K-DayTimeDurationDivide-5                    # Expected error FOCA0005 but got FOAR0001.
+op-divide-dayTimeDuration/K-DayTimeDurationDivide-6                    # Expected error FODT0002 but got FOAR0001.
+op-divide-dayTimeDuration/K-DayTimeDurationDivide-7                    # Expected error but evaluation succeeded.
+op-divide-dayTimeDuration/cbcl-divide-dayTimeDuration-003              # any-of: none passed: Could not evaluate assert-eq expression 'xs:dayTimeDuration("P18446744073709551614D")': FORG0001: Invalid lexical value 'P18446744073709551614D' for type xs:dayTimeDuration.; Expected error but evaluation succeeded.
+op-divide-dayTimeDuration/op-divide-dayTimeDuration2args-1             # Expected a value but got error: UNEXPECTED:OverflowException.
+op-divide-dayTimeDuration/op-divide-dayTimeDuration2args-2             # Expected a value but got error: UNEXPECTED:OverflowException.
+op-divide-dayTimeDuration/op-divide-dayTimeDuration2args-3             # Expected a value but got error: UNEXPECTED:OverflowException.
+op-divide-dayTimeDuration/op-divide-dayTimeDuration2args-5             # Expected a value but got error: UNEXPECTED:OverflowException.
+op-divide-yearMonthDuration/K-YearMonthDurationDivide-4                # Expected error FODT0002 but got FOAR0001.
+op-divide-yearMonthDuration/K-YearMonthDurationDivide-5                # Expected error FOCA0005 but got FOAR0001.
+op-divide-yearMonthDuration/K-YearMonthDurationDivide-6                # Expected error FODT0002 but got FOAR0001.
+op-divide-yearMonthDuration/op-divide-yearMonthDuration-17             # String value mismatch: expected '-P2M -P1M P0M P0M P0M P1M P1M P3M', got '-P3M -P1M -P1M PT0S PT0S P1M P1M P3M'.
+op-divide-yearMonthDuration/op-divide-yearMonthDuration-8              # String value mismatch: expected '-P5Y', got '-P5Y1M'.
+op-divide-yearMonthDuration/op-divide-yearMonthDuration2args-1         # String value mismatch: expected 'P0M', got 'PT0S'.
+op-divide-yearMonthDuration/op-divide-yearMonthDuration2args-2         # String value mismatch: expected 'P0M', got 'PT0S'.
+op-divide-yearMonthDuration/op-divide-yearMonthDuration2args-3         # String value mismatch: expected 'P0M', got 'PT0S'.
+op-divide-yearMonthDuration/op-divide-yearMonthDuration2args-4         # String value mismatch: expected 'P0M', got 'PT0S'.
+op-divide-yearMonthDuration/op-divide-yearMonthDuration2args-5         # String value mismatch: expected 'P0M', got 'PT0S'.
+op-except/fn-except-node-args-009                                      # Expected a value but got error: XPTY0004.
+op-except/fn-except-node-args-022                                      # Expected a value but got error: XPTY0004.
+op-gDay-equal/cbcl-gDay-equal-015                                      # Expected True but got False.
+op-gDay-equal/cbcl-gDay-equal-016                                      # Expected True but got False.
+op-gDay-equal/cbcl-gDay-equal-017                                      # Expected False but got True.
+op-gDay-equal/cbcl-gDay-equal-018                                      # Expected False but got True.
+op-gMonthDay-equal/cbcl-gMonthDay-equal-015                            # Expected True but got False.
+op-gMonthDay-equal/cbcl-gMonthDay-equal-016                            # Expected True but got False.
+op-gMonthDay-equal/cbcl-gMonthDay-equal-017                            # Expected False but got True.
+op-gMonthDay-equal/cbcl-gMonthDay-equal-018                            # Expected False but got True.
+op-intersect/fn-intersect-node-args-005                                # Expected a value but got error: XPTY0004.
+op-intersect/fn-intersect-node-args-011                                # Expected a value but got error: XPTY0004.
+op-is-same-node/nodeexpression12                                       # Expected false but got error: XPST0008.
+op-is-same-node/nodeexpression15                                       # Expected false but got error: XPST0008.
+op-multiply-dayTimeDuration/K-DayTimeDurationMultiply-7                # Expected error FODT0002 but got UNEXPECTED:OverflowException.
+op-multiply-dayTimeDuration/K-DayTimeDurationMultiply-8                # Expected error FODT0002 but got UNEXPECTED:OverflowException.
+op-multiply-dayTimeDuration/K-DayTimeDurationMultiply-9                # Expected error FOCA0005 but got FOAR0001.
+op-multiply-dayTimeDuration/op-multiply-dayTimeDuration2args-1         # Expected a value but got error: UNEXPECTED:OverflowException.
+op-multiply-dayTimeDuration/op-multiply-dayTimeDuration2args-5         # Expected a value but got error: UNEXPECTED:OverflowException.
+op-multiply-yearMonthDuration/K-YearMonthDurationMultiply-5            # Expected error but evaluation succeeded.
+op-multiply-yearMonthDuration/K-YearMonthDurationMultiply-6            # Expected error but evaluation succeeded.
+op-multiply-yearMonthDuration/K-YearMonthDurationMultiply-7            # Expected error FOCA0005 but got FOAR0001.
+op-multiply-yearMonthDuration/K-YearMonthDurationMultiply-8            # Expected error but evaluation succeeded.
+op-multiply-yearMonthDuration/K-YearMonthDurationMultiply-9            # Expected error but evaluation succeeded.
+op-multiply-yearMonthDuration/cbcl-multiply-yearMonthDuration-003      # Expected error FOCA0005 but got FOAR0001.
+op-multiply-yearMonthDuration/cbcl-multiply-yearMonthDuration-006      # Expected error FOCA0005 but got FOAR0001.
+op-multiply-yearMonthDuration/op-multiply-yearMonthDuration-19         # Expected error FOCA0005 but got FOAR0001.
+op-multiply-yearMonthDuration/op-multiply-yearMonthDuration-20         # String value mismatch: expected '-P4M -P3M -P3M -P1M P0M P0M P0M P1M P1M P3M P4M P4M', got '-P4M -P4M -P3M -P1M -P1M PT0S PT0S P1M P1M P3M P4M P4M'.
+op-multiply-yearMonthDuration/op-multiply-yearMonthDuration2args-1     # String value mismatch: expected 'P0M', got 'PT0S'.
+op-multiply-yearMonthDuration/op-multiply-yearMonthDuration2args-2     # String value mismatch: expected 'P0M', got 'PT0S'.
+op-multiply-yearMonthDuration/op-multiply-yearMonthDuration2args-3     # String value mismatch: expected 'P0M', got 'PT0S'.
+op-multiply-yearMonthDuration/op-multiply-yearMonthDuration2args-4     # String value mismatch: expected 'P0M', got 'PT0S'.
+op-multiply-yearMonthDuration/op-multiply-yearMonthDuration2args-5     # String value mismatch: expected 'P0M', got 'PT0S'.
+op-node-after/nodeexpression44                                         # any-of: none passed: Expected false but got error: XPST0008.; Expected true but got error: XPST0008.
+op-node-after/nodeexpression47                                         # Expected true but got error: XPST0008.
+op-node-before/nodeexpression28                                        # any-of: none passed: Expected true but got error: XPST0008.; Expected false but got error: XPST0008.
+op-node-before/nodeexpression31                                        # Expected true but got error: XPST0008.
+op-numeric-divide/cbcl-numeric-divide-015                              # any-of: none passed: Expected error FOAR0002 but got FOAR0001.; Expected true but got error: FOAR0001.
+op-numeric-divide/op-numeric-divide-big-01                             # any-of: none passed: Expected error FOAR0002 but got FOAR0001.; Expected a value but got error: FOAR0001.
+op-numeric-greater-than/K-NumericGT-17                                 # Expected True but got False.
+op-numeric-greater-than/K-NumericGT-18                                 # Expected True but got False.
+op-numeric-greater-than/K-NumericGT-19                                 # Expected True but got False.
+op-numeric-greater-than/K-NumericGT-20                                 # Expected True but got False.
+op-numeric-greater-than/K2-NumericGT-3                                 # Expected False but got True.
+op-numeric-integer-divide/K-NumericIntegerDivide-31                    # Expected error FOAR0002 but got FOAR0001.
+op-numeric-integer-divide/K-NumericIntegerDivide-32                    # Expected error FOAR0002 but got FOAR0001.
+op-numeric-integer-divide/K-NumericIntegerDivide-33                    # Expected error FOAR0002 but got FOAR0001.
+op-numeric-integer-divide/K-NumericIntegerDivide-34                    # Expected error FOAR0002 but got FOAR0001.
+op-numeric-integer-divide/K-NumericIntegerDivide-37                    # Expected error FOAR0002 but got FOAR0001.
+op-numeric-integer-divide/K-NumericIntegerDivide-38                    # Expected error FOAR0002 but got FOAR0001.
+op-numeric-integer-divide/K-NumericIntegerDivide-39                    # Expected error FOAR0002 but got FOAR0001.
+op-numeric-integer-divide/K-NumericIntegerDivide-40                    # Expected error FOAR0002 but got FOAR0001.
+op-numeric-integer-divide/K-NumericIntegerDivide-46                    # Expected error XPTY0004 but got UNEXPECTED:InvalidCastException.
+op-numeric-integer-divide/cbcl-numeric-idivide-008                     # any-of: none passed: Expected error FOAR0002 but got FOAR0001.; Expected error FOCA0002 but got FOAR0001.; Expected a typed value but got error: FOAR0001.
+op-numeric-integer-divide/op-numeric-integer-divide-1                  # Expected error FOAR0002 but got FOAR0001.
+op-numeric-integer-divide/op-numeric-integer-dividedouble2args-1       # Expected error FOAR0002 but got FOAR0001.
+op-numeric-integer-divide/op-numeric-integer-dividedouble2args-2       # Expected error FOAR0002 but got FOAR0001.
+op-numeric-integer-divide/op-numeric-integer-dividefloat2args-1        # Expected error FOAR0002 but got FOAR0001.
+op-numeric-integer-divide/op-numeric-integer-dividefloat2args-2        # Expected error FOAR0002 but got FOAR0001.
+op-numeric-integer-divide/op-numeric-integer-dividemix2args-2          # Expected error XPTY0004 but got UNEXPECTED:InvalidCastException.
+op-numeric-less-than/K-NumericLT-13                                    # Expected True but got False.
+op-numeric-less-than/K-NumericLT-14                                    # Expected True but got False.
+op-numeric-less-than/K-NumericLT-15                                    # Expected True but got False.
+op-numeric-less-than/K-NumericLT-16                                    # Expected True but got False.
+op-numeric-subtract/cbcl-numeric-subtract-001                          # any-of: none passed: Expected true but got error: FOAR0001.; Expected error FOAR0002 but got FOAR0001.
+op-numeric-subtract/op-numeric-subtract-big-01                         # any-of: none passed: Expected a value but got error: FOAR0001.; Expected error FOAR0002 but got FOAR0001.
+op-numeric-unary-plus/K-NumericUnaryPlus-1                             # Expected error but evaluation succeeded.
+op-string-less-than/K2-StringLT-1                                      # Expected True but got False.
+op-subtract-dateTimes/cbcl-subtract-dateTimes-001                      # Expected error but evaluation succeeded.
+op-subtract-dateTimes/cbcl-subtract-dateTimes-002                      # Expected error but evaluation succeeded.
+op-subtract-dateTimes/cbcl-subtract-dateTimes-003                      # String value mismatch: expected 'P2192DT1H', got 'P2192D'.
+op-subtract-dateTimes/cbcl-subtract-dateTimes-004                      # String value mismatch: expected '-P2192DT1H', got '-P2192D'.
+op-subtract-dateTimes/op-subtract-dateTimes-yielding-DTD-1             # String value mismatch: expected 'P337DT2H12M', got 'P336DT21H12M'.
+op-subtract-dates/cbcl-subtract-dates-001                              # Expected error but evaluation succeeded.
+op-subtract-dates/cbcl-subtract-dates-002                              # Expected error but evaluation succeeded.
+op-subtract-dates/cbcl-subtract-dates-003                              # String value mismatch: expected 'P2192DT1H', got 'P2192D'.
+op-subtract-dates/cbcl-subtract-dates-004                              # String value mismatch: expected '-P2192DT1H', got '-P2192D'.
+op-subtract-dates/op-subtract-dates-yielding-DTD-2                     # String value mismatch: expected 'P336DT19H', got 'P337D'.
+op-subtract-dates/op-subtract-dates-yielding-DTD-3                     # String value mismatch: expected 'P5DT7H', got 'P5D'.
+op-subtract-dayTimeDuration-from-date/K-DateSubtractDTD-1              # Expected True but got False.
+op-subtract-dayTimeDuration-from-date/op-subtract-dayTimeDuration-from-date-1 # String value mismatch: expected '2000-10-26', got '2000-11-24'.
+op-subtract-dayTimeDuration-from-date/op-subtract-dayTimeDuration-from-date-7 # String value mismatch: expected '1989-07-03Z', got '1989-07-07Z'.
+op-subtract-dayTimeDuration-from-dateTime/op-subtract-dayTimeDuration-from-dateTime-1 # String value mismatch: expected '2000-10-27T09:57:00', got '2000-11-25T09:57:00'.
+op-subtract-dayTimeDuration-from-dateTime/op-subtract-dayTimeDuration-from-dateTime-7 # String value mismatch: expected '1989-07-04T01:08:10Z', got '1989-07-08T01:08:10Z'.
+op-subtract-dayTimeDuration-from-time/K-TimeSubtractDTD-1              # Expected True but got False.
+op-subtract-dayTimeDuration-from-time/K-TimeSubtractDTD-2              # Expected error but evaluation succeeded.
+op-subtract-dayTimeDuration-from-time/K-TimeSubtractDTD-3              # Expected error but evaluation succeeded.
+op-subtract-dayTimeDuration-from-time/K-TimeSubtractDTD-5              # Expected error but evaluation succeeded.
+op-subtract-dayTimeDurations/K2-DayTimeDurationSubtract-2              # Expected True but got False.
+op-subtract-times/cbcl-subtract-times-001                              # String value mismatch: expected '-PT1H', got 'PT0S'.
+op-subtract-times/cbcl-subtract-times-002                              # String value mismatch: expected 'PT1H', got 'PT0S'.
+op-subtract-times/cbcl-subtract-times-003                              # String value mismatch: expected 'PT9H', got 'PT8H'.
+op-subtract-times/cbcl-subtract-times-004                              # String value mismatch: expected '-PT9H', got '-PT8H'.
+op-subtract-times/op-subtract-times-2                                  # String value mismatch: expected 'PT0S', got '-PT10H30M'.
+op-subtract-times/op-subtract-times-3                                  # String value mismatch: expected 'P1D', got 'PT9H'.
+op-subtract-yearMonthDurations/op-subtract-yearMonthDurations2args-1   # String value mismatch: expected 'P0M', got 'PT0S'.
+op-time-greater-than/cbcl-time-greater-than-005                        # Expected True but got False.
+op-time-greater-than/cbcl-time-greater-than-010                        # Expected False but got True.
+op-time-less-than/cbcl-time-less-than-004                              # Expected True but got False.
+op-time-less-than/cbcl-time-less-than-009                              # Expected False but got True.
+op-time-less-than/op-time-less-than-1                                  # Expected False but got True.
+op-to/RangeExpr-409                                                    # Expected a value but got error: XPTY0004.
+op-to/RangeExpr-409a                                                   # Expected a value but got error: XPTY0004.
+op-to/RangeExpr-409b                                                   # Expected a value but got error: XPTY0004.
+op-to/RangeExpr-409c                                                   # Expected true but got error: XPTY0004.
+op-to/RangeExpr-409d                                                   # Expected true but got error: XPTY0004.
+op-to/RangeExpr-409e                                                   # Expected a value but got error: XPTY0004.
+op-to/RangeExpr-411                                                    # Expected a value but got error: XPTY0004.
+op-to/RangeExpr-411a                                                   # Expected a value but got error: XPTY0004.
+op-to/RangeExpr-411b                                                   # Expected a value but got error: XPTY0004.
+op-to/RangeExpr-411c                                                   # Expected true but got error: XPTY0004.
+op-to/RangeExpr-411d                                                   # Expected false but got error: XPTY0004.
+op-to/RangeExpr-411e                                                   # Expected a value but got error: XPTY0004.
+op-to/rangeExpr-28                                                     # any-of: none passed: Expected a value but got error: XPTY0004.; Expected error FOAR0002 but got XPTY0004.
+op-to/rangeExpr-29                                                     # any-of: none passed: Expected a value but got error: XPTY0004.; Expected error FOAR0002 but got XPTY0004.
+op-union/fn-union-node-args-002                                        # Expected a value but got error: XPTY0004.
+prod-AxisStep.abbr/abbreviatedSyntax-1                                 # Expected a value but got error: XPTY0004.
+prod-AxisStep.abbr/abbreviatedSyntax-10                                # Expected a value but got error: XPTY0004.
+prod-AxisStep.abbr/abbreviatedSyntax-12                                # Expected a value but got error: XPTY0004.
+prod-AxisStep.abbr/abbreviatedSyntax-13                                # Expected a value but got error: XPTY0004.
+prod-AxisStep.abbr/abbreviatedSyntax-22                                # Expected a value but got error: XPTY0004.
+prod-AxisStep.abbr/abbreviatedSyntax-24                                # Expected a value but got error: XPTY0004.
+prod-AxisStep.abbr/abbreviatedSyntax-7                                 # Expected a value but got error: XPTY0004.
+prod-AxisStep.abbr/abbreviatedSyntax-9                                 # Expected a value but got error: XPTY0004.
+prod-AxisStep.ancestor-or-self/ancestorself-1                          # Expected error XPTY0019 but got XPDY0002.
+prod-AxisStep.ancestor/ancestor-1                                      # Expected error XPTY0019 but got XPDY0002.
+prod-AxisStep.following-sibling/followingsibling-1                     # Expected error XPTY0019 but got XPDY0002.
+prod-AxisStep.following/following-1                                    # Expected error XPTY0019 but got XPDY0002.
+prod-AxisStep.preceding-sibling/preceding-sibling-1                    # Expected error XPTY0019 but got XPDY0002.
+prod-AxisStep.preceding/preceding-1                                    # Expected error XPTY0019 but got XPDY0002.
+prod-AxisStep/Axes041-1                                                # Expected a value but got error: UNEXPECTED:IndexOutOfRangeException.
+prod-AxisStep/Axes046-1                                                # Value mismatch: '3' != '1'.
+prod-AxisStep/Axes046-2                                                # Value mismatch: '15' != '7'.
+prod-AxisStep/Axes049-1                                                # Value mismatch: '3' != '1'.
+prod-AxisStep/Axes049-2                                                # Value mismatch: '15' != '7'.
+prod-AxisStep/Axes058-1                                                # Value mismatch: '2' != '1'.
+prod-AxisStep/Axes058-2                                                # Value mismatch: '58' != '56'.
+prod-AxisStep/Axes058-3                                                # Value mismatch: '66' != '58'.
+prod-AxisStep/Axes061-1                                                # Value mismatch: '59' != '57'.
+prod-AxisStep/Axes061-2                                                # Value mismatch: '67' != '59'.
+prod-AxisStep/Axes064-1                                                # Value mismatch: '2' != '1'.
+prod-AxisStep/Axes064-2                                                # Value mismatch: '58' != '56'.
+prod-AxisStep/Axes064-3                                                # Value mismatch: '66' != '58'.
+prod-AxisStep/Axes067-1                                                # Value mismatch: '2' != '1'.
+prod-AxisStep/Axes067-2                                                # Value mismatch: '58' != '56'.
+prod-AxisStep/Axes067-3                                                # Value mismatch: '66' != '58'.
+prod-AxisStep/Axes073-1                                                # Value mismatch: '59' != '57'.
+prod-AxisStep/Axes073-2                                                # Value mismatch: '67' != '59'.
+prod-AxisStep/K2-Axes-38                                               # any-of: none passed: Expected error XPTY0019 but got XPTY0004.; Expected error XPTY0020 but got XPTY0004.
+prod-AxisStep/K2-Axes-39                                               # any-of: none passed: Expected error XPTY0019 but got XPTY0004.; Expected error XPTY0020 but got XPTY0004.
+prod-AxisStep/K2-Axes-50                                               # Expected error XPTY0019 but got XPDY0002.
+prod-AxisStep/K2-Axes-53                                               # Expected error XPTY0019 but got XPDY0002.
+prod-AxisStep/K2-Axes-55                                               # any-of: none passed: Expected true but got error: XPDY0002.; Expected error XPST0005 but got XPDY0002.
+prod-AxisStep/K2-Axes-56                                               # any-of: none passed: Expected true but got error: XPDY0002.; Expected error XPST0005 but got XPDY0002.
+prod-AxisStep/statictypingaxis-1                                       # Expected error XPTY0019 but got XPDY0002.
+prod-AxisStep/statictypingaxis-2                                       # Expected error XPTY0019 but got XPDY0002.
+prod-AxisStep/statictypingaxis-3                                       # Expected error XPTY0019 but got XPDY0002.
+prod-AxisStep/statictypingaxis-4                                       # Expected error XPTY0019 but got XPDY0002.
+prod-AxisStep/statictypingaxis-5                                       # Expected error XPTY0019 but got XPDY0002.
+prod-AxisStep/statictypingaxis-6                                       # Expected error XPTY0019 but got XPDY0002.
+prod-CastExpr.derived/cbcl-cast-nmtoken-001b                           # Expected true but got error: FORG0001.
+prod-CastExpr.derived/cbcl-cast-normalizedString-001b                  # Expected true but got error: FORG0001.
+prod-CastExpr.derived/cbcl-cast-token-001b                             # Expected true but got error: FORG0001.
+prod-CastExpr/CastAs010                                                # String value mismatch: expected '-1.0E7', got '-10000000'.
+prod-CastExpr/CastAs015                                                # String value mismatch: expected '-1.0E7', got '-10000000'.
+prod-CastExpr/CastAs092                                                # String value mismatch: expected '-1.0E7', got '-10000000'.
+prod-CastExpr/CastAs097                                                # String value mismatch: expected '-1.0E7', got '-10000000'.
+prod-CastExpr/CastAs167                                                # String value mismatch: expected '-0', got '0'.
+prod-CastExpr/CastAs180                                                # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/CastAs201                                                # String value mismatch: expected '1.0E8', got '100000000'.
+prod-CastExpr/CastAs217                                                # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/CastAs218                                                # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/CastAs286                                                # String value mismatch: expected 'P0M', got 'PT0S'.
+prod-CastExpr/CastAs336                                                # String value mismatch: expected 'P0M', got 'PT0S'.
+prod-CastExpr/CastAs451                                                # Expected error but evaluation succeeded.
+prod-CastExpr/CastAs454                                                # Expected error but evaluation succeeded.
+prod-CastExpr/CastAs498                                                # Expected error but evaluation succeeded.
+prod-CastExpr/CastAs499                                                # Expected error but evaluation succeeded.
+prod-CastExpr/CastAs677                                                # Expected a value but got error: FORG0001.
+prod-CastExpr/CastAs678                                                # Expected a value but got error: FORG0001.
+prod-CastExpr/CastFOCA0001-1                                           # any-of: none passed: Expected a value but got error: FORG0001.; Expected error FOCA0001 but got FORG0001.
+prod-CastExpr/K-SeqExprCast-1000                                       # Expected error but evaluation succeeded.
+prod-CastExpr/K-SeqExprCast-1007                                       # Expected error FORG0006 but got XPTY0004.
+prod-CastExpr/K-SeqExprCast-1052                                       # Expected error but evaluation succeeded.
+prod-CastExpr/K-SeqExprCast-1059                                       # Expected error FORG0006 but got XPTY0004.
+prod-CastExpr/K-SeqExprCast-1090                                       # Expected error but evaluation succeeded.
+prod-CastExpr/K-SeqExprCast-1091                                       # Expected True but got False.
+prod-CastExpr/K-SeqExprCast-1092                                       # Expected error but evaluation succeeded.
+prod-CastExpr/K-SeqExprCast-1093                                       # Expected True but got False.
+prod-CastExpr/K-SeqExprCast-1104                                       # Expected error but evaluation succeeded.
+prod-CastExpr/K-SeqExprCast-1111                                       # Expected error FORG0006 but got XPTY0004.
+prod-CastExpr/K-SeqExprCast-1156                                       # Expected error but evaluation succeeded.
+prod-CastExpr/K-SeqExprCast-1163                                       # Expected error FORG0006 but got XPTY0004.
+prod-CastExpr/K-SeqExprCast-1208                                       # Expected error but evaluation succeeded.
+prod-CastExpr/K-SeqExprCast-1260                                       # Expected error but evaluation succeeded.
+prod-CastExpr/K-SeqExprCast-1267                                       # Expected error FORG0006 but got XPTY0004.
+prod-CastExpr/K-SeqExprCast-129                                        # Expected error but evaluation succeeded.
+prod-CastExpr/K-SeqExprCast-1312                                       # Expected error but evaluation succeeded.
+prod-CastExpr/K-SeqExprCast-1319                                       # Expected error FORG0006 but got XPTY0004.
+prod-CastExpr/K-SeqExprCast-1364                                       # Expected error but evaluation succeeded.
+prod-CastExpr/K-SeqExprCast-1416                                       # Expected error but evaluation succeeded.
+prod-CastExpr/K-SeqExprCast-1422                                       # Expected error FORG0006 but got XPTY0004.
+prod-CastExpr/K-SeqExprCast-1466                                       # Expected error but evaluation succeeded.
+prod-CastExpr/K-SeqExprCast-152                                        # Expected error but evaluation succeeded.
+prod-CastExpr/K-SeqExprCast-174                                        # Expected error but evaluation succeeded.
+prod-CastExpr/K-SeqExprCast-199                                        # Expected error but evaluation succeeded.
+prod-CastExpr/K-SeqExprCast-204                                        # Expected True but got False.
+prod-CastExpr/K-SeqExprCast-207                                        # Expected True but got False.
+prod-CastExpr/K-SeqExprCast-209                                        # Expected True but got False.
+prod-CastExpr/K-SeqExprCast-211                                        # Expected True but got False.
+prod-CastExpr/K-SeqExprCast-295                                        # Expected error but evaluation succeeded.
+prod-CastExpr/K-SeqExprCast-297                                        # Expected error but evaluation succeeded.
+prod-CastExpr/K-SeqExprCast-298                                        # Expected error but evaluation succeeded.
+prod-CastExpr/K-SeqExprCast-299                                        # Expected error but evaluation succeeded.
+prod-CastExpr/K-SeqExprCast-312                                        # Expected error but evaluation succeeded.
+prod-CastExpr/K-SeqExprCast-319                                        # Expected error but evaluation succeeded.
+prod-CastExpr/K-SeqExprCast-350                                        # Expected True but got False.
+prod-CastExpr/K-SeqExprCast-355                                        # Expected error but evaluation succeeded.
+prod-CastExpr/K-SeqExprCast-374                                        # Expected True but got False.
+prod-CastExpr/K-SeqExprCast-379                                        # Expected error but evaluation succeeded.
+prod-CastExpr/K-SeqExprCast-422                                        # Expected error XPTY0004 but got FORG0001.
+prod-CastExpr/K-SeqExprCast-424                                        # Expected error but evaluation succeeded.
+prod-CastExpr/K-SeqExprCast-436                                        # Expected error but evaluation succeeded.
+prod-CastExpr/K-SeqExprCast-484                                        # Expected error but evaluation succeeded.
+prod-CastExpr/K-SeqExprCast-532                                        # Expected error but evaluation succeeded.
+prod-CastExpr/K-SeqExprCast-584                                        # Expected error but evaluation succeeded.
+prod-CastExpr/K-SeqExprCast-6                                          # Expected error XPST0080 but got XPTY0004.
+prod-CastExpr/K-SeqExprCast-61                                         # Expected error XPST0080 but got XPTY0004.
+prod-CastExpr/K-SeqExprCast-62                                         # Expected error XPST0080 but got XPTY0004.
+prod-CastExpr/K-SeqExprCast-63                                         # any-of: none passed: Expected error but evaluation succeeded.; Expected error but evaluation succeeded.
+prod-CastExpr/K-SeqExprCast-636                                        # Expected error but evaluation succeeded.
+prod-CastExpr/K-SeqExprCast-643                                        # Expected error FORG0006 but got XPTY0004.
+prod-CastExpr/K-SeqExprCast-688                                        # Expected error but evaluation succeeded.
+prod-CastExpr/K-SeqExprCast-695                                        # Expected error FORG0006 but got XPTY0004.
+prod-CastExpr/K-SeqExprCast-71a                                        # Expected error but evaluation succeeded.
+prod-CastExpr/K-SeqExprCast-740                                        # Expected error but evaluation succeeded.
+prod-CastExpr/K-SeqExprCast-747                                        # Expected error FORG0006 but got XPTY0004.
+prod-CastExpr/K-SeqExprCast-792                                        # Expected error but evaluation succeeded.
+prod-CastExpr/K-SeqExprCast-799                                        # Expected error FORG0006 but got XPTY0004.
+prod-CastExpr/K-SeqExprCast-844                                        # Expected error but evaluation succeeded.
+prod-CastExpr/K-SeqExprCast-851                                        # Expected error FORG0006 but got XPTY0004.
+prod-CastExpr/K-SeqExprCast-896                                        # Expected error but evaluation succeeded.
+prod-CastExpr/K-SeqExprCast-903                                        # Expected error FORG0006 but got XPTY0004.
+prod-CastExpr/K-SeqExprCast-948                                        # Expected error but evaluation succeeded.
+prod-CastExpr/K-SeqExprCast-955                                        # Expected error FORG0006 but got XPTY0004.
+prod-CastExpr/K-SeqExprCast-982                                        # Expected error but evaluation succeeded.
+prod-CastExpr/K-SeqExprCast-983                                        # Expected True but got False.
+prod-CastExpr/K-SeqExprCast-988                                        # Expected error but evaluation succeeded.
+prod-CastExpr/K-SeqExprCast-989                                        # Expected True but got False.
+prod-CastExpr/K2-SeqExprCast-1                                         # Expected True but got False.
+prod-CastExpr/K2-SeqExprCast-185                                       # Expected error FORG0001 but got UNEXPECTED:ArgumentException.
+prod-CastExpr/K2-SeqExprCast-190                                       # Expected a value but got error: FORG0001.
+prod-CastExpr/K2-SeqExprCast-196                                       # Expected error FORG0001 but got UNEXPECTED:ArgumentException.
+prod-CastExpr/K2-SeqExprCast-197                                       # Expected error FORG0001 but got UNEXPECTED:ArgumentException.
+prod-CastExpr/K2-SeqExprCast-198                                       # Expected error FORG0001 but got UNEXPECTED:ArgumentException.
+prod-CastExpr/K2-SeqExprCast-199                                       # Expected error FORG0001 but got UNEXPECTED:ArgumentException.
+prod-CastExpr/K2-SeqExprCast-200                                       # Expected error FORG0001 but got UNEXPECTED:ArgumentException.
+prod-CastExpr/K2-SeqExprCast-201                                       # String value mismatch: expected 'http://example.com/defelementns', got ''.
+prod-CastExpr/K2-SeqExprCast-202                                       # Expected a value but got error: FORG0001.
+prod-CastExpr/K2-SeqExprCast-210                                       # Expected error but evaluation succeeded.
+prod-CastExpr/K2-SeqExprCast-214                                       # String value mismatch: expected '-1.87391441E9', got '-1873914410'.
+prod-CastExpr/K2-SeqExprCast-225                                       # Expected error but evaluation succeeded.
+prod-CastExpr/K2-SeqExprCast-226                                       # Expected error but evaluation succeeded.
+prod-CastExpr/K2-SeqExprCast-231a                                      # Expected a value but got error: FORG0001.
+prod-CastExpr/K2-SeqExprCast-232a                                      # Expected a value but got error: FORG0001.
+prod-CastExpr/K2-SeqExprCast-242                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-243                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-244                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-245                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-246                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-247                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-248                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-249                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-250                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-251                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-252                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-253                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-254                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-255                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-256                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-257                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-258                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-259                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-260                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-261                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-262                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-263                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-264                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-265                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-266                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-267                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-268                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-269                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-270                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-271                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-272                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-273                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-274                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-275                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-276                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-277                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-278                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-279                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-280                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-281                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-282                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-283                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-284                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-285                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-286                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-287                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-288                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-289                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-290                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-291                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-292                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-293                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-294                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-295                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-296                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-297                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-298                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-299                                       # any-of: none passed: Expected error FOCA0002 but got FORG0001.; Expected error XPST0005 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-300                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-301                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-302                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-303                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-304                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-305                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-306                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-307                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-308                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-309                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-310                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-311                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-312                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-313                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-314                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-315                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-316                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-317                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-318                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-319                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-320                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-321                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-322                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-323                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-324                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-325                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-326                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-327                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-328                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-329                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-330                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-331                                       # Expected error FOCA0002 but got FORG0001.
+prod-CastExpr/K2-SeqExprCast-422                                       # Expected error but evaluation succeeded.
+prod-CastExpr/K2-SeqExprCast-423                                       # Expected error but evaluation succeeded.
+prod-CastExpr/K2-SeqExprCast-424                                       # Expected error but evaluation succeeded.
+prod-CastExpr/K2-SeqExprCast-505                                       # Expected error but evaluation succeeded.
+prod-CastExpr/K2-SeqExprCast-522                                       # Expected error but evaluation succeeded.
+prod-CastExpr/K2-SeqExprCast-523                                       # Expected error but evaluation succeeded.
+prod-CastExpr/casthc12                                                 # String value mismatch: expected '1.26743233E15', got '1267432330000000'.
+prod-CastExpr/casthc13                                                 # String value mismatch: expected '1.26743233E15', got '1267432330000000'.
+prod-CastExpr/casthc17                                                 # String value mismatch: expected '1.2678968E7', got '12678968'.
+prod-CastExpr/casthc18                                                 # String value mismatch: expected '1.2678967543233E7', got '12678967.543233'.
+prod-CastExpr/casthc24                                                 # String value mismatch: expected '1.2678967543233E13', got '12678967543233'.
+prod-CastExpr/casthc43                                                 # Expected error XPST0080 but got XPTY0004.
+prod-CastableExpr/CastableAs451                                        # Expected False but got True.
+prod-CastableExpr/CastableAs454                                        # Expected False but got True.
+prod-CastableExpr/CastableAs498                                        # Expected False but got True.
+prod-CastableExpr/CastableAs499                                        # Expected False but got True.
+prod-CastableExpr/CastableAs648                                        # Expected False but got True.
+prod-CastableExpr/K-SeqExprCastable-10                                 # Expected error but evaluation succeeded.
+prod-CastableExpr/K-SeqExprCastable-11                                 # Expected error but evaluation succeeded.
+prod-CastableExpr/K-SeqExprCastable-7                                  # Expected error but evaluation succeeded.
+prod-CastableExpr/K-SeqExprCastable-8                                  # Expected error but evaluation succeeded.
+prod-CastableExpr/K-SeqExprCastable-9                                  # Expected error but evaluation succeeded.
+prod-CastableExpr/K2-SeqExprCastable-6                                 # Expected False but got True.
+prod-CastableExpr/K2-SeqExprCastable-7                                 # Expected False but got True.
+prod-CastableExpr/cbcl-castable-date-001                               # Expected False but got True.
+prod-CastableExpr/cbcl-castable-date-002                               # Expected False but got True.
+prod-CastableExpr/cbcl-castable-dateTime-001                           # Expected False but got True.
+prod-CastableExpr/cbcl-castable-dateTime-002                           # Expected False but got True.
+prod-CastableExpr/cbcl-castable-nmtoken-002b                           # Expected True but got False.
+prod-ForClause/ForExpr012                                              # Evaluation exceeded 5s watchdog timeout.
+prod-ForClause/ForExpr013                                              # Evaluation exceeded 5s watchdog timeout.
+prod-ForClause/ForExpr015                                              # Evaluation exceeded 5s watchdog timeout.
+prod-ForClause/ForExpr016                                              # Evaluation exceeded 5s watchdog timeout.
+prod-ForClause/ForExpr025                                              # Evaluation exceeded 5s watchdog timeout.
+prod-GeneralComp.eq/GenCompEq-4                                        # Expected error but evaluation succeeded.
+prod-GeneralComp.eq/GenCompEq-6                                        # Expected error but evaluation succeeded.
+prod-GeneralComp.eq/K-GenCompEq-23                                     # Expected error but evaluation succeeded.
+prod-GeneralComp.eq/K-GenCompEq-30                                     # Expected error but evaluation succeeded.
+prod-GeneralComp.eq/K-GenCompEq-31                                     # Expected error but evaluation succeeded.
+prod-GeneralComp.eq/K-GenCompEq-47                                     # Expected error but evaluation succeeded.
+prod-GeneralComp.eq/K-GenCompEq-48                                     # Expected error but evaluation succeeded.
+prod-GeneralComp.eq/K-GenCompEq-49                                     # Expected error but evaluation succeeded.
+prod-GeneralComp.eq/K-GenCompEq-50                                     # Expected error but evaluation succeeded.
+prod-GeneralComp.eq/K-GenCompEq-52                                     # Expected error but evaluation succeeded.
+prod-GeneralComp.eq/K-GenCompEq-53                                     # Expected error but evaluation succeeded.
+prod-GeneralComp.eq/K-GenCompEq-54                                     # Expected error but evaluation succeeded.
+prod-GeneralComp.eq/K-GenCompEq-55                                     # Expected error but evaluation succeeded.
+prod-GeneralComp.eq/K-GenCompEq-56                                     # Expected error but evaluation succeeded.
+prod-GeneralComp.eq/K-GenCompEq-58                                     # Expected error but evaluation succeeded.
+prod-GeneralComp.eq/K-GenCompEq-59                                     # Expected error but evaluation succeeded.
+prod-GeneralComp.eq/generalexpression10                                # Expected false but got error: XPST0008.
+prod-GeneralComp.eq/generalexpression19                                # Expected false but got error: XPST0008.
+prod-GeneralComp.eq/generalexpression29                                # Expected false but got error: XPST0008.
+prod-GeneralComp.eq/generalexpression39                                # Expected false but got error: XPST0008.
+prod-GeneralComp.eq/generalexpression79                                # Expected true but got error: XPST0008.
+prod-GeneralComp.eq/generalexpression89                                # Expected true but got error: XPST0008.
+prod-GeneralComp.eq/generalexpression90                                # Expected false but got error: XPST0008.
+prod-GeneralComp.eq/generalexpression91                                # Expected false but got error: XPST0008.
+prod-GeneralComp.eq/generalexpression92                                # Expected false but got error: XPST0008.
+prod-GeneralComp.eq/generalexpression93                                # Expected false but got error: XPST0008.
+prod-GeneralComp.eq/generalexpression97                                # Expected true but got error: XPST0008.
+prod-GeneralComp.eq/generalexpression98                                # Expected true but got error: XPST0008.
+prod-GeneralComp.eq/generalexpression99                                # Expected true but got error: XPST0008.
+prod-GeneralComp.ge/generalexpression505                               # Expected false but got error: XPST0008.
+prod-GeneralComp.ge/generalexpression514                               # Expected true but got error: XPST0008.
+prod-GeneralComp.ge/generalexpression524                               # Expected true but got error: XPST0008.
+prod-GeneralComp.ge/generalexpression534                               # Expected true but got error: XPST0008.
+prod-GeneralComp.ge/generalexpression574                               # Expected true but got error: XPST0008.
+prod-GeneralComp.ge/generalexpression584                               # Expected true but got error: XPST0008.
+prod-GeneralComp.ge/generalexpression585                               # Expected false but got error: XPST0008.
+prod-GeneralComp.ge/generalexpression586                               # Expected false but got error: XPST0008.
+prod-GeneralComp.ge/generalexpression587                               # Expected false but got error: XPST0008.
+prod-GeneralComp.ge/generalexpression588                               # Expected false but got error: XPST0008.
+prod-GeneralComp.ge/generalexpression592                               # Expected true but got error: XPST0008.
+prod-GeneralComp.ge/generalexpression593                               # Expected true but got error: XPST0008.
+prod-GeneralComp.ge/generalexpression594                               # Expected true but got error: XPST0008.
+prod-GeneralComp.gt/K-GenCompGT-16                                     # Expected error but evaluation succeeded.
+prod-GeneralComp.gt/K-GenCompGT-17                                     # Expected error but evaluation succeeded.
+prod-GeneralComp.gt/generalexpression406                               # Expected false but got error: XPST0008.
+prod-GeneralComp.gt/generalexpression415                               # Expected true but got error: XPST0008.
+prod-GeneralComp.gt/generalexpression425                               # Expected true but got error: XPST0008.
+prod-GeneralComp.gt/generalexpression435                               # Expected true but got error: XPST0008.
+prod-GeneralComp.gt/generalexpression475                               # Expected false but got error: XPST0008.
+prod-GeneralComp.gt/generalexpression485                               # Expected false but got error: XPST0008.
+prod-GeneralComp.gt/generalexpression486                               # Expected false but got error: XPST0008.
+prod-GeneralComp.gt/generalexpression487                               # Expected false but got error: XPST0008.
+prod-GeneralComp.gt/generalexpression488                               # Expected false but got error: XPST0008.
+prod-GeneralComp.gt/generalexpression489                               # Expected false but got error: XPST0008.
+prod-GeneralComp.gt/generalexpression493                               # Expected false but got error: XPST0008.
+prod-GeneralComp.gt/generalexpression494                               # Expected true but got error: XPST0008.
+prod-GeneralComp.le/generalexpression307                               # Expected false but got error: XPST0008.
+prod-GeneralComp.le/generalexpression316                               # Expected false but got error: XPST0008.
+prod-GeneralComp.le/generalexpression326                               # Expected false but got error: XPST0008.
+prod-GeneralComp.le/generalexpression336                               # Expected false but got error: XPST0008.
+prod-GeneralComp.le/generalexpression376                               # Expected true but got error: XPST0008.
+prod-GeneralComp.le/generalexpression386                               # Expected true but got error: XPST0008.
+prod-GeneralComp.le/generalexpression387                               # Expected false but got error: XPST0008.
+prod-GeneralComp.le/generalexpression388                               # Expected true but got error: XPST0008.
+prod-GeneralComp.le/generalexpression389                               # Expected true but got error: XPST0008.
+prod-GeneralComp.le/generalexpression390                               # Expected true but got error: XPST0008.
+prod-GeneralComp.le/generalexpression394                               # Expected true but got error: XPST0008.
+prod-GeneralComp.le/generalexpression395                               # Expected true but got error: XPST0008.
+prod-GeneralComp.le/generalexpression396                               # Expected true but got error: XPST0008.
+prod-GeneralComp.lt/K-GenCompLT-16                                     # Expected error but evaluation succeeded.
+prod-GeneralComp.lt/K-GenCompLT-17                                     # Expected error but evaluation succeeded.
+prod-GeneralComp.lt/generalexpression208                               # Expected false but got error: XPST0008.
+prod-GeneralComp.lt/generalexpression217                               # Expected false but got error: XPST0008.
+prod-GeneralComp.lt/generalexpression227                               # Expected false but got error: XPST0008.
+prod-GeneralComp.lt/generalexpression237                               # Expected false but got error: XPST0008.
+prod-GeneralComp.lt/generalexpression277                               # Expected false but got error: XPST0008.
+prod-GeneralComp.lt/generalexpression287                               # Expected true but got error: XPST0008.
+prod-GeneralComp.lt/generalexpression288                               # Expected false but got error: XPST0008.
+prod-GeneralComp.lt/generalexpression289                               # Expected true but got error: XPST0008.
+prod-GeneralComp.lt/generalexpression290                               # Expected true but got error: XPST0008.
+prod-GeneralComp.lt/generalexpression291                               # Expected true but got error: XPST0008.
+prod-GeneralComp.lt/generalexpression295                               # Expected false but got error: XPST0008.
+prod-GeneralComp.lt/generalexpression296                               # Expected false but got error: XPST0008.
+prod-GeneralComp.lt/generalexpression297                               # Expected false but got error: XPST0008.
+prod-GeneralComp.ne/K-GenCompNE-33                                     # Expected error but evaluation succeeded.
+prod-GeneralComp.ne/K-GenCompNE-34                                     # Expected error but evaluation succeeded.
+prod-GeneralComp.ne/K-GenCompNE-35                                     # Expected error but evaluation succeeded.
+prod-GeneralComp.ne/K-GenCompNE-36                                     # Expected error but evaluation succeeded.
+prod-GeneralComp.ne/K-GenCompNE-37                                     # Expected error but evaluation succeeded.
+prod-GeneralComp.ne/K-GenCompNE-38                                     # Expected error but evaluation succeeded.
+prod-GeneralComp.ne/K-GenCompNE-39                                     # Expected error but evaluation succeeded.
+prod-GeneralComp.ne/K-GenCompNE-40                                     # Expected error but evaluation succeeded.
+prod-GeneralComp.ne/K-GenCompNE-41                                     # Expected error but evaluation succeeded.
+prod-GeneralComp.ne/generalexpression109                               # Expected false but got error: XPST0008.
+prod-GeneralComp.ne/generalexpression118                               # Expected true but got error: XPST0008.
+prod-GeneralComp.ne/generalexpression128                               # Expected true but got error: XPST0008.
+prod-GeneralComp.ne/generalexpression138                               # Expected true but got error: XPST0008.
+prod-GeneralComp.ne/generalexpression178                               # Expected false but got error: XPST0008.
+prod-GeneralComp.ne/generalexpression188                               # Expected true but got error: XPST0008.
+prod-GeneralComp.ne/generalexpression189                               # Expected false but got error: XPST0008.
+prod-GeneralComp.ne/generalexpression190                               # Expected true but got error: XPST0008.
+prod-GeneralComp.ne/generalexpression191                               # Expected true but got error: XPST0008.
+prod-GeneralComp.ne/generalexpression192                               # Expected true but got error: XPST0008.
+prod-GeneralComp.ne/generalexpression196                               # Expected false but got error: XPST0008.
+prod-GeneralComp.ne/generalexpression197                               # Expected true but got error: XPST0008.
+prod-GeneralComp.ne/generalexpression198                               # Expected false but got error: XPST0008.
+prod-IfExpr/CondExpr016                                                # Evaluation exceeded 5s watchdog timeout.
+prod-IfExpr/CondExpr017                                                # Evaluation exceeded 5s watchdog timeout.
+prod-IfExpr/CondExpr018                                                # Evaluation exceeded 5s watchdog timeout.
+prod-IfExpr/CondExpr022                                                # Expected a value but got error: XPST0017.
+prod-IfExpr/K-CondExpr-7                                               # Expected error FORG0006 but got XPTY0004.
+prod-Literal/K2-Literals-11                                            # String value mismatch: expected '-0', got '0'.
+prod-Literal/Literals016                                               # String value mismatch: expected '6.5535032E9', got '6553503200'.
+prod-Literal/Literals017                                               # String value mismatch: expected '6.5535032E6', got '6553503.2'.
+prod-Literal/Literals025                                               # String value mismatch: expected '-6.5535032E6', got '-6553503.2'.
+prod-Literal/Literals027                                               # String value mismatch: expected '6.5535032E9', got '6553503200'.
+prod-Literal/Literals028                                               # String value mismatch: expected '6.5535032E6', got '6553503.2'.
+prod-NameTest/K2-NameTest-37                                           # Expected error XPST0008 but got XPDY0002.
+prod-NameTest/K2-NameTest-38                                           # Expected error XPST0008 but got XPDY0002.
+prod-NameTest/NodeTest004                                              # assert expression evaluation failed: XPDY0002: The context item is undefined
+prod-NameTest/NodeTest005                                              # assert expression evaluation failed: XPDY0002: The context item is undefined
+prod-NodeTest/K2-NodeTest-12                                           # Expected error XPST0003 but got XPST0051.
+prod-NodeTest/K2-NodeTest-13                                           # Expected error XPST0003 but got XPST0051.
+prod-NodeTest/K2-NodeTest-19                                           # Expected error XPST0008 but got XPDY0002.
+prod-OrExpr/K-LogicExpr-16                                             # Expected error FORG0006 but got XPTY0004.
+prod-OrExpr/K-LogicExpr-17                                             # Expected error FORG0006 but got XPTY0004.
+prod-OrExpr/K-LogicExpr-18                                             # Expected error FORG0006 but got XPTY0004.
+prod-OrExpr/K-LogicExpr-19                                             # Expected error FORG0006 but got XPTY0004.
+prod-OrExpr/K-LogicExpr-20                                             # Expected error FORG0006 but got XPTY0004.
+prod-OrExpr/K-LogicExpr-21                                             # Expected error FORG0006 but got XPTY0004.
+prod-OrExpr/K-LogicExpr-45                                             # Expected error FORG0006 but got XPTY0004.
+prod-ParenthesizedExpr/Parenexpr-19                                    # assert expression evaluation failed: XPDY0002: The context item is undefined
+prod-Predicate/K-FilterExpr-38                                         # Expected error FORG0006 but got XPTY0004.
+prod-Predicate/K-FilterExpr-40                                         # Expected error FORG0006 but got XPTY0004.
+prod-Predicate/K-FilterExpr-91                                         # Expected error FORG0006 but got XPTY0004.
+prod-Predicate/K-FilterExpr-92                                         # Expected error FORG0006 but got XPTY0004.
+prod-Predicate/K-FilterExpr-93                                         # Expected error FORG0006 but got XPTY0004.
+prod-Predicate/K-FilterExpr-94                                         # Expected error FORG0006 but got XPTY0004.
+prod-Predicate/filterexpressionhc1                                     # Evaluation exceeded 5s watchdog timeout.
+prod-QuantifiedExpr/K-QuantExprWithout-1                               # Expected error FORG0006 but got XPTY0004.
+prod-QuantifiedExpr/K-QuantExprWithout-2                               # Expected error FORG0006 but got XPTY0004.
+prod-QuantifiedExpr/K-QuantExprWithout-28                              # Expected error FORG0006 but got XPTY0004.
+prod-QuantifiedExpr/K-QuantExprWithout-29                              # Expected error FORG0006 but got XPTY0004.
+prod-QuantifiedExpr/K-QuantExprWithout-30                              # Expected error FORG0006 but got XPTY0004.
+prod-QuantifiedExpr/K-QuantExprWithout-31                              # Expected error FORG0006 but got XPTY0004.
+prod-QuantifiedExpr/K-QuantExprWithout-32                              # Expected error FORG0006 but got XPTY0004.
+prod-QuantifiedExpr/K-QuantExprWithout-94                              # Expected error FORG0006 but got XPTY0004.
+prod-QuantifiedExpr/K-QuantExprWithout-95                              # Expected error FORG0006 but got XPTY0004.
+prod-QuantifiedExpr/K-QuantExprWithout-96                              # Expected error FORG0006 but got XPTY0004.
+prod-QuantifiedExpr/K-QuantExprWithout-97                              # Expected error FORG0006 but got XPTY0004.
+prod-ReturnClause/ReturnExpr005                                        # Evaluation exceeded 5s watchdog timeout.
+prod-ReturnClause/ReturnExpr006                                        # Evaluation exceeded 5s watchdog timeout.
+prod-ReturnClause/ReturnExpr007                                        # Evaluation exceeded 5s watchdog timeout.
+prod-ReturnClause/ReturnExpr008                                        # Evaluation exceeded 5s watchdog timeout.
+prod-ReturnClause/ReturnExpr009                                        # Evaluation exceeded 5s watchdog timeout.
+prod-ReturnClause/ReturnExpr011                                        # Evaluation exceeded 5s watchdog timeout.
+prod-ReturnClause/ReturnExpr015                                        # Evaluation exceeded 5s watchdog timeout.
+prod-ReturnClause/ReturnExpr017                                        # Evaluation exceeded 5s watchdog timeout.
+prod-ReturnClause/ReturnExpr018                                        # Evaluation exceeded 5s watchdog timeout.
+prod-ReturnClause/ReturnExpr020                                        # Evaluation exceeded 5s watchdog timeout.
+prod-SequenceType/sequence-type-1                                      # Evaluation exceeded 5s watchdog timeout.
+prod-SequenceType/sequence-type-2                                      # Evaluation exceeded 5s watchdog timeout.
+prod-SequenceType/sequence-type-3                                      # Evaluation exceeded 5s watchdog timeout.
+prod-TreatExpr/K-SeqExprTreat-1                                        # Expected error XPDY0050 but got XPTY0004.
+prod-TreatExpr/K-SeqExprTreat-10                                       # Expected error XPDY0050 but got XPTY0004.
+prod-TreatExpr/K-SeqExprTreat-2                                        # Expected error XPDY0050 but got XPTY0004.
+prod-TreatExpr/K-SeqExprTreat-3                                        # Expected error XPDY0050 but got XPTY0004.
+prod-TreatExpr/K-SeqExprTreat-4                                        # Expected error XPDY0050 but got XPTY0004.
+prod-TreatExpr/K2-SeqExprTreat-1                                       # Expected error XPDY0050 but got XPTY0004.
+prod-TreatExpr/cbcl-treat-as-001                                       # Evaluation exceeded 5s watchdog timeout.
+prod-TreatExpr/cbcl-treat-as-009                                       # Expected error XPDY0050 but got XPTY0004.
+prod-TreatExpr/cbcl-treat-as-010                                       # Expected error XPDY0050 but got XPTY0004.
+prod-TreatExpr/cbcl-treat-as-011                                       # Expected error XPDY0050 but got XPTY0004.
+prod-TreatExpr/cbcl-treat-as-012                                       # Expected error XPDY0050 but got XPTY0004.
+prod-TreatExpr/cbcl-treat-as-013                                       # Expected error XPDY0050 but got XPTY0004.
+prod-TreatExpr/cbcl-treat-as-014                                       # Expected error XPDY0050 but got XPTY0004.
+xs-base64Binary/base64-906                                             # Expected error but evaluation succeeded.
+xs-base64Binary/base64-907                                             # Expected error but evaluation succeeded.
+xs-dateTimeStamp/xs-dateTimeStamp-2                                    # Expected a value but got error: XPST0017.
+xs-dateTimeStamp/xs-dateTimeStamp-3                                    # Expected error FORG0001 but got XPST0017.
+xs-dateTimeStamp/xs-dateTimeStamp-4                                    # Expected error FORG0001 but got XPST0017.
+xs-dateTimeStamp/xs-dateTimeStamp-5                                    # Expected a value but got error: XPST0017.
+xs-double/xs-double-001                                                # Value mismatch: '0' != '-0'.
+xs-double/xs-double-003                                                # Expected true but got error: FORG0001.
+xs-float/xs-float-001                                                  # Value mismatch: '0' != '-0'.
+xs-float/xs-float-003                                                  # Expected true but got error: FORG0001.
+xs-normalizedString/cbcl-normalizedstring-002b                         # Expected a value but got error: FORG0001.
+xs-token/cbcl-token-002b                                               # Expected a value but got error: FORG0001.

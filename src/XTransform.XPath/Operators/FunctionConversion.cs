@@ -77,6 +77,13 @@ internal static class FunctionConversion
             return value;
         }
 
+        // F&O §3.1.5: xs:anyAtomicType is abstract — any atomic value satisfies it; pass through.
+        // (CastTable.Cast would throw XPTY0004 for target==AnyAtomicType.)
+        if (target == XdmTypeCode.AnyAtomicType)
+        {
+            return value;
+        }
+
         // Cast xs:untypedAtomic to the expected type (F&O §3.1.5 rule 2).
         if (value.TypeCode == XdmTypeCode.UntypedAtomic)
         {
@@ -98,7 +105,18 @@ internal static class FunctionConversion
             return XdmAtomicValue.String(value.GetStringValue());
         }
 
-        // Otherwise pass through; runtime match failure will surface later.
+        // F&O §3.1.5: if none of the above conversions apply and the value type is not a
+        // subtype of the target, raise XPTY0004.
+        // (Subtype values — e.g. xs:normalizedString when target is xs:string — pass through.)
+        if (!CastTable.IsSubtypeOf(value.TypeCode, target))
+        {
+            throw new XPathDynamicException(
+                XPathErrors.XPTY0004,
+                $"Function argument type mismatch: cannot convert xs:{CastTable.GetXsLocalName(value.TypeCode)} to xs:{CastTable.GetXsLocalName(target)}.",
+                location);
+        }
+
+        // Subtype of target — pass through.
         return value;
     }
 

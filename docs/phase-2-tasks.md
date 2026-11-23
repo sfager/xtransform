@@ -378,7 +378,7 @@ pattern string; cache compiled regexes in `RunState` by translated pattern.
 
 ## P2-15 Gate G2 run and baseline bump
 
-- [ ] Done
+- [x] Done
 
 **Scope.** Switch the conformance harness from parse-only to full evaluation
 mode: for each in-scope QT3 test, build a `DynamicContext` with the test's
