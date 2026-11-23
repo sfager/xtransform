@@ -270,7 +270,7 @@ emit their contents before the element's own attributes.
 
 ## P3-11 `xsl:function`, `xsl:key`, resource functions
 
-- [ ] Done
+- [x] Done
 
 **Scope.** `xsl:function` compiles into a `UserDefinedFunction` registered in
 the compiled stylesheet's `FunctionLibrary` (reuses the P2-08 abstraction).

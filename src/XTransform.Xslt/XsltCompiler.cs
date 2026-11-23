@@ -1,6 +1,6 @@
-// XSLT 2.0 compiler — pass 1 (declaration collection and name binding).
-// Later passes (static type inference, template rule compilation, optimisation, code gen)
-// land in P3-05+ and attach additional state to the returned CompiledStylesheet.
+// XSLT 2.0 compiler — orchestrates declaration collection, name binding, mode compilation
+// and instruction compilation. Later passes (full static type inference, optimisation,
+// IL code gen) attach to CompiledStylesheet as separate tasks.
 
 using System;
 using System.Collections.Generic;
@@ -9,18 +9,13 @@ using XTransform.Xslt.Instructions;
 
 namespace XTransform.Xslt;
 
-/// <summary>
-/// The XSLT 2.0 compiler. P3-04 implements declaration collection and the first wave of
-/// name-binding diagnostics; subsequent tasks bolt instruction compilation onto the result.
-/// </summary>
+/// <summary>The XSLT 2.0 compiler.</summary>
 internal static class XsltCompiler
 {
     /// <summary>
-    /// Runs the P3-04 compiler passes over <paramref name="assembly"/>. Every static error
-    /// detected during a pass is collected into a <see cref="DiagnosticBag"/>; on completion,
-    /// the compiler throws a single <see cref="XsltStaticException"/> listing them all.
+    /// Runs every compiler pass over <paramref name="assembly"/>. Static errors are collected
+    /// into a <see cref="DiagnosticBag"/> and raised as a single <see cref="XsltStaticException"/>.
     /// </summary>
-    /// <exception cref="XsltStaticException">Thrown when any static error was recorded.</exception>
     public static CompiledStylesheet Compile(StylesheetAssembly assembly)
     {
 #pragma warning disable CA1510 // ArgumentNullException.ThrowIfNull not available on netstandard2.0
@@ -54,11 +49,22 @@ internal static class XsltCompiler
         GlobalBindingValidator.Validate(declarations, bag);
         IReadOnlyDictionary<QName, ModeTable> modes = ModeCompiler.Compile(declarations, bag);
 
+        // Build the function library: register user function signatures first so inter-function
+        // references resolve; bodies are populated in pass 2 via the slot.
+        XsltFunctionLibrary functions = new XsltFunctionLibrary();
+        Dictionary<FunctionKey, UserFunctionSlot> userSlots = new Dictionary<FunctionKey, UserFunctionSlot>();
+        foreach (KeyValuePair<FunctionKey, FunctionDecl> kv in declarations.Functions)
+        {
+            UserFunctionSlot slot = functions.RegisterUser(kv.Value.Name, kv.Value.Arity);
+            userSlots[kv.Key] = slot;
+        }
+
+        // Pass 2: compile every template and function body.
         Dictionary<TemplateDecl, CompiledTemplate> compiledTemplates =
             new Dictionary<TemplateDecl, CompiledTemplate>();
         foreach (TemplateDecl decl in declarations.Templates)
         {
-            CompiledTemplate? compiled = InstructionCompiler.CompileTemplate(decl, declarations, bag);
+            CompiledTemplate? compiled = InstructionCompiler.CompileTemplate(decl, declarations, functions, bag);
             if (compiled is not null)
             {
                 compiledTemplates[decl] = compiled;
@@ -72,10 +78,20 @@ internal static class XsltCompiler
                 continue;
             }
 
-            CompiledTemplate? compiled = InstructionCompiler.CompileTemplate(decl, declarations, bag);
+            CompiledTemplate? compiled = InstructionCompiler.CompileTemplate(decl, declarations, functions, bag);
             if (compiled is not null)
             {
                 compiledTemplates[decl] = compiled;
+            }
+        }
+
+        // Compile xsl:function bodies and bind their slots.
+        foreach (KeyValuePair<FunctionKey, FunctionDecl> kv in declarations.Functions)
+        {
+            UserFunctionBody? body = InstructionCompiler.CompileUserFunction(kv.Value, declarations, functions, bag);
+            if (body is not null)
+            {
+                userSlots[kv.Key].SetBody(body);
             }
         }
 
@@ -84,8 +100,6 @@ internal static class XsltCompiler
             throw new XsltStaticException(bag.ToList());
         }
 
-        // Promote any warnings collected during mode compilation (e.g. XTRE0540) onto the
-        // compiled stylesheet's warning list.
         foreach (Diagnostic d in bag.ToList())
         {
             if (d.Severity == DiagnosticSeverity.Warning)
@@ -94,6 +108,13 @@ internal static class XsltCompiler
             }
         }
 
-        return new CompiledStylesheet(assembly, declarations, modes, compiledTemplates, warnings);
+        return new CompiledStylesheet(
+            assembly,
+            declarations,
+            modes,
+            compiledTemplates,
+            declarations.Keys,
+            functions,
+            warnings);
     }
 }

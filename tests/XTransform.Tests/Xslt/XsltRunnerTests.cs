@@ -336,6 +336,8 @@ internal sealed class XsltRunnerTests
             compiled.Declarations,
             compiled.Modes,
             replaced,
+            compiled.Keys,
+            compiled.Functions,
             compiled.Warnings);
     }
 

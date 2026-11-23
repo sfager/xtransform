@@ -163,13 +163,15 @@ internal sealed class DeclarationTable
         IReadOnlyList<TemplateDecl> templates,
         IReadOnlyDictionary<QName, TemplateDecl> namedTemplates,
         IReadOnlyDictionary<FunctionKey, FunctionDecl> functions,
-        IReadOnlyCollection<QName> declaredModes)
+        IReadOnlyCollection<QName> declaredModes,
+        IReadOnlyDictionary<QName, KeyDecl> keys)
     {
         GlobalVariables = globalVariables;
         Templates = templates;
         NamedTemplates = namedTemplates;
         Functions = functions;
         DeclaredModes = declaredModes;
+        Keys = keys;
     }
 
     /// <summary>Global variables and parameters, keyed by expanded name — higher-precedence wins.</summary>
@@ -186,4 +188,7 @@ internal sealed class DeclarationTable
 
     /// <summary>Set of modes that have at least one matching template rule.</summary>
     public IReadOnlyCollection<QName> DeclaredModes { get; }
+
+    /// <summary>xsl:key declarations keyed by expanded name.</summary>
+    public IReadOnlyDictionary<QName, KeyDecl> Keys { get; }
 }

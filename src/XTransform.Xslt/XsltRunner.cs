@@ -28,6 +28,7 @@ internal static class XsltRunner
         IResultReceiver receiver,
         NamePool? namePool = null,
         IReadOnlyDictionary<QName, XdmSequence>? parameters = null,
+        IResourceResolver? resolver = null,
         int maxRecursionDepth = XsltRunState.DefaultMaxRecursionDepth)
     {
 #pragma warning disable CA1510 // ArgumentNullException.ThrowIfNull not available on netstandard2.0
@@ -49,7 +50,12 @@ internal static class XsltRunner
 
         RunState xpathRun = new RunState();
         NamePool effectivePool = namePool ?? new NamePool();
-        XsltRunState run = new XsltRunState(compiled, xpathRun, effectivePool, maxRecursionDepth);
+        XsltRunState run = new XsltRunState(compiled, xpathRun, effectivePool, maxRecursionDepth)
+        {
+            Resolver = resolver,
+        };
+        // Expose XsltRunState to XPath built-ins (fn:document, fn:key, user functions).
+        xpathRun.Tag = run;
 
         if (parameters is not null)
         {
