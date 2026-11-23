@@ -28,6 +28,7 @@ internal static class DeclarationCollector
         Dictionary<FunctionKey, FunctionDecl> functions = new Dictionary<FunctionKey, FunctionDecl>();
         List<TemplateDecl> templates = new List<TemplateDecl>();
         HashSet<QName> declaredModes = new HashSet<QName>();
+        Dictionary<QName, KeyDecl> keys = new Dictionary<QName, KeyDecl>();
 
         // Modules are iterated in load order (post-order). Entries with the same precedence
         // can conflict; higher precedence overrides lower. We process in ascending order and
@@ -67,7 +68,11 @@ internal static class DeclarationCollector
                         CollectFunction(child, entry.ImportPrecedence, functions, bag);
                         break;
 
-                    // Other top-level declarations (key, attribute-set, decimal-format,
+                    case "key":
+                        CollectKey(child, entry.ImportPrecedence, keys, bag);
+                        break;
+
+                    // Other top-level declarations (attribute-set, decimal-format,
                     // character-map, namespace-alias, output, strip-space, preserve-space,
                     // import-schema) are collected in later tasks — P3-04 stays tight.
                     default:
@@ -76,7 +81,43 @@ internal static class DeclarationCollector
             }
         }
 
-        return new DeclarationTable(globals, templates, namedTemplates, functions, declaredModes);
+        return new DeclarationTable(globals, templates, namedTemplates, functions, declaredModes, keys);
+    }
+
+    private static void CollectKey(
+        StylesheetElement element,
+        int precedence,
+        Dictionary<QName, KeyDecl> keys,
+        DiagnosticBag bag)
+    {
+        string? nameAttr = GetAttribute(element, "name");
+        if (nameAttr is null)
+        {
+            bag.Error(XsltErrors.XTSE0010, "xsl:key requires a name attribute", element.Location);
+            return;
+        }
+
+        if (!LexicalQNameParser.TryResolve(nameAttr, element.InScopeNamespaces, out QName name, out string? why))
+        {
+            bag.Error(XsltErrors.XTSE0010, $"Invalid key name '{nameAttr}': {why}", element.Location);
+            return;
+        }
+
+        string? match = GetAttribute(element, "match");
+        string? use = GetAttribute(element, "use");
+        if (match is null || use is null)
+        {
+            bag.Error(XsltErrors.XTSE0010, "xsl:key requires both match and use attributes", element.Location);
+            return;
+        }
+
+        // Multiple xsl:key with the same name are allowed; P3-11 keeps the first seen and
+        // relies on union semantics at lookup (XSLT 2.0 §16.2.3). A proper merged-index
+        // implementation is deferred.
+        if (!keys.ContainsKey(name))
+        {
+            keys[name] = new KeyDecl(element, precedence, name, match, use);
+        }
     }
 
     // ── xsl:variable / xsl:param ────────────────────────────────────────────

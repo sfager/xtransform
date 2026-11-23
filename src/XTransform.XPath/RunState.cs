@@ -51,6 +51,12 @@ internal sealed class RunState
     public int ImplicitTimezoneMinutes => _implicitTimezoneMinutes;
 
     /// <summary>
+    /// Host-opaque tag used by higher layers (XSLT) to attach their own run-wide state to a
+    /// shared <see cref="RunState"/>. XPath itself never inspects this value.
+    /// </summary>
+    public object? Tag { get; set; }
+
+    /// <summary>
     /// Captures UTC now as an <see cref="XsdDateTime"/> with UTC timezone (offset = 0).
     /// Never uses <see cref="System.DateTime"/> for storage; raw components are stored instead.
     /// </summary>

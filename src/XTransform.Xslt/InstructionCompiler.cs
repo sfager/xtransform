@@ -23,7 +23,98 @@ internal static class InstructionCompiler
     /// <see langword="null"/> when the template body references constructs that this phase of
     /// the compiler doesn't yet support (reported as diagnostics).
     /// </summary>
+    /// <summary>Thread-local function library used for the current compilation.</summary>
+    [System.ThreadStatic]
+    private static FunctionLibrary? s_functions;
+
     public static CompiledTemplate? CompileTemplate(
+        TemplateDecl decl,
+        DeclarationTable declarations,
+        FunctionLibrary functions,
+        DiagnosticBag bag)
+    {
+        s_functions = functions;
+        try
+        {
+            return CompileTemplateInner(decl, declarations, bag);
+        }
+        finally
+        {
+            s_functions = null;
+        }
+    }
+
+    /// <summary>
+    /// Compiles an <c>xsl:function</c> body into a <see cref="UserFunctionBody"/>. Params are
+    /// pushed onto the variable scope stack at invocation time; the body's returned items are
+    /// collected via <see cref="ItemCollectorReceiver"/>.
+    /// </summary>
+    public static UserFunctionBody? CompileUserFunction(
+        FunctionDecl decl,
+        DeclarationTable declarations,
+        FunctionLibrary functions,
+        DiagnosticBag bag)
+    {
+        s_functions = functions;
+        try
+        {
+            XsltCompileScope scope = XsltCompileScope.WithGlobals(declarations.GlobalVariables.Keys);
+            List<QName> paramNames = new List<QName>();
+            int firstNonParam = 0;
+            for (int i = 0; i < decl.Element.Children.Count; i++)
+            {
+                if (decl.Element.Children[i] is not StylesheetElement child)
+                {
+                    continue;
+                }
+
+                if (!(child.IsXsltElement && string.Equals(child.Name.LocalName, "param", StringComparison.Ordinal)))
+                {
+                    firstNonParam = i;
+                    break;
+                }
+
+                string? nameAttr = GetAttribute(child, "name");
+                if (nameAttr is null)
+                {
+                    bag.Error(XsltErrors.XTSE0010, "xsl:param requires a name attribute", child.Location);
+                    return null;
+                }
+
+                if (!LexicalQNameParser.TryResolve(nameAttr, child.InScopeNamespaces, out QName name, out string? why))
+                {
+                    bag.Error(XsltErrors.XTSE0010, $"Invalid param name '{nameAttr}': {why}", child.Location);
+                    return null;
+                }
+
+                paramNames.Add(name);
+                scope.Declare(name, SequenceType.AnySequence);
+                firstNonParam = i + 1;
+            }
+
+            List<XsltInstruction> bodyInstructions = new List<XsltInstruction>();
+            for (int i = firstNonParam; i < decl.Element.Children.Count; i++)
+            {
+                XsltInstruction? compiled = CompileNode(decl.Element.Children[i], scope, bag);
+                if (compiled is not null)
+                {
+                    bodyInstructions.Add(compiled);
+                }
+            }
+
+            XsltInstruction body = bodyInstructions.Count == 1
+                ? bodyInstructions[0]
+                : new SequenceInstruction(bodyInstructions, decl.Location);
+
+            return new UserFunctionBody(paramNames, body);
+        }
+        finally
+        {
+            s_functions = null;
+        }
+    }
+
+    private static CompiledTemplate? CompileTemplateInner(
         TemplateDecl decl,
         DeclarationTable declarations,
         DiagnosticBag bag)
@@ -717,7 +808,7 @@ internal static class InstructionCompiler
 
             Dictionary<QName, SequenceType> externals = scope.AsExternalVariables();
             CompiledExpression ce = XPathCompiler.ParseAndCompile(
-                expression, scopeElement.Location, resolver, BuiltInFunctionLibrary.Instance, externals);
+                expression, scopeElement.Location, resolver, s_functions ?? BuiltInFunctionLibrary.Instance, externals);
             compiled = new BoundExpression(ce.Root, ce.SlotCount, new List<QName>(scope.Names));
             return true;
         }
