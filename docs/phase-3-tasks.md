@@ -79,7 +79,7 @@ evaluate `use-when` (P3-02).
 
 ## P3-02 Attribute value templates, `use-when`, `xml:space`
 
-- [ ] Done
+- [x] Done
 
 **Scope.** Split every attribute value on an XSLT instruction (and every
 attribute on a literal result element that is not a namespace declaration) into

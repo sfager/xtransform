@@ -9,4 +9,10 @@
     <PackageReference Include="System.Collections.Immutable" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- XTransform.Xslt needs XPathCompiler, FunctionLibrary and IStaticNamespaceResolver
+         to drive use-when expression evaluation (P3-02) and later instruction compilation. -->
+    <InternalsVisibleTo Include="XTransform.Xslt" />
+  </ItemGroup>
+
 </Project>
