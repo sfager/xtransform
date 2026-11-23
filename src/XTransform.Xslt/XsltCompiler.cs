@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using XTransform.Xdm;
+using XTransform.Xslt.Instructions;
 
 namespace XTransform.Xslt;
 
@@ -53,6 +54,31 @@ internal static class XsltCompiler
         GlobalBindingValidator.Validate(declarations, bag);
         IReadOnlyDictionary<QName, ModeTable> modes = ModeCompiler.Compile(declarations, bag);
 
+        Dictionary<TemplateDecl, CompiledTemplate> compiledTemplates =
+            new Dictionary<TemplateDecl, CompiledTemplate>();
+        foreach (TemplateDecl decl in declarations.Templates)
+        {
+            CompiledTemplate? compiled = InstructionCompiler.CompileTemplate(decl, bag);
+            if (compiled is not null)
+            {
+                compiledTemplates[decl] = compiled;
+            }
+        }
+
+        foreach (TemplateDecl decl in declarations.NamedTemplates.Values)
+        {
+            if (compiledTemplates.ContainsKey(decl))
+            {
+                continue;
+            }
+
+            CompiledTemplate? compiled = InstructionCompiler.CompileTemplate(decl, bag);
+            if (compiled is not null)
+            {
+                compiledTemplates[decl] = compiled;
+            }
+        }
+
         if (bag.HasErrors)
         {
             throw new XsltStaticException(bag.ToList());
@@ -68,6 +94,6 @@ internal static class XsltCompiler
             }
         }
 
-        return new CompiledStylesheet(assembly, declarations, modes, warnings);
+        return new CompiledStylesheet(assembly, declarations, modes, compiledTemplates, warnings);
     }
 }

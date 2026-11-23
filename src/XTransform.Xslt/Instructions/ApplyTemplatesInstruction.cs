@@ -1,0 +1,89 @@
+using System.Collections.Generic;
+using XTransform.Xdm;
+using XTransform.XPath;
+
+namespace XTransform.Xslt.Instructions;
+
+/// <summary>
+/// How the <c>mode</c> attribute was spelled on <c>xsl:apply-templates</c>.
+/// </summary>
+internal enum ApplyTemplatesMode
+{
+    /// <summary>No <c>mode</c> attribute or <c>mode="#default"</c>: the default mode.</summary>
+    Default,
+    /// <summary><c>mode="#current"</c>: inherit the caller's mode at runtime.</summary>
+    Current,
+    /// <summary>A specific mode QName in <see cref="ApplyTemplatesInstruction.Mode"/>.</summary>
+    Named,
+}
+
+/// <summary>
+/// Compiled <c>xsl:apply-templates</c>. For each item from <see cref="Select"/>,
+/// chooses the best-matching template rule in the resolved mode table and runs it;
+/// falls back to the built-in rules when no match (XSLT 2.0 §6.6).
+/// </summary>
+internal sealed class ApplyTemplatesInstruction : XsltInstruction
+{
+    /// <summary>Initializes an xsl:apply-templates instruction.</summary>
+    public ApplyTemplatesInstruction(
+        ExpressionNode select,
+        ApplyTemplatesMode modeSpec,
+        QName mode,
+        IReadOnlyList<WithParamInstruction> withParams,
+        SourceSpan location)
+        : base(location)
+    {
+        Select = select;
+        ModeSpec = modeSpec;
+        Mode = mode;
+        WithParams = withParams;
+    }
+
+    /// <summary>Compiled <c>@select</c> (default: <c>child::node()</c>).</summary>
+    public ExpressionNode Select { get; }
+
+    /// <summary>How the mode was declared.</summary>
+    public ApplyTemplatesMode ModeSpec { get; }
+
+    /// <summary>The resolved mode when <see cref="ModeSpec"/> is <see cref="ApplyTemplatesMode.Named"/>.</summary>
+    public QName Mode { get; }
+
+    /// <summary>The <c>xsl:with-param</c> bindings.</summary>
+    public IReadOnlyList<WithParamInstruction> WithParams { get; }
+
+    /// <inheritdoc/>
+    public override void Execute(DynamicContext context, IResultReceiver receiver, XsltRunState run)
+    {
+        // Materialise the selection to drive focus/position/size through the loop.
+        List<XdmItem> items = new List<XdmItem>();
+        IXdmIterator iter = Select.Iterate(context);
+        XdmItem? item;
+        while ((item = iter.Next()) is not null)
+        {
+            items.Add(item);
+        }
+
+        QName effectiveMode = ModeSpec switch
+        {
+            ApplyTemplatesMode.Current => run.CurrentMode,
+            ApplyTemplatesMode.Named => Mode,
+            _ => DeclarationCollector.DefaultMode,
+        };
+
+        int size = items.Count;
+        QName savedMode = run.CurrentMode;
+        try
+        {
+            run.CurrentMode = effectiveMode;
+            for (int i = 0; i < size; i++)
+            {
+                DynamicContext childCtx = context.WithContextItem(items[i], position: i + 1, size: size);
+                ModeDispatcher.Dispatch(childCtx, receiver, run, effectiveMode, WithParams, Location);
+            }
+        }
+        finally
+        {
+            run.CurrentMode = savedMode;
+        }
+    }
+}

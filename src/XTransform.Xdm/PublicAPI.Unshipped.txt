@@ -78,6 +78,8 @@ static readonly XTransform.Xdm.XPathErrors.XPST0081 -> XTransform.Xdm.QName
 static readonly XTransform.Xdm.XPathErrors.XPTY0004 -> XTransform.Xdm.QName
 XTransform.Xdm.XsltErrors
 static readonly XTransform.Xdm.XsltErrors.XTDE0640 -> XTransform.Xdm.QName
+static readonly XTransform.Xdm.XsltErrors.XTDE0700 -> XTransform.Xdm.QName
+static readonly XTransform.Xdm.XsltErrors.XTDE0810 -> XTransform.Xdm.QName
 static readonly XTransform.Xdm.XsltErrors.XTRE0540 -> XTransform.Xdm.QName
 static readonly XTransform.Xdm.XsltErrors.XTMM9000 -> XTransform.Xdm.QName
 static readonly XTransform.Xdm.XsltErrors.XTSE0010 -> XTransform.Xdm.QName
