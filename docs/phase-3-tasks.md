@@ -248,7 +248,7 @@ fixup, F&O §15.1.6).
 
 ## P3-10 Constructor instructions
 
-- [ ] Done
+- [x] Done
 
 **Scope.** `xsl:element` (name is an AVT; namespace resolved per XSLT 2.0
 §11.2), `xsl:attribute` (ditto), `xsl:comment`, `xsl:processing-instruction`,

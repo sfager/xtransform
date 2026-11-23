@@ -110,14 +110,179 @@ internal static class InstructionCompiler
             "sequence" => CompileXslSequence(element, scope, bag),
             "copy" => CompileCopy(element, scope, bag),
             "copy-of" => CompileCopyOf(element, scope, bag),
+            "element" => CompileXslElement(element, scope, bag),
+            "attribute" => CompileXslAttribute(element, scope, bag),
+            "comment" => CompileXslComment(element, scope, bag),
+            "processing-instruction" => CompileXslPi(element, scope, bag),
+            "document" => CompileXslDocument(element, scope, bag),
             // Deferred to later tasks:
-            "element" or "attribute" or
-            "comment" or "processing-instruction" or
-            "document" or "message" or "number" or "result-document" or
+            "message" or "number" or "result-document" or
             "analyze-string" or "for-each-group" or "next-match" or "fallback" or
             "apply-imports" or "perform-sort" => null,
             _ => null,
         };
+    }
+
+    // ── xsl:element / xsl:attribute / xsl:comment / xsl:processing-instruction / xsl:document ──
+
+    private static XsltInstruction? CompileXslElement(StylesheetElement element, XsltCompileScope scope, DiagnosticBag bag)
+    {
+        string? nameAttr = GetAttribute(element, "name");
+        if (nameAttr is null)
+        {
+            bag.Error(XsltErrors.XTSE0010, "xsl:element requires a name attribute", element.Location);
+            return null;
+        }
+
+        CompiledAvt? nameAvt = CompileAvtString(nameAttr, element, scope, bag);
+        if (nameAvt is null) { return null; }
+
+        CompiledAvt? nsAvt = null;
+        string? nsAttr = GetAttribute(element, "namespace");
+        if (nsAttr is not null)
+        {
+            nsAvt = CompileAvtString(nsAttr, element, scope, bag);
+            if (nsAvt is null) { return null; }
+        }
+
+        string defaultElementNs = element.InScopeNamespaces.Resolve(string.Empty) ?? string.Empty;
+        XsltInstruction body = CompileChildren(element, scope, bag);
+        return new ElementInstruction(nameAvt, nsAvt, element.InScopeNamespaces, defaultElementNs, body, element.Location);
+    }
+
+    private static XsltInstruction? CompileXslAttribute(StylesheetElement element, XsltCompileScope scope, DiagnosticBag bag)
+    {
+        string? nameAttr = GetAttribute(element, "name");
+        if (nameAttr is null)
+        {
+            bag.Error(XsltErrors.XTSE0010, "xsl:attribute requires a name attribute", element.Location);
+            return null;
+        }
+
+        CompiledAvt? nameAvt = CompileAvtString(nameAttr, element, scope, bag);
+        if (nameAvt is null) { return null; }
+
+        CompiledAvt? nsAvt = null;
+        string? nsAttr = GetAttribute(element, "namespace");
+        if (nsAttr is not null)
+        {
+            nsAvt = CompileAvtString(nsAttr, element, scope, bag);
+            if (nsAvt is null) { return null; }
+        }
+
+        string? selectExpr = GetAttribute(element, "select");
+        BoundExpression? select = null;
+        XsltInstruction? body = null;
+        if (!string.IsNullOrEmpty(selectExpr))
+        {
+            if (!TryCompileXPath(selectExpr!, element, scope, bag, out select))
+            {
+                return null;
+            }
+        }
+        else
+        {
+            body = CompileChildren(element, scope, bag);
+        }
+
+        return new AttributeInstruction(nameAvt, nsAvt, element.InScopeNamespaces, select, body, element.Location);
+    }
+
+    private static XsltInstruction? CompileXslComment(StylesheetElement element, XsltCompileScope scope, DiagnosticBag bag)
+    {
+        string? selectExpr = GetAttribute(element, "select");
+        BoundExpression? select = null;
+        XsltInstruction? body = null;
+        if (!string.IsNullOrEmpty(selectExpr))
+        {
+            if (!TryCompileXPath(selectExpr!, element, scope, bag, out select))
+            {
+                return null;
+            }
+        }
+        else
+        {
+            body = CompileChildren(element, scope, bag);
+        }
+
+        return new CommentInstruction(select, body, element.Location);
+    }
+
+    private static XsltInstruction? CompileXslPi(StylesheetElement element, XsltCompileScope scope, DiagnosticBag bag)
+    {
+        string? nameAttr = GetAttribute(element, "name");
+        if (nameAttr is null)
+        {
+            bag.Error(XsltErrors.XTSE0010, "xsl:processing-instruction requires a name attribute", element.Location);
+            return null;
+        }
+
+        CompiledAvt? nameAvt = CompileAvtString(nameAttr, element, scope, bag);
+        if (nameAvt is null) { return null; }
+
+        string? selectExpr = GetAttribute(element, "select");
+        BoundExpression? select = null;
+        XsltInstruction? body = null;
+        if (!string.IsNullOrEmpty(selectExpr))
+        {
+            if (!TryCompileXPath(selectExpr!, element, scope, bag, out select))
+            {
+                return null;
+            }
+        }
+        else
+        {
+            body = CompileChildren(element, scope, bag);
+        }
+
+        return new ProcessingInstructionInstruction(nameAvt, select, body, element.Location);
+    }
+
+    private static XsltInstruction? CompileXslDocument(StylesheetElement element, XsltCompileScope scope, DiagnosticBag bag)
+    {
+        XsltInstruction body = CompileChildren(element, scope, bag);
+        return new DocumentInstruction(body, element.Location);
+    }
+
+    /// <summary>Parses + compiles an AVT given its raw string value.</summary>
+    private static CompiledAvt? CompileAvtString(string value, StylesheetElement scopeElement, XsltCompileScope scope, DiagnosticBag bag)
+    {
+        AttributeValueTemplate avt;
+        try
+        {
+            avt = AttributeValueTemplate.Parse(value, scopeElement.Location);
+        }
+        catch (XsltStaticException ex)
+        {
+            foreach (Diagnostic d in ex.Errors)
+            {
+                bag.Add(d);
+            }
+
+            return null;
+        }
+
+        List<CompiledAvtPart> parts = new List<CompiledAvtPart>(avt.Parts.Count);
+        foreach (AvtPart part in avt.Parts)
+        {
+            switch (part)
+            {
+                case AvtLiteral literal:
+                    parts.Add(CompiledAvtPart.Literal_(literal.Text));
+                    break;
+
+                case AvtExpression expr:
+                    if (!TryCompileXPath(expr.ExpressionText, scopeElement, scope, bag, out BoundExpression? compiled))
+                    {
+                        return null;
+                    }
+
+                    parts.Add(CompiledAvtPart.Expression_(compiled!));
+                    break;
+            }
+        }
+
+        return new CompiledAvt(parts.ToArray());
     }
 
     // ── xsl:sequence / xsl:copy / xsl:copy-of ──────────────────────────────
