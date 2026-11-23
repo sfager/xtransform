@@ -244,12 +244,7 @@ internal sealed class XsltTransformGoldenTests
             "<hi><xsl:value-of select='$n'/></hi>" +
             "</xsl:template>");
         string expected = "<hi>world</hi>";
-        // P3-07a scope: xsl:param visible-to-body lands in P3-08. The compiler currently
-        // compiles $n against an empty external-variable scope, so this test exercises the
-        // path up to — but not through — the value-of; expect XPST0008 for now.
-        // Mark as explicit to document the known gap without breaking the suite.
-        Assert.Ignore("$param reference in template body deferred to P3-08");
-        _ = expected;
+        AssertTransform(xsl, "<doc/>", expected);
     }
 
     // ── Priority and mode dispatch ───────────────────────────────────────────

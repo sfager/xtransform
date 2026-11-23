@@ -26,7 +26,7 @@ internal sealed class ApplyTemplatesInstruction : XsltInstruction
 {
     /// <summary>Initializes an xsl:apply-templates instruction.</summary>
     public ApplyTemplatesInstruction(
-        ExpressionNode select,
+        BoundExpression select,
         ApplyTemplatesMode modeSpec,
         QName mode,
         IReadOnlyList<WithParamInstruction> withParams,
@@ -40,7 +40,7 @@ internal sealed class ApplyTemplatesInstruction : XsltInstruction
     }
 
     /// <summary>Compiled <c>@select</c> (default: <c>child::node()</c>).</summary>
-    public ExpressionNode Select { get; }
+    public BoundExpression Select { get; }
 
     /// <summary>How the mode was declared.</summary>
     public ApplyTemplatesMode ModeSpec { get; }
@@ -56,7 +56,7 @@ internal sealed class ApplyTemplatesInstruction : XsltInstruction
     {
         // Materialise the selection to drive focus/position/size through the loop.
         List<XdmItem> items = new List<XdmItem>();
-        IXdmIterator iter = Select.Iterate(context);
+        IXdmIterator iter = Select.Iterate(context, run);
         XdmItem? item;
         while ((item = iter.Next()) is not null)
         {

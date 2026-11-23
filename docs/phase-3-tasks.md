@@ -208,7 +208,7 @@ attribute → copy string value; comment / PI / document → recurse.
 
 ## P3-08 Variables, params, globals
 
-- [ ] Done
+- [x] Done
 
 **Scope.** `xsl:variable` and `xsl:param` at every level: when `select` is
 present, evaluate lazily; when a body is present, build a temporary tree

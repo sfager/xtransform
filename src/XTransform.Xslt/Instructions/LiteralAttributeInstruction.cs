@@ -27,6 +27,6 @@ internal sealed class LiteralAttributeInstruction : XsltInstruction
     public override void Execute(DynamicContext context, IResultReceiver receiver, XsltRunState run)
     {
         int nameCode = run.NamePool.Allocate(Name.NamespaceUri, Name.LocalName);
-        receiver.Attribute(nameCode, Value.Stringify(context), Location);
+        receiver.Attribute(nameCode, Value.Stringify(context, run), Location);
     }
 }
