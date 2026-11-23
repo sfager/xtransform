@@ -58,7 +58,7 @@ internal static class XsltCompiler
             new Dictionary<TemplateDecl, CompiledTemplate>();
         foreach (TemplateDecl decl in declarations.Templates)
         {
-            CompiledTemplate? compiled = InstructionCompiler.CompileTemplate(decl, bag);
+            CompiledTemplate? compiled = InstructionCompiler.CompileTemplate(decl, declarations, bag);
             if (compiled is not null)
             {
                 compiledTemplates[decl] = compiled;
@@ -72,7 +72,7 @@ internal static class XsltCompiler
                 continue;
             }
 
-            CompiledTemplate? compiled = InstructionCompiler.CompileTemplate(decl, bag);
+            CompiledTemplate? compiled = InstructionCompiler.CompileTemplate(decl, declarations, bag);
             if (compiled is not null)
             {
                 compiledTemplates[decl] = compiled;

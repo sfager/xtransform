@@ -7,7 +7,7 @@ namespace XTransform.Xslt.Instructions;
 internal sealed class IfInstruction : XsltInstruction
 {
     /// <summary>Initializes an <c>xsl:if</c> instruction.</summary>
-    public IfInstruction(ExpressionNode test, XsltInstruction body, SourceSpan location)
+    public IfInstruction(BoundExpression test, XsltInstruction body, SourceSpan location)
         : base(location)
     {
         Test = test;
@@ -15,7 +15,7 @@ internal sealed class IfInstruction : XsltInstruction
     }
 
     /// <summary>The compiled <c>@test</c> expression.</summary>
-    public ExpressionNode Test { get; }
+    public BoundExpression Test { get; }
 
     /// <summary>Body to run when <see cref="Test"/> evaluates to true.</summary>
     public XsltInstruction Body { get; }
@@ -23,7 +23,7 @@ internal sealed class IfInstruction : XsltInstruction
     /// <inheritdoc/>
     public override void Execute(DynamicContext context, IResultReceiver receiver, XsltRunState run)
     {
-        if (Test.EffectiveBooleanValue(context))
+        if (Test.EffectiveBooleanValue(context, run))
         {
             Body.Execute(context, receiver, run);
         }

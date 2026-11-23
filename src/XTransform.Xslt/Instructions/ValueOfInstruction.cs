@@ -13,7 +13,7 @@ namespace XTransform.Xslt.Instructions;
 internal sealed class ValueOfInstruction : XsltInstruction
 {
     /// <summary>Initializes an xsl:value-of instruction.</summary>
-    public ValueOfInstruction(ExpressionNode select, string separator, SourceSpan location)
+    public ValueOfInstruction(BoundExpression select, string separator, SourceSpan location)
         : base(location)
     {
         Select = select;
@@ -21,7 +21,7 @@ internal sealed class ValueOfInstruction : XsltInstruction
     }
 
     /// <summary>The compiled select expression.</summary>
-    public ExpressionNode Select { get; }
+    public BoundExpression Select { get; }
 
     /// <summary>Separator between adjacent item string values (XSLT 2.0 default: " ").</summary>
     public string Separator { get; }
@@ -30,7 +30,7 @@ internal sealed class ValueOfInstruction : XsltInstruction
     public override void Execute(DynamicContext context, IResultReceiver receiver, XsltRunState run)
     {
         List<XdmItem> items = new List<XdmItem>();
-        IXdmIterator iter = Select.Iterate(context);
+        IXdmIterator iter = Select.Iterate(context, run);
         XdmItem? item;
         while ((item = iter.Next()) is not null)
         {

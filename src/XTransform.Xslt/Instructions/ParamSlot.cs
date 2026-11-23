@@ -4,17 +4,17 @@ using XTransform.XPath;
 namespace XTransform.Xslt.Instructions;
 
 /// <summary>
-/// Describes a parameter slot on a compiled template / function: name, local-variable slot
-/// index, optional default <c>@select</c>, and the "required" flag. Populated by the
-/// instruction compiler and consumed by <c>apply-templates</c> / <c>call-template</c>.
+/// Describes a parameter slot on a compiled template / function: name, optional default
+/// <c>@select</c>, and the "required" flag. Populated by the instruction compiler and
+/// consumed by <c>apply-templates</c> / <c>call-template</c>; the runtime binds values via
+/// <see cref="XsltRunState.PushVariable"/> rather than a numeric slot index.
 /// </summary>
 internal sealed class ParamSlot
 {
     /// <summary>Initializes a parameter slot.</summary>
-    public ParamSlot(QName name, int slotIndex, ExpressionNode? defaultSelect, bool isRequired, SourceSpan location)
+    public ParamSlot(QName name, BoundExpression? defaultSelect, bool isRequired, SourceSpan location)
     {
         Name = name;
-        SlotIndex = slotIndex;
         DefaultSelect = defaultSelect;
         IsRequired = isRequired;
         Location = location;
@@ -23,11 +23,8 @@ internal sealed class ParamSlot
     /// <summary>The parameter name.</summary>
     public QName Name { get; }
 
-    /// <summary>Local-variable slot the caller writes the value into before entering the body.</summary>
-    public int SlotIndex { get; }
-
     /// <summary>Default-value expression; <see langword="null"/> when none is declared.</summary>
-    public ExpressionNode? DefaultSelect { get; }
+    public BoundExpression? DefaultSelect { get; }
 
     /// <summary>True when <c>required="yes"</c>.</summary>
     public bool IsRequired { get; }
