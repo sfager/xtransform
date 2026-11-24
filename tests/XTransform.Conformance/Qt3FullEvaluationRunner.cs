@@ -98,8 +98,9 @@ internal static class Qt3FullEvaluationRunner
 
         // ── 5. Build the dynamic context ──────────────────────────────────────
 
-        // Guard against runaway evaluation (we've seen tests loop indefinitely); the
-        // cancellation token is observed inside Iterate loops where CheckCancellation() is called.
+        // P3-12 wired CheckCancellation() into the hot iterators; the token stops a
+        // runaway stylesheet without needing a background-thread watchdog. We keep the
+        // 5-second cap as a hard ceiling for test runtime.
         using CancellationTokenSource timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
         RunState run = new RunState(timeoutCts.Token);
         DynamicContext ctx = DynamicContext.Root(run).WithFrame(compiled.SlotCount);
@@ -130,47 +131,35 @@ internal static class Qt3FullEvaluationRunner
             // If we can't load the doc, context item remains null (may cause XPDY0002)
         }
 
-        // ── 6. Evaluate (with watchdog timeout) ───────────────────────────────
+        // ── 6. Evaluate ────────────────────────────────────────────────────────
 
         XdmSequence? actual = null;
         string? exceptionCode = null;
 
-        // Run on a worker thread so a runaway loop can't block the whole harness.
-        // The evaluator doesn't poll cancellation, so we can't safely stop it — abandon it
-        // and report a timeout. The thread will finish on its own eventually.
-        DynamicContext evalCtx = ctx;
-        Task<(XdmSequence? Items, string? ErrorCode)> evalTask = Task.Run<(XdmSequence?, string?)>(() =>
+        try
         {
-            try
+            IXdmIterator iter = compiled.Root.Iterate(ctx);
+            List<XdmItem> items = new List<XdmItem>();
+            XdmItem? item;
+            while ((item = iter.Next()) != null)
             {
-                IXdmIterator iter = compiled.Root.Iterate(evalCtx);
-                List<XdmItem> items = new List<XdmItem>();
-                XdmItem? item;
-                while ((item = iter.Next()) != null)
-                {
-                    items.Add(item);
-                }
+                items.Add(item);
+            }
 
-                return (XdmSequence.From(items), (string?)null);
-            }
-            catch (XTransformException ex)
-            {
-                return (null, ex.ErrorCode.LocalName);
-            }
-            catch (Exception ex)
-            {
-                return (null, "UNEXPECTED:" + ex.GetType().Name);
-            }
-        });
-
-        if (!evalTask.Wait(TimeSpan.FromSeconds(5)))
-        {
-            // Timeout — cancel the token so the thread notices if it ever polls, and move on.
-            timeoutCts.Cancel();
-            return new Qt3EvaluationResult(EvaluationOutcome.Fail, "Evaluation exceeded 5s watchdog timeout.");
+            actual = XdmSequence.From(items);
         }
-
-        (actual, exceptionCode) = evalTask.Result;
+        catch (OperationCanceledException)
+        {
+            return new Qt3EvaluationResult(EvaluationOutcome.Fail, "Evaluation exceeded 5s cancellation deadline.");
+        }
+        catch (XTransformException ex)
+        {
+            exceptionCode = ex.ErrorCode.LocalName;
+        }
+        catch (Exception ex)
+        {
+            exceptionCode = "UNEXPECTED:" + ex.GetType().Name;
+        }
 
         // ── 7. Compare result ─────────────────────────────────────────────────
 

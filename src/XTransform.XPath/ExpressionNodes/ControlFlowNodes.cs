@@ -77,6 +77,9 @@ internal sealed class ForNode : ExpressionNode
             XdmSequence[] frame = context.LocalFrame;
             while (true)
             {
+                // Loop back-edge: cheap cancellation check (P3-12).
+                context.CheckCancellation();
+
                 XdmItem? item = source.Next();
                 if (item is null)
                 {
@@ -191,6 +194,9 @@ internal sealed class QuantifiedNode : ExpressionNode
         XdmSequence[] frame = context.LocalFrame;
         while (true)
         {
+            // Loop back-edge: cheap cancellation check (P3-12).
+            context.CheckCancellation();
+
             XdmItem? item = source.Next();
             if (item is null)
             {
