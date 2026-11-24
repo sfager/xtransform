@@ -291,7 +291,7 @@ document cache, `fn:doc` and `fn:doc-available`.
 
 ## P3-12 Cancellation on loop back-edges and template entry
 
-- [ ] Done
+- [x] Done
 
 **Scope.** Call `DynamicContext.CheckCancellation()` at every iterator
 loop back-edge (`for`, `xsl:for-each`, path step, filter) and at the top of

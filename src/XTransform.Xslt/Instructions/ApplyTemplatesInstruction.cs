@@ -77,6 +77,7 @@ internal sealed class ApplyTemplatesInstruction : XsltInstruction
             run.CurrentMode = effectiveMode;
             for (int i = 0; i < size; i++)
             {
+                context.CheckCancellation();
                 DynamicContext childCtx = context.WithContextItem(items[i], position: i + 1, size: size);
                 ModeDispatcher.Dispatch(childCtx, receiver, run, effectiveMode, WithParams, Location);
             }

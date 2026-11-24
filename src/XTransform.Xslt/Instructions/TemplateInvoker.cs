@@ -20,6 +20,9 @@ internal static class TemplateInvoker
         IReadOnlyList<WithParamInstruction> withParams,
         SourceSpan callSite)
     {
+        // Template entry — cheap cancellation check (P3-12).
+        context.CheckCancellation();
+
         run.EnterTemplate(source, callSite);
         int varMarker = run.VariableScopeMarker;
         try

@@ -27,18 +27,27 @@ internal sealed class ForEachInstruction : XsltInstruction
     /// <inheritdoc/>
     public override void Execute(DynamicContext context, IResultReceiver receiver, XsltRunState run)
     {
-        // Materialise so fn:last() is cheap to answer during the iteration.
+        // Materialise so fn:last() is cheap to answer during the iteration. Poll the
+        // cancellation token every batch so runaway selects (e.g. 1 to 10^9) stop promptly.
         List<XdmItem> items = new List<XdmItem>();
         IXdmIterator iter = Select.Iterate(context, run);
         XdmItem? item;
+        int seen = 0;
         while ((item = iter.Next()) is not null)
         {
             items.Add(item);
+            if ((++seen & 0xFF) == 0)
+            {
+                context.CheckCancellation();
+            }
         }
 
         int size = items.Count;
         for (int i = 0; i < size; i++)
         {
+            // Loop back-edge — give the cancellation token a chance to stop runaway stylesheets.
+            context.CheckCancellation();
+
             DynamicContext child = context.WithContextItem(items[i], position: i + 1, size: size);
             int marker = run.VariableScopeMarker;
             try
