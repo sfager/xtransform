@@ -411,6 +411,10 @@ regenerates expected outputs manually.
   (pass at G3 — until then the test is marked `[Explicit]` and excluded).
 - `eng/check-realworld.sh` wraps the test selection for CI.
 
+**Follow-up (p3-17a).** `docbook-article` needed `fn:current()` (XSLT 2.0 §16.1), which no
+task had scheduled; implemented alongside a fix for dropped leading text in template
+bodies. All five stylesheets now pass.
+
 ## P3-18 Gate G3 run and NuGet preview
 
 - [ ] Done

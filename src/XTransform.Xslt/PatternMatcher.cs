@@ -162,7 +162,7 @@ internal static class PatternMatcher
         // Evaluate each predicate against a focus on this node.
         if (!step.Predicates.IsEmpty)
         {
-            DynamicContext predCtx = context.WithContextItem(node, position: 1, size: 1);
+            DynamicContext predCtx = context.WithCurrentItem(node, position: 1, size: 1);
             foreach (XPathAst predAst in step.Predicates)
             {
                 // We expect the compiler-visible predicate form to be an expression. For

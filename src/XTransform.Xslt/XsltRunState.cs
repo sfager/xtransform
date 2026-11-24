@@ -241,7 +241,7 @@ internal sealed class XsltRunState
                 continue;
             }
 
-            DynamicContext itemCtx = context.WithContextItem(node, 1, 1).WithFrame(useExpr.SlotCount);
+            DynamicContext itemCtx = context.WithCurrentItem(node, 1, 1).WithFrame(useExpr.SlotCount);
             IXdmIterator iter = useExpr.Root.Iterate(itemCtx);
             XdmItem? value;
             while ((value = iter.Next()) is not null)

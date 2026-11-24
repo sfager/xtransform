@@ -86,7 +86,7 @@ internal static class XsltRunner
 
         DynamicContext rootCtx = input is null
             ? DynamicContext.Root(xpathRun)
-            : DynamicContext.Root(xpathRun).WithContextItem(input, position: 1, size: 1);
+            : DynamicContext.Root(xpathRun).WithCurrentItem(input, position: 1, size: 1);
 
         // Validate the entry point before running anything (XSLT 2.0 §2.3).
         TemplateDecl? entryTemplate = null;

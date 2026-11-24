@@ -96,6 +96,11 @@ internal sealed class XsltFunctionLibrary : FunctionLibrary
             new[] { SeqStringOne() },
             DocInvoker);
 
+        Register("current", 0,
+            new SequenceType(ItemType.AnyItem, Occurrence.ExactlyOne),
+            System.Array.Empty<SequenceType>(),
+            CurrentInvoker);
+
         Register("doc-available", 1,
             SeqBoolOne(),
             new[] { SeqStringOne() },
@@ -169,6 +174,22 @@ internal sealed class XsltFunctionLibrary : FunctionLibrary
         }
 
         return new XTransform.Xdm.Iterators.SingleItemIterator(loaded);
+    }
+
+    // XSLT 2.0 §16.1: fn:current() returns the current item — the item being processed by the
+    // innermost template rule or xsl:for-each. Predicates and path steps do not change it.
+    private static IXdmIterator CurrentInvoker(DynamicContext context, XdmSequence[] args)
+    {
+        XdmItem? current = context.CurrentItem;
+        if (current is null)
+        {
+            throw new XsltDynamicException(
+                XsltErrors.XTDE1360,
+                "fn:current() was called but there is no current item",
+                SourceSpan.None);
+        }
+
+        return new XTransform.Xdm.Iterators.SingleItemIterator(current);
     }
 
     private static IXdmIterator DocAvailableInvoker(DynamicContext context, XdmSequence[] args)
