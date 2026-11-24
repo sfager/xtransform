@@ -334,7 +334,7 @@ dropped, attributes and namespaces placed before any child emits raise
 
 ## P3-14 `TextEmitter` and `xsl:output` wiring
 
-- [ ] Done
+- [x] Done
 
 **Scope.** `TextEmitter` writes only the string values of text nodes to a
 `TextWriter` (no markup). `xsl:output` instructions merge by name (unnamed =
