@@ -47,8 +47,8 @@ XTransform.XsltTransformer.ResultDocumentHandler.get -> XTransform.IResultDocume
 XTransform.XsltTransformer.ResultDocumentHandler.set -> void
 XTransform.XsltTransformer.SetParameter(XTransform.Xdm.QName name, XTransform.Xdm.XdmItem! value) -> void
 XTransform.XsltTransformer.SetParameter(XTransform.Xdm.QName name, XTransform.Xdm.XdmSequence! value) -> void
-XTransform.XsltTransformer.Transform(System.IO.Stream! input, System.IO.Stream! output) -> void
-XTransform.XsltTransformer.Transform(System.Xml.XmlReader! input, System.IO.TextWriter! output) -> void
-XTransform.XsltTransformer.Transform(System.Xml.XmlReader! input, System.Xml.XmlWriter! output) -> void
-XTransform.XsltTransformer.TransformAsync(System.IO.Stream! input, System.IO.Stream! output, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+XTransform.XsltTransformer.Transform(System.IO.Stream? input, System.IO.Stream! output) -> void
+XTransform.XsltTransformer.Transform(System.Xml.XmlReader? input, System.IO.TextWriter! output) -> void
+XTransform.XsltTransformer.Transform(System.Xml.XmlReader? input, System.Xml.XmlWriter! output) -> void
+XTransform.XsltTransformer.TransformAsync(System.IO.Stream? input, System.IO.Stream! output, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 XTransform.XsltTransformer.TransformToSequence(System.Xml.XmlReader? input) -> XTransform.Xdm.XdmSequence!
