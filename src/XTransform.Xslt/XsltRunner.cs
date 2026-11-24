@@ -80,7 +80,7 @@ internal static class XsltRunner
         DynamicContext rootCtx = DynamicContext.Root(xpathRun).WithContextItem(input, position: 1, size: 1);
         GlobalVariableEvaluator.EvaluateAll(compiled, rootCtx, run);
 
-        SequenceNormalizer normalizer = new SequenceNormalizer(receiver);
+        SequenceNormalizer normalizer = new SequenceNormalizer(receiver, effectivePool);
         normalizer.StartDocument();
         try
         {
