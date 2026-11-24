@@ -78,11 +78,11 @@ internal sealed class XsltConstructorTests
             "<out><child/><xsl:attribute name='late' select='&quot;val&quot;'/></out>" +
             "</xsl:template>");
 
-        string output = Transform(xsl, "<doc/>");
+        string output = Transform(xsl, "<doc/>", out IReadOnlyList<Diagnostic> diagnostics);
         Assert.Multiple(() =>
         {
             Assert.That(output, Is.EqualTo("<out><child /></out>"));
-            Assert.That(XsltRunner.LastRunDiagnostics.Any(d => d.Code == XsltErrors.XTDE0410), Is.True);
+            Assert.That(diagnostics.Any(d => d.Code == XsltErrors.XTDE0410), Is.True);
         });
     }
 
@@ -148,10 +148,12 @@ internal sealed class XsltConstructorTests
         InMemoryResolver resolver = new InMemoryResolver();
         resolver.Add("s.xsl", xsl);
         StylesheetAssembly asm = StylesheetLinker.Link(new Uri("file:///suite/s.xsl"), resolver);
-        return XsltCompiler.Compile(asm);
+        return StylesheetCompiler.Compile(asm);
     }
 
-    private static string Transform(string xsl, string input)
+    private static string Transform(string xsl, string input) => Transform(xsl, input, out _);
+
+    private static string Transform(string xsl, string input, out IReadOnlyList<Diagnostic> diagnostics)
     {
         CompiledStylesheet compiled = Compile(xsl);
 
@@ -170,7 +172,7 @@ internal sealed class XsltConstructorTests
         using XmlWriter writer = XmlWriter.Create(sb, settings);
         using XmlWriterReceiver sink = new XmlWriterReceiver(writer, pool);
 
-        XsltRunner.Transform(compiled, inputDoc, sink, pool);
+        diagnostics = XsltRunner.Transform(compiled, inputDoc, sink, pool);
         writer.Flush();
         return sb.ToString();
     }

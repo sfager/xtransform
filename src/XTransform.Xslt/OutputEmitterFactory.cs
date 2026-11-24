@@ -53,6 +53,14 @@ internal static class OutputEmitterFactory
         }
     }
 
+    /// <summary>
+    /// Creates a receiver that feeds a caller-supplied <see cref="System.Xml.XmlWriter"/>. The
+    /// writer's own settings (indentation, declaration, conformance level) apply; the
+    /// stylesheet's <c>xsl:output</c> parameters do not.
+    /// </summary>
+    public static IResultReceiver CreateForXmlWriter(System.Xml.XmlWriter writer, NamePool pool) =>
+        new XmlWriterReceiver(writer, pool);
+
     private static NotSupportedException Unsupported(string method) =>
         new NotSupportedException($"Output method '{method}' is not supported yet (html / xhtml arrive in phase 4)");
 }

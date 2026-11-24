@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Xml;
 using XTransform.Xdm;
 
 namespace XTransform.Xslt;
@@ -35,7 +36,36 @@ internal static class StylesheetLinker
 #pragma warning restore CA1510
 
         LinkerState state = new LinkerState(resolver);
-        ModuleNode primary = state.LoadImportTree(primaryUri, SourceSpan.None);
+        return Assemble(state.LoadImportTree(primaryUri, SourceSpan.None, preRead: null));
+    }
+
+    /// <summary>
+    /// Links a primary module that the caller has already opened as <paramref name="reader"/>.
+    /// Relative <c>xsl:include</c> / <c>xsl:import</c> hrefs resolve against
+    /// <paramref name="baseUri"/>; without one a relative href raises <c>XTSE0165</c>.
+    /// </summary>
+    public static StylesheetAssembly Link(XmlReader reader, Uri? baseUri, IResourceResolver resolver)
+    {
+#pragma warning disable CA1510 // ArgumentNullException.ThrowIfNull not available on netstandard2.0
+        if (reader is null)
+        {
+            throw new ArgumentNullException(nameof(reader));
+        }
+
+        if (resolver is null)
+        {
+            throw new ArgumentNullException(nameof(resolver));
+        }
+#pragma warning restore CA1510
+
+        StylesheetModule module = StylesheetReader.Read(reader, baseUri);
+        Uri identity = baseUri ?? new Uri("urn:xtransform:anonymous-stylesheet");
+        LinkerState state = new LinkerState(resolver);
+        return Assemble(state.LoadImportTree(identity, SourceSpan.None, module));
+    }
+
+    private static StylesheetAssembly Assemble(ModuleNode primary)
+    {
         List<StylesheetModuleEntry> flat = new List<StylesheetModuleEntry>();
         int precedence = 0;
         AssignPrecedence(primary, ref precedence, flat, isPrimary: true);
@@ -92,7 +122,7 @@ internal static class StylesheetLinker
         /// Loads <paramref name="uri"/> and its xsl:include / xsl:import graph, returning the
         /// tree node that represents this module.
         /// </summary>
-        public ModuleNode LoadImportTree(Uri uri, SourceSpan requestLocation)
+        public ModuleNode LoadImportTree(Uri uri, SourceSpan requestLocation, StylesheetModule? preRead = null)
         {
             string key = uri.OriginalString;
 
@@ -104,7 +134,7 @@ internal static class StylesheetLinker
             _loading.Add(key);
             try
             {
-                StylesheetModule module = ReadModule(uri, requestLocation);
+                StylesheetModule module = preRead ?? ReadModule(uri, requestLocation);
                 StylesheetModule processed = StylesheetProcessor.Process(module);
 
                 ModuleNode node = new ModuleNode(processed, uri);
@@ -201,7 +231,15 @@ internal static class StylesheetLinker
                 });
             }
 
-            return new Uri(currentBase, href);
+            try
+            {
+                return new Uri(currentBase, href);
+            }
+            catch (UriFormatException)
+            {
+                // Typically a relative href against a base URI that cannot anchor one.
+                throw Xtse0165(element.Location, currentBase, $"cannot resolve href '{href}' against this base URI");
+            }
         }
 
         private StylesheetModule ReadModule(Uri uri, SourceSpan requestLocation)

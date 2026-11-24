@@ -208,7 +208,7 @@ internal sealed class ModeCompilerTests
         InMemoryResolver resolver = new InMemoryResolver();
         resolver.Add("a.xsl", xml);
         StylesheetAssembly asm = StylesheetLinker.Link(new Uri("file:///suite/a.xsl"), resolver);
-        return XsltCompiler.Compile(asm);
+        return StylesheetCompiler.Compile(asm);
     }
 
     private sealed class InMemoryResolver : IResourceResolver

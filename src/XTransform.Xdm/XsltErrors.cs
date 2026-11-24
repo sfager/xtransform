@@ -67,6 +67,12 @@ public static class XsltErrors
     /// <summary>Recoverable dynamic error: multiple template rules match a node with equal import precedence and priority. (XSLT 2.0 §6.4)</summary>
     public static readonly QName XTRE0540 = new QName("err", XPathErrors.Namespace, "XTRE0540");
 
+    /// <summary>It is a dynamic error if the initial named template does not exist in the stylesheet. (XSLT 2.0 §2.3)</summary>
+    public static readonly QName XTDE0040 = new QName("err", XPathErrors.Namespace, "XTDE0040");
+
+    /// <summary>It is a dynamic error if the initial mode is not used by any template rule. (XSLT 2.0 §2.3)</summary>
+    public static readonly QName XTDE0045 = new QName("err", XPathErrors.Namespace, "XTDE0045");
+
     /// <summary>It is a dynamic error if no value is supplied for a required global stylesheet parameter. (XSLT 2.0 §9.5)</summary>
     public static readonly QName XTDE0050 = new QName("err", XPathErrors.Namespace, "XTDE0050");
 

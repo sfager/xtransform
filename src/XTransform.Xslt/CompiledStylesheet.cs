@@ -5,8 +5,8 @@ using XTransform.Xslt.Instructions;
 namespace XTransform.Xslt;
 
 /// <summary>
-/// The output of <see cref="XsltCompiler"/>. The type will be wrapped by the public
-/// <c>XsltExecutable</c> in P3-15; it stays <c>internal</c> until then.
+/// The output of <see cref="StylesheetCompiler"/>, wrapped by the public
+/// <c>XsltExecutable</c>; the type itself stays <c>internal</c>.
 /// </summary>
 internal sealed class CompiledStylesheet
 {

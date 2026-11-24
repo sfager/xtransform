@@ -9,4 +9,9 @@
     <ProjectReference Include="..\XTransform.Serialization\XTransform.Serialization.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The public API assembly drives the compiler and runner directly (P3-15). -->
+    <InternalsVisibleTo Include="XTransform" />
+  </ItemGroup>
+
 </Project>

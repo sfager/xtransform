@@ -11,6 +11,8 @@
     <InternalsVisibleTo Include="XTransform.Xslt" />
     <!-- XTransform.Serialization uses IResultReceiver and related internals for emitters / normalizer -->
     <InternalsVisibleTo Include="XTransform.Serialization" />
+    <!-- The public API assembly creates name pools and receivers when running transformations (P3-15) -->
+    <InternalsVisibleTo Include="XTransform" />
   </ItemGroup>
 
 </Project>

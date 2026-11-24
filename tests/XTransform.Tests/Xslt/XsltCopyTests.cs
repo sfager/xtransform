@@ -121,7 +121,7 @@ internal sealed class XsltCopyTests
         InMemoryResolver resolver = new InMemoryResolver();
         resolver.Add("s.xsl", xsl);
         StylesheetAssembly asm = StylesheetLinker.Link(new Uri("file:///suite/s.xsl"), resolver);
-        return XsltCompiler.Compile(asm);
+        return StylesheetCompiler.Compile(asm);
     }
 
     private static void AssertOutput(string xsl, string input, string expected)

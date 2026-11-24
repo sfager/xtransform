@@ -352,7 +352,7 @@ API exposes these through `XsltExecutable.OutputSettings` and the chosen
 
 ## P3-15 Public API wiring
 
-- [ ] Done
+- [x] Done
 
 **Scope.** Implement `XsltCompiler`, `XsltExecutable`, `XsltTransformer`
 exactly as signed in [interfaces.md Public API](interfaces.md#public-api).

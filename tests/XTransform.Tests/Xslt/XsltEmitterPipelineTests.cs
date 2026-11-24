@@ -82,7 +82,7 @@ internal sealed class XsltEmitterPipelineTests
         InMemoryResolver resolver = new InMemoryResolver();
         resolver.Add("s.xsl", xsl);
         StylesheetAssembly asm = StylesheetLinker.Link(new Uri("file:///suite/s.xsl"), resolver);
-        CompiledStylesheet compiled = XsltCompiler.Compile(asm);
+        CompiledStylesheet compiled = StylesheetCompiler.Compile(asm);
 
         NamePool pool = new NamePool();
         using StringReader sr = new StringReader(input);
