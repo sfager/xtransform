@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using XTransform.Serialization;
 using XTransform.Xdm;
 using XTransform.Xslt.Instructions;
@@ -22,6 +23,7 @@ internal static class XsltRunner
     /// Transforms <paramref name="input"/> through <paramref name="compiled"/>. Starts by
     /// applying templates in the default mode to the input document node.
     /// </summary>
+#pragma warning disable CA1068 // Optional parameters after the token keep call sites tidy
     public static void Transform(
         CompiledStylesheet compiled,
         XdmNode input,
@@ -29,7 +31,9 @@ internal static class XsltRunner
         NamePool? namePool = null,
         IReadOnlyDictionary<QName, XdmSequence>? parameters = null,
         IResourceResolver? resolver = null,
+        CancellationToken cancellationToken = default,
         int maxRecursionDepth = XsltRunState.DefaultMaxRecursionDepth)
+#pragma warning restore CA1068
     {
 #pragma warning disable CA1510 // ArgumentNullException.ThrowIfNull not available on netstandard2.0
         if (compiled is null)
@@ -48,7 +52,7 @@ internal static class XsltRunner
         }
 #pragma warning restore CA1510
 
-        RunState xpathRun = new RunState();
+        RunState xpathRun = new RunState(cancellation: cancellationToken);
         NamePool effectivePool = namePool ?? new NamePool();
         XsltRunState run = new XsltRunState(compiled, xpathRun, effectivePool, maxRecursionDepth)
         {
