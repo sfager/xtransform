@@ -23,4 +23,8 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="Stylesheets\RealWorld\**\*" CopyToOutputDirectory="PreserveNewest" LinkBase="" />
+  </ItemGroup>
+
 </Project>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<catalog name="spring range">
+  <item code="A1" tags="new sale"><title>Widget - small &amp; light</title></item>
+  <item code="BB22" tags="clearance"><title>Gadget - heavy duty</title></item>
+  <item code="CCC333" tags="newest"><title>Gizmo - deluxe</title></item>
+</catalog>

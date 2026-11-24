@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<task id="install-tool">
+  <title>Installing the tool</title>
+  <shortdesc>Install and verify the command-line tool.</shortdesc>
+  <taskbody>
+    <prereq><p>You need <codeph>dotnet</codeph> 8 or later.</p></prereq>
+    <steps>
+      <step importance="required"><cmd>Run <codeph>dotnet tool install xtransform</codeph>.</cmd><info><p>This downloads the tool.</p></info></step>
+      <step><cmd>Open <uicontrol>a terminal</uicontrol>.</cmd></step>
+      <step importance="required"><cmd>Type <codeph>xtransform --version</codeph>.</cmd></step>
+    </steps>
+    <result><p>The version number is printed.</p></result>
+  </taskbody>
+</task>
