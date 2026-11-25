@@ -12,23 +12,30 @@ namespace XTransform.Xslt.Instructions;
 internal sealed class VariableInstruction : XsltInstruction
 {
     /// <summary>Initializes a local xsl:variable.</summary>
-    public VariableInstruction(QName name, BoundExpression? select, SourceSpan location)
+    public VariableInstruction(QName name, BoundExpression? select, VariableValueBody? body, SourceSpan location)
         : base(location)
     {
         Name = name;
         Select = select;
+        Body = body;
     }
 
     /// <summary>The variable's expanded name.</summary>
     public QName Name { get; }
 
-    /// <summary>The compiled select expression; <see langword="null"/> means empty sequence (body form not yet supported).</summary>
+    /// <summary>The compiled select expression, or null when the value comes from <see cref="Body"/> or is the empty string.</summary>
     public BoundExpression? Select { get; }
+
+    /// <summary>The compiled content when there is no select attribute, or null.</summary>
+    public VariableValueBody? Body { get; }
 
     /// <inheritdoc/>
     public override void Execute(DynamicContext context, IResultReceiver receiver, XsltRunState run)
     {
-        XdmSequence value = Select is null ? XdmSequence.Empty : Select.Evaluate(context, run);
+        // §9.3: select, else the content (the compiler supplies the zero-length string for an empty untyped variable).
+        XdmSequence value = Select is not null
+            ? Select.Evaluate(context, run)
+            : Body is not null ? Body.Evaluate(context, run) : XdmSequence.Empty;
         run.PushVariable(Name, value);
     }
 }

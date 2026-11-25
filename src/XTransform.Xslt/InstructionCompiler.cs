@@ -221,12 +221,155 @@ internal static class InstructionCompiler
             "processing-instruction" => CompileXslPi(element, scope, bag),
             "document" => CompileXslDocument(element, scope, bag),
             "number" => CompileNumber(element, scope, bag),
+            "analyze-string" => CompileAnalyzeString(element, scope, bag),
             // Deferred to later tasks:
             "message" or "result-document" or
-            "analyze-string" or "for-each-group" or "next-match" or "fallback" or
+            "for-each-group" or "next-match" or "fallback" or
             "apply-imports" or "perform-sort" => null,
             _ => null,
         };
+    }
+
+    /// <summary>
+    /// Compiles the content of every global variable and parameter that is defined by a sequence
+    /// constructor (no <c>select</c>): XSLT 2.0 §9.3. Their scope is the global variables only.
+    /// </summary>
+    public static IReadOnlyDictionary<GlobalVariableDecl, VariableValueBody> CompileGlobalBodies(
+        DeclarationTable declarations,
+        FunctionLibrary functions,
+        PatternPredicateTable patterns,
+        DiagnosticBag bag)
+    {
+        Dictionary<GlobalVariableDecl, VariableValueBody> bodies = new Dictionary<GlobalVariableDecl, VariableValueBody>();
+        s_functions = functions;
+        s_patterns = patterns;
+        try
+        {
+            foreach (GlobalVariableDecl decl in declarations.GlobalVariables.Values)
+            {
+                if (!string.IsNullOrEmpty(decl.SelectExpression) || decl.Element.Children.Count == 0)
+                {
+                    continue;
+                }
+
+                XsltCompileScope scope = XsltCompileScope.WithGlobals(declarations.GlobalVariables.Keys);
+                bodies[decl] = new VariableValueBody(
+                    CompileChildren(decl.Element, scope, bag),
+                    buildsDocument: decl.AsType is null);
+            }
+        }
+        finally
+        {
+            s_functions = null;
+            s_patterns = null;
+        }
+
+        return bodies;
+    }
+
+    // ── xsl:analyze-string (XSLT 2.0 §15.1) ─────────────────────────────────────
+
+    private static XsltInstruction? CompileAnalyzeString(StylesheetElement element, XsltCompileScope scope, DiagnosticBag bag)
+    {
+        string? selectAttr = GetAttribute(element, "select");
+        string? regexAttr = GetAttribute(element, "regex");
+        if (selectAttr is null || regexAttr is null)
+        {
+            bag.Error(XsltErrors.XTSE0010, "xsl:analyze-string requires select and regex attributes", element.Location);
+            return null;
+        }
+
+        // Content model: xsl:matching-substring?, xsl:non-matching-substring?, xsl:fallback* — in that order.
+        StylesheetElement? matchingEl = null;
+        StylesheetElement? nonMatchingEl = null;
+        bool ok = true;
+        foreach (StylesheetNode child in element.Children)
+        {
+            if (child is not StylesheetElement childEl || !childEl.IsXsltElement)
+            {
+                bag.Error(XsltErrors.XTSE0010, "xsl:analyze-string may contain only xsl:matching-substring, xsl:non-matching-substring and xsl:fallback", element.Location);
+                ok = false;
+                continue;
+            }
+
+            switch (childEl.Name.LocalName)
+            {
+                case "matching-substring":
+                    if (matchingEl is not null || nonMatchingEl is not null)
+                    {
+                        bag.Error(XsltErrors.XTSE0010, "xsl:matching-substring must appear once, before xsl:non-matching-substring", childEl.Location);
+                        ok = false;
+                    }
+
+                    matchingEl ??= childEl;
+                    break;
+                case "non-matching-substring":
+                    if (nonMatchingEl is not null)
+                    {
+                        bag.Error(XsltErrors.XTSE0010, "xsl:non-matching-substring must appear at most once", childEl.Location);
+                        ok = false;
+                    }
+
+                    nonMatchingEl ??= childEl;
+                    break;
+                case "fallback":
+                    break;
+                default:
+                    bag.Error(XsltErrors.XTSE0010, $"xsl:{childEl.Name.LocalName} is not allowed inside xsl:analyze-string", childEl.Location);
+                    ok = false;
+                    break;
+            }
+        }
+
+        if (matchingEl is null && nonMatchingEl is null && ok)
+        {
+            bag.Error(XsltErrors.XTSE1130, "xsl:analyze-string needs an xsl:matching-substring or an xsl:non-matching-substring", element.Location);
+            ok = false;
+        }
+
+        if (!ok ||
+            !TryCompileXPath(selectAttr, element, scope, bag, out BoundExpression? select))
+        {
+            return null;
+        }
+
+        CompiledAvt? regex = CompileAvtString(regexAttr, element, scope, bag);
+        CompiledAvt? flags = CompileOptionalAvt(element, "flags", scope, bag, out bool flagsOk);
+        if (regex is null || !flagsOk)
+        {
+            return null;
+        }
+
+        // A regex written without expressions can be checked now (XTDE1140 / XTDE1145 as static errors).
+        string? literalRegex = LiteralValue(regex);
+        string? literalFlags = flags is null ? string.Empty : LiteralValue(flags);
+        if (literalRegex is not null && literalFlags is not null)
+        {
+            try
+            {
+                AnalyzeStringInstruction.CompileRegex(literalRegex, literalFlags, element.Location);
+            }
+            catch (XsltDynamicException ex)
+            {
+                bag.Error(ex.ErrorCode, ex.Message, element.Location);
+                return null;
+            }
+        }
+
+        XsltInstruction? matching = matchingEl is null ? null : CompileChildren(matchingEl, scope, bag);
+        XsltInstruction? nonMatching = nonMatchingEl is null ? null : CompileChildren(nonMatchingEl, scope, bag);
+        return new AnalyzeStringInstruction(select!, regex, flags, matching, nonMatching, element.Location);
+    }
+
+    // The text of an AVT that contains no expressions, or null when it has any.
+    private static string? LiteralValue(CompiledAvt avt)
+    {
+        if (avt.Parts.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        return avt.Parts.Count == 1 && avt.Parts[0].Literal is string text ? text : null;
     }
 
     // ── xsl:number (XSLT 2.0 §12) ──────────────────────────────────────────────
@@ -625,10 +768,27 @@ internal static class InstructionCompiler
             }
         }
 
+        // XSLT 2.0 §9.3: without select the value is the content — a document node when there is no
+        // as attribute, else the sequence the content constructs; an empty untyped variable is "".
+        // The content is compiled before the variable is declared, so it cannot see itself.
+        VariableValueBody? body = null;
+        if (select is null && string.IsNullOrEmpty(selectExpr))
+        {
+            bool hasAs = GetAttribute(element, "as") is not null;
+            if (element.Children.Count > 0)
+            {
+                body = new VariableValueBody(CompileChildren(element, scope, bag), buildsDocument: !hasAs);
+            }
+            else if (!hasAs && !TryCompileXPath("''", element, scope, bag, out select))
+            {
+                return null;
+            }
+        }
+
         // Add to scope so subsequent siblings see $name. Lexical extent is the enclosing
         // SequenceInstruction (restored by its finally block at runtime).
         scope.Declare(name, SequenceType.AnySequence);
-        return new VariableInstruction(name, select, element.Location);
+        return new VariableInstruction(name, select, body, element.Location);
     }
 
     // ── Literal result elements ────────────────────────────────────────────

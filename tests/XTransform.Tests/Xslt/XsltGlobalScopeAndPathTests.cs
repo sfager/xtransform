@@ -76,6 +76,63 @@ internal sealed class XsltGlobalScopeAndPathTests
         Assert.That(output, Is.EqualTo("1,2"));
     }
 
+    [TestCase(11)]
+    [TestCase(16)]
+    [TestCase(40)]
+    public void Concat_MoreThanTenArguments_ConcatenatesThemAll(int count)
+    {
+        // Arrange — fn:concat accepts any number of arguments (F&O §7.4.1).
+        StringBuilder args = new StringBuilder();
+        StringBuilder expected = new StringBuilder();
+        for (int i = 0; i < count; i++)
+        {
+            args.Append(i == 0 ? string.Empty : ", ").Append('\'').Append((char)('a' + (i % 26))).Append('\'');
+            expected.Append((char)('a' + (i % 26)));
+        }
+
+        string xsl = $"<xsl:template match='/'><xsl:value-of select=\"concat({args})\"/></xsl:template>";
+
+        // Act / Assert
+        Assert.That(Run(xsl, Doc), Is.EqualTo(expected.ToString()));
+    }
+
+    [Test]
+    public void Path_FirstStepIsAVariable_WorksWhenTheContextItemIsAtomic()
+    {
+        // Arrange — inside the for-each the context item is the string 'x'; $d/a does not read it.
+        const string xsl =
+            "<xsl:variable name='d'><r><a/><a/></r></xsl:variable>" +
+            "<xsl:template match='/'><xsl:for-each select=\"'x'\"><xsl:value-of select='count($d//a)'/></xsl:for-each></xsl:template>";
+
+        // Act
+        string output = Run(xsl, Doc);
+
+        // Assert — this raised XPTY0004 ("a path step is being applied to an atomic value").
+        Assert.That(output, Is.EqualTo("2"));
+    }
+
+    [Test]
+    public void Path_AxisStepWithAnAtomicContextItem_RaisesXpty0020()
+    {
+        const string xsl =
+            "<xsl:template match='/'><xsl:for-each select=\"'x'\"><xsl:value-of select='child::a'/></xsl:for-each></xsl:template>";
+
+        XTransformException ex = Assert.Throws<XPathDynamicException>(() => Run(xsl, Doc))!;
+
+        Assert.That(ex.ErrorCode, Is.EqualTo(XPathErrors.XPTY0020));
+    }
+
+    [Test]
+    public void Path_StepOtherThanTheLastYieldsAtomics_RaisesXpty0019()
+    {
+        const string xsl =
+            "<xsl:template match='/'><xsl:value-of select=\"count(/doc/a/string(@n)/x)\"/></xsl:template>";
+
+        XTransformException ex = Assert.Throws<XPathDynamicException>(() => Run(xsl, Doc))!;
+
+        Assert.That(ex.ErrorCode, Is.EqualTo(XPathErrors.XPTY0019));
+    }
+
     [Test]
     public void Path_LastStepMixesNodesAndAtomics_RaisesXpty0018()
     {

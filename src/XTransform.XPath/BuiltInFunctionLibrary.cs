@@ -55,6 +55,23 @@ internal sealed class BuiltInFunctionLibrary : FunctionLibrary
             return true;
         }
 
+        // F&O §7.4.1: fn:concat takes any number of arguments (two or more); the fixed arities above
+        // are registered for speed, longer calls get a signature on demand.
+        if (arity > 10 &&
+            string.Equals(name.NamespaceUri, FnNamespace, System.StringComparison.Ordinal) &&
+            string.Equals(name.LocalName, "concat", System.StringComparison.Ordinal))
+        {
+            SequenceType[] parameters = new SequenceType[arity];
+            for (int i = 0; i < arity; i++)
+            {
+                parameters[i] = ST_AnyAtomicType_ZeroOrOne;
+            }
+
+            QName qn = new QName("fn", FnNamespace, "concat");
+            signature = new FunctionSignature(qn, arity, ST_String_ExactlyOne, parameters.ToImmutableArray(), StringFunctions.FnConcatN);
+            return true;
+        }
+
         signature = null;
         return false;
     }

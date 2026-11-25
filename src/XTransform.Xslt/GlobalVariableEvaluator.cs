@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using XTransform.Xdm;
 using XTransform.XPath;
+using XTransform.Xslt.Instructions;
 
 namespace XTransform.Xslt;
 
@@ -65,7 +66,16 @@ internal static class GlobalVariableEvaluator
             XdmSequence value;
             if (string.IsNullOrEmpty(decl.SelectExpression))
             {
-                value = XdmSequence.Empty;
+                // XSLT 2.0 §9.3: the content (a document node when there is no as attribute), else "" or ().
+                if (run.Stylesheet.GlobalBodies.TryGetValue(decl, out VariableValueBody? body))
+                {
+                    ForceReferencedGlobals(decl, CollectText(decl.Element), decls, initialContext, run);
+                    value = body.Evaluate(initialContext, run);
+                }
+                else
+                {
+                    value = decl.AsType is null ? XdmSequence.Of(XdmAtomicValue.String(string.Empty)) : XdmSequence.Empty;
+                }
             }
             else
             {
@@ -91,7 +101,7 @@ internal static class GlobalVariableEvaluator
                 // reference points at an un-evaluated global, LookupVariable returns Empty —
                 // which would mask cycles. So recursively force-evaluate the dependencies
                 // referenced by this expression before we evaluate it.
-                ForceReferencedGlobals(decl, decls, initialContext, run);
+                ForceReferencedGlobals(decl, decl.SelectExpression ?? string.Empty, decls, initialContext, run);
 
                 DynamicContext ctx = initialContext.WithFrame(ce.SlotCount);
                 int i = 0;
@@ -129,11 +139,11 @@ internal static class GlobalVariableEvaluator
     /// </summary>
     private static void ForceReferencedGlobals(
         GlobalVariableDecl decl,
+        string text,
         DeclarationTable decls,
         DynamicContext initialContext,
         XsltRunState run)
     {
-        string text = decl.SelectExpression ?? string.Empty;
         for (int i = 0; i < text.Length; i++)
         {
             if (text[i] != '$')
@@ -162,6 +172,30 @@ internal static class GlobalVariableEvaluator
             if (decls.GlobalVariables.ContainsKey(referenced))
             {
                 Evaluate(referenced, decls, initialContext, run);
+            }
+        }
+    }
+
+    // Every attribute value under an element: the variable references a body may contain (select, test, ...).
+    private static string CollectText(StylesheetElement element)
+    {
+        System.Text.StringBuilder sb = new System.Text.StringBuilder();
+        AppendAttributes(element, sb);
+        return sb.ToString();
+    }
+
+    private static void AppendAttributes(StylesheetElement element, System.Text.StringBuilder sb)
+    {
+        foreach (StylesheetAttribute attribute in element.Attributes)
+        {
+            sb.Append(attribute.Value).Append(' ');
+        }
+
+        foreach (StylesheetNode child in element.Children)
+        {
+            if (child is StylesheetElement childElement)
+            {
+                AppendAttributes(childElement, sb);
             }
         }
     }

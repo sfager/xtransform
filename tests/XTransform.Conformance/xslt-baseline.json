@@ -3,12 +3,12 @@
   "gate": "G3",
   "suite": "xslt30-test",
   "xsltCommit": "see eng/test-suites.env",
-  "measuredAt": "2026-11-25",
+  "measuredAt": "2026-11-26",
   "coreInScope": 6029,
-  "corePassed": 3295,
+  "corePassed": 3613,
   "unicode90InScope": 1460,
-  "unicode90Passed": 597,
+  "unicode90Passed": 192,
   "inScopeCount": 7489,
-  "passed": 3892,
+  "passed": 3805,
   "minimumPassRate": 0.40
 }

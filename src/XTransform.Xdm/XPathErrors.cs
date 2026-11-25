@@ -31,6 +31,12 @@ public static class XPathErrors
     /// <summary>It is a type error if the last step of a path yields both nodes and non-nodes.</summary>
     public static readonly QName XPTY0018 = new QName("err", Namespace, "XPTY0018");
 
+    /// <summary>It is a type error if a step other than the last in a path yields a non-node.</summary>
+    public static readonly QName XPTY0019 = new QName("err", Namespace, "XPTY0019");
+
+    /// <summary>It is a type error if, in an axis step (or a rooted path), the context item is not a node.</summary>
+    public static readonly QName XPTY0020 = new QName("err", Namespace, "XPTY0020");
+
     /// <summary>It is a dynamic error if the context item is undefined where it is needed.</summary>
     public static readonly QName XPDY0002 = new QName("err", Namespace, "XPDY0002");
 
