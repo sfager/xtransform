@@ -134,6 +134,17 @@ internal sealed class DynamicContext
         return ctx;
     }
 
+    /// <summary>
+    /// Returns a context with no focus and no XSLT current item, sharing the run state and local frame.
+    /// An xsl:function body is evaluated this way: XSLT 2.0 §10.3 says the focus is undefined inside it.
+    /// </summary>
+    /// <returns>A new child context with an undefined focus.</returns>
+    public DynamicContext WithoutFocus()
+    {
+        return new DynamicContext(Run, focus: null, contextItem: null, position: 0,
+                                  frame: LocalFrame, currentItem: null);
+    }
+
     /// <summary>Advances the focus; returns false at end of sequence.</summary>
     /// <returns><see langword="true"/> while items remain; <see langword="false"/> at end of sequence.</returns>
     public bool AdvanceFocus()

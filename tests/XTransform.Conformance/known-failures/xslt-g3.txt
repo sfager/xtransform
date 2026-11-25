@@ -128,9 +128,9 @@ as/as-0128  # [Compare] assert was false: /out = "true"
 as/as-0129  # [Compare] assert was false: /out/e2 = "truetrue"
 as/as-0133  # [Compare] expected a result but got internal XmlException: 'att' is a duplicate attribute name.
 as/as-0136  # [Compare] XML differs. Expected: <out><func1>truefalse</func1><func2>truetrue</func2></out> Actual: <?xml vers...
-as/as-0137  # [Compare] XML differs. Expected: <out><func1>truefalse</func1><func2>truetrue</func2><func3>truefalse</func3><...
-as/as-0138  # [Compare] XML differs. Expected: <out><func1>truefalse</func1><func2>truetrue</func2></out> Actual: <?xml vers...
-as/as-0141  # [Compare] assert was false: /out/func3 = "truetrue"
+as/as-0137  # [Run] expected a result but got XPDY0002: The context item is undefined
+as/as-0138  # [Run] expected a result but got XPDY0002: The context item is undefined
+as/as-0141  # [Run] expected a result but got XPDY0002: The context item is undefined
 as/as-0143  # [Compare] assert was false: every $var in /out/* satisfies $var = "falsetrue"
 as/as-0144  # [Compare] assert was false: every $var in /out/* satisfies $var = "falsetrue"
 as/as-0144a  # [Compare] assert was false: every $var in /out/* satisfies $var = "falsetrue"
@@ -244,7 +244,6 @@ avt/avt-0303  # [Compile] expected a result but got XTSE0805: Unknown XSLT eleme
 avt/avt-0401  # [Compare] XML differs. Expected: <out>
 avt/avt-0501  # [Compare] XML differs. Expected: <out>
 avt/avt-0601  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?>
-avt/avt-0801  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>One Hundredth * Two Hundredth * Th...
 avt/avt-0901  # [Compare] XML differs. Expected: <out>12 * 14 * 4 * 1 * 6 * 10 * 13 * 7 * 9 * 8 * 3 * 11 * 5 * 2 * </out> Actu...
 avt/avt-1001  # [Compare] XML differs. Expected: <out>2a@b * 6a@b * 1a@B * 8a@bb * 5a@bB * 4a@Bb * 7a@Bb * 3a@BB * </out> Actu...
 avt/avt-1201  # [Compare] XML differs. Expected: <out src="/images/headquarters.jpg"/> Actual: <?xml version="1.0" encoding="U...
@@ -319,7 +318,7 @@ backwards/backwards-012  # [Compare] XML differs. Expected: <out>5 4 3 2 1</out>
 backwards/backwards-013  # [Compare] XML differs. Expected: <out><out>1</out></out> Actual: <?xml version="1.0" encoding="UTF-8"?><out><o...
 backwards/backwards-014  # [Compile] expected a result but got XPST0017: Unknown function 'unknown:function' with arity 1
 backwards/backwards-015  # [Compare] XML differs. Expected: <out>NaN</out> Actual: <?xml version="1.0" encoding="UTF-8"?><out />
-backwards/backwards-016  # [Compare] XML differs. Expected: <out>NaN</out> Actual: <?xml version="1.0" encoding="UTF-8"?><out />
+backwards/backwards-016  # [Run] expected a result but got XTDE0980: xsl:number value 'apples' cannot be converted to a non-negative inte...
 backwards/backwards-018  # [Compare] output does not match /meta http-equiv/: <?xml version="1.0" encoding="UTF-8"?><html xmlns="http://w...
 backwards/backwards-019b  # [Compare] output does not match /file:///My D%C3%B8cuments/page.html/: <?xml version="1.0" encoding="UTF-8"?>
 backwards/backwards-020  # [Run] expected a result but got XPTY0004: Function argument type mismatch: cannot convert xs:date to xs:string...
@@ -427,7 +426,6 @@ bug/bug-3201  # [Compare] output does not match /<output-escaping>content</outpu
 bug/bug-3601  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><x:stylesheet version="1.0" xmlns:x="ht...
 bug/bug-3701  # [Compile] expected a result but got XPST0017: Unknown function 'generate-id' with arity 0
 bug/bug-3901  # [Compare] XML differs. Expected: <out><title>Reproducing Bugzilla#6284: predicate/global variable/position()</...
-bug/bug-4301  # [Compare] XML differs. Expected: <doc><message>icon 2 has content </message></doc> Actual: <?xml version="1.0"...
 bug/bug-4401  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><doc><sss>bits</sss><sss>bits</sss><sss...
 bug/bug-4702  # [Compare] expected error XTRE0540 but the transformation succeeded
 bug/bug-4703  # [Compare] expected error XTRE0540 but the transformation succeeded
@@ -571,7 +569,7 @@ copy/copy-1401  # [Compare] expected a result but got internal XmlException: Ref
 copy/copy-2501  # [Compare] XML differs. Expected: <out><OL>
 copy/copy-2502  # [Compare] XML differs. Expected: <out><OL>
 copy/copy-3001  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out><a3 x="a3-5" ordering="2">
-copy/copy-3702  # [Run] expected a result but got XPTY0004: A path step is being applied to an atomic value
+copy/copy-3702  # [Run] expected a result but got XPDY0002: The context item is undefined
 copy/copy-4101  # [Compare] XML differs. Expected: <out><!--foo top-level-a sub-level-a--><!-- footop-level-asub-level-a--></out...
 copy/copy-4102  # [Compare] XML differs. Expected: <out spec-change="2004-03-05"><?pi1 foo top-level-a sub-level-a?><?pi2 footop...
 copy/copy-4201  # [Compare] XML differs. Expected: <root><a-root/></root> Actual: <?xml version="1.0" encoding="UTF-8"?><root />
@@ -860,7 +858,6 @@ error/error-0280f  # [Compile] expected error XTSE0280, got XTSE0010: Invalid te
 error/error-0290a  # [Compare] any-of: expected error XTDE0290 but the transformation succeeded | expected error XTDE1460 but the t...
 error/error-0340a  # [Compare] expected error XTSE0340 but the transformation succeeded
 error/error-0340c  # [Compare] expected error XTSE0340 but the transformation succeeded
-error/error-0340d  # [Compare] expected error XTSE0340 but the transformation succeeded
 error/error-0350a  # [Compile] expected error XTSE0350, got XTSE0370: Unmatched '{' in attribute value template
 error/error-0350b  # [Compile] expected error XTSE0350, got XTSE0370: Unmatched '{' in attribute value template
 error/error-0410a  # [Compare] expected error XTDE0410 but the transformation succeeded
@@ -954,13 +951,6 @@ error/error-0925a  # [Compile] expected error XTDE0925, got XTSE0805: Unknown XS
 error/error-0925b  # [Compile] expected error XTDE0925, got XTSE0805: Unknown XSLT element xsl:namespace
 error/error-0930a  # [Compile] expected error XTDE0930, got XTSE0805: Unknown XSLT element xsl:namespace
 error/error-0940a  # [Compare] expected error XTSE0940 but the transformation succeeded
-error/error-0975a  # [Compare] expected error XTSE0975 but the transformation succeeded
-error/error-0975b  # [Compare] expected error XTSE0975 but the transformation succeeded
-error/error-0975c  # [Compare] expected error XTSE0975 but the transformation succeeded
-error/error-0975d  # [Compare] expected error XTSE0975 but the transformation succeeded
-error/error-0980a  # [Compare] expected error XTDE0980 but the transformation succeeded
-error/error-0990a  # [Compare] expected error XTTE0990 but the transformation succeeded
-error/error-1000a  # [Compare] expected error XTTE1000 but the transformation succeeded
 error/error-1015a  # [Compare] expected error XTSE1015 but the transformation succeeded
 error/error-1017a  # [Compare] expected error XTSE1017 but the transformation succeeded
 error/error-1020a  # [Compare] expected error XTTE1020 but the transformation succeeded
@@ -990,7 +980,7 @@ error/error-1220a  # [Compare] any-of: expected error XTSE1210 but the transform
 error/error-1260a  # [Compare] expected error XTDE1260 but the transformation succeeded
 error/error-1260b  # [Compare] expected error XTDE1260 but the transformation succeeded
 error/error-1260c  # [Compare] expected error XTDE1260 but the transformation succeeded
-error/error-1260d  # [Compare] any-of: unsupported: assert-message (xsl:message / xsl:result-document arrive in phase 4) | expected...
+error/error-1260d  # [Compile] any-of: unsupported: assert-message (xsl:message / xsl:result-document arrive in phase 4) | expected...
 error/error-1260e  # [Compare] expected error XTDE1260 but the transformation succeeded
 error/error-1260f  # [Compare] expected error XTDE1260 but the transformation succeeded
 error/error-1270a  # [Compare] expected error XTDE1270 but the transformation succeeded
@@ -1015,7 +1005,6 @@ error/error-1310f-20  # [Compile] expected error XTDE1310, got XPST0017: Unknown
 error/error-1310g-20  # [Compile] expected error XTDE1310, got XPST0017: Unknown function 'format-number' with arity 3
 error/error-1310h-20  # [Compile] expected error XTDE1310, got XPST0017: Unknown function 'format-number' with arity 3
 error/error-1310i-20  # [Compile] expected error XTDE1310, got XPST0017: Unknown function 'format-number' with arity 3
-error/error-1360a  # [Compare] expected error XTDE1360 but the transformation succeeded
 error/error-1370a  # [Compile] expected error XTDE1370, got XPST0017: Unknown function 'unparsed-entity-uri' with arity 1
 error/error-1370b  # [Compile] expected error XTDE1370, got XPST0017: Unknown function 'unparsed-entity-uri' with arity 1
 error/error-1380a  # [Compile] expected error XTDE1380, got XPST0017: Unknown function 'unparsed-entity-public-id' with arity 1
@@ -1049,10 +1038,6 @@ error/error-FODC0002a-ignore  # [Compare] XML differs. Expected: <root/> Actual:
 error/error-FORG0001a  # [Compare] expected error FORG0001 but the transformation succeeded
 error/error-FORG0006a  # [Run] expected error FORG0006, got XPTY0004: fn:min requires a numeric sequence; item has type xs:dateTime.
 error/error-FORG0006b  # [Run] expected error FORG0006, got XPTY0004: fn:sum requires a numeric sequence; item has type xs:string.
-error/error-XPDY0002a  # [Run] expected error XPDY0002, got FORG0001: Invalid lexical value '
-error/error-XPDY0002b  # [Compare] expected error XPDY0002 but the transformation succeeded
-error/error-XPDY0002c  # [Compare] expected error XPDY0002 but the transformation succeeded
-error/error-XPDY0002d  # [Compare] expected error XPDY0002 but the transformation succeeded
 error/error-XPDY0050a  # [Run] expected error XPDY0050, got XPTY0004: treat as xs:integer: value does not match the declared type
 error/error-XPDY0050b  # [Run] expected error XPDY0050, got XPTY0004: treat as xs:decimal: value does not match the declared type
 error/error-XPDY0050c  # [Run] expected error XPDY0050, got XPTY0004: treat as xs:decimal: value does not match the declared type
@@ -1285,10 +1270,15 @@ function-available/function-available-1008  # [Compile] expected a result but go
 function-available/function-available-1010  # [Compile] expected a result but got XPST0017: Unknown function 'function-available' with arity 2; XPST0017: Un...
 function-available/function-available-1015  # [Compile] expected a result but got XPST0017: Unknown function 'function-available' with arity 1; XPST0017: Un...
 function-available/function-available-1016  # [Compile] expected a result but got XPST0017: Unknown function 'function-available' with arity 2; XPST0017: Un...
-function/function-0119a  # [Compare] expected error XTSE0090 but the transformation succeeded
-function/function-0120a  # [Compare] expected error XTSE0090 but the transformation succeeded
-function/function-0301  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out><item>10-grapefruit: grapefruit</i...
+function/function-0101  # [Run] expected a result but got XPDY0002: The context item is undefined
+function/function-0102  # [Run] expected a result but got XPDY0002: The context item is undefined
+function/function-0103  # [Run] expected a result but got XPDY0002: The context item is undefined
+function/function-0104  # [Run] expected a result but got XPDY0002: The context item is undefined
+function/function-0119a  # [Run] expected error XTSE0090, got XPDY0002: The context item is undefined
+function/function-0120a  # [Run] expected error XTSE0090, got XPDY0002: The context item is undefined
+function/function-0301  # [Run] expected a result but got XPDY0002: The context item is undefined
 function/function-0302  # [Compile] expected a result but got XPST0017: Unknown function 'element-available' with arity 1; XPST0017: Unk...
+function/function-0501  # [Run] expected a result but got XPDY0002: The context item is undefined
 function/function-1005  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
 function/function-1009  # [Compare] XML differs. Expected: <out count="3"/> Actual: <?xml version="1.0" encoding="UTF-8"?><out count="1"...
 function/function-1014  # [Compare] XML differs. Expected: <result>10</result> Actual: <?xml version="1.0" encoding="UTF-8"?><result />
@@ -1301,8 +1291,9 @@ function/function-1020  # [Compare] expected error XTTE0570 but the transformati
 function/function-1021  # [Compare] expected error XTSE0080 but the transformation succeeded
 function/function-1022  # [Compare] expected error XPTY0004 but the transformation succeeded
 function/function-1023  # [Compare] expected error XPST0017 but the transformation succeeded
+function/function-1101  # [Run] expected a result but got XPDY0002: The context item is undefined
 function/function-1201  # [Compare] XML differs. Expected: <out><author value="Anthony Burgess"><title value="A Clockwork Orange"/><titl...
-function/function-1301  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="iso-8859-1"?><out>
+function/function-1301  # [Run] expected a result but got XPDY0002: The context item is undefined
 function/function-1902  # [Compile] expected a result but got XPST0017: Unknown function 'function-available' with arity 2
 function/function-2002  # [Compile] expected a result but got XPST0017: Unknown function 'function-available' with arity 2
 function/function-2102  # [Compare] expected error XTSE0020 but the transformation succeeded
@@ -1422,7 +1413,7 @@ key/key-042  # [Compile] expected a result but got XPST0017: Unknown function 'g
 key/key-043  # [Compare] XML differs. Expected: <out><bound>HTTP- http://schemas.xmlsoap.org/wsdl/http/</bound><bound>SOAP- h...
 key/key-044  # [Compile] expected a result but got XPST0017: Unknown function 'generate-id' with arity 1; XPST0017: Unknown f...
 key/key-046  # [Compare] assert was false: deep-equal(/out/group[@k="25"]/title/string(), ("Introduction", "Expressions", "Nu...
-key/key-047  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?>
+key/key-047  # [Run] expected a result but got XTTE1000: The select attribute of xsl:number must yield a single node
 key/key-049  # [Compare] assert was false: /out/P/t1 = "Intro Section."
 key/key-050  # [Compare] XML differs. Expected: <out><item>2<s>22</s></item><item>3<s>23</s><s>22</s></item><item>5<s>21</s><...
 key/key-051  # [Compare] XML differs. Expected: <out><item>2<s>22</s></item>;
@@ -1439,6 +1430,7 @@ key/key-066  # [Compile] expected a result but got XPST0017: Unknown function 'g
 key/key-069  # [Compare] XML differs. Expected: <out>a,c,d</out> Actual: <?xml version="1.0" encoding="UTF-8"?><out />
 key/key-070  # [Compare] XML differs. Expected: <out/> Actual: <?xml version="1.0" encoding="UTF-8"?><out>d</out>
 key/key-071  # [Compare] XML differs. Expected: <out><item id="a">10.00</item><item id="d">NaN</item><item id="f">banana</ite...
+key/key-072  # [Run] expected a result but got XPDY0002: The context item is undefined
 key/key-073  # [Compile] expected a result but got XTSE0010: xsl:key requires both match and use attributes; XPST0017: Unknow...
 key/key-074  # [Compile] expected a result but got XTSE0010: xsl:key requires both match and use attributes; XPST0017: Unknow...
 key/key-075  # [Compile] expected a result but got XPST0017: Unknown function 'key' with arity 3
@@ -1563,7 +1555,7 @@ mode/mode-1201  # [Compare] XML differs. Expected: <out><m1><a mode="m1"/><b mod
 mode/mode-1203  # [Compare] XML differs. Expected: <out><m1><a mode="m1"/><b mode="#all"/></m1><m2><a mode="m2"/><b mode="#all"/...
 mode/mode-1204  # [Compare] XML differs. Expected: <out><m1><a mode="m1"/><b mode="#all"/><b mode="m1"/></m1><m2><a mode="m2"/><...
 mode/mode-1301  # [Compare] XML differs. Expected: <out><m1><a mode="m1"/><b mode="#all"/></m1><m2><a mode="m2"/><b mode="m2"/><...
-mode/mode-1401  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out><chapter><chtitle mode="m">Chapter...
+mode/mode-1401  # [Run] expected a result but got XPDY0002: The context item is undefined
 mode/mode-1402  # [Compare] XML differs. Expected: <out><chapter a="m:Chapter 1"/><chapter a="m:Chapter 2"/></out> Actual: <?xml...
 mode/mode-1403  # [Compare] XML differs. Expected: <out><chapter a="#default:Chapter 1"/><chapter a="#default:Chapter 1"/></out>...
 mode/mode-1404  # [Compare] XML differs. Expected: <out><chapter a="#default:Chapter 1"/><chapter a="#default:Chapter 1"/></out>...
@@ -1672,8 +1664,6 @@ namespace/namespace-4501  # [Compare] XML differs. Expected: <?xml version="1.0"
 namespace/namespace-4801  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out xmlns="http://bubba.com/" xmlns:bd...
 namespace/namespace-5201  # [Compare] XML differs. Expected: <out>xml=xml</out> Actual: <?xml version="1.0" encoding="UTF-8"?><out>=</out>
 namespace/namespace-5701  # [Compare] XML differs. Expected: <out>Namespaces for docs:|;
-namespace/namespace-5901  # [Compare] XML differs. Expected: <one xmlns:fiscus="http://www.fiscus.de" fiscus:objectID="1">
-namespace/namespace-5902  # [Compare] XML differs. Expected: <one xmlns:fiscus="http://www.fiscus.de" fiscus:objectID="1">
 namespace/namespace-5903  # [Compare] XML differs. Expected: <out elements="3" attributes="3" fiscus-attributes="3"/> Actual: <?xml versio...
 namespace/namespace-6201  # [Compare] assert was false: /out = "xy"
 next-match/next-match-001  # [Compare] XML differs. Expected: <a><b><c/></b></a> Actual: <?xml version="1.0" encoding="UTF-8"?><b><b /></b>
@@ -1722,136 +1712,49 @@ normalize-unicode/normalize-unicode-016  # [Compare] output does not match /<div
 normalize-unicode/normalize-unicode-017  # [Compare] output does not match /<en>The quick brown fox</en>/: <?xml version="1.0" encoding="ISO-8859-1"?>
 normalize-unicode/normalize-unicode-018  # [Compare] output does not match /<de norm="c" üss="üß">Straßenüberführung</de>/: <?xml version="1.0" encoding=...
 number/number-0101  # [Compare] XML differs. Expected: <out><a name="Andy">1</a><a name="Thomas">2</a><a name="Peter">3</a><a name="...
-number/number-0201  # [Compare] XML differs. Expected: <out xmlns:fo="http://www.w3.org/XSL/Format/1.0"><fo:block>1. aaa</fo:block><...
 number/number-0202  # [Compile] expected a result but got XPST0017: Unknown function 'generate-id' with arity 1
-number/number-0301  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out xmlns:fo="http://www.w3.org/XSL/Fo...
 number/number-0401  # [Compare] XML differs. Expected: <out xmlns:fo="http://www.w3.org/XSL/Format/1.0"><fo:block>(1) aaa</fo:block>...
 number/number-0402  # [Compare] XML differs. Expected: <out xmlns:fo="http://www.w3.org/XSL/Format/1.0"><fo:block>(1) [1] aaa</fo:bl...
-number/number-0403  # [Compare] assert was false: /out/fo:block[1] = "(1) [1] {1} aaa"
-number/number-0404  # [Compare] XML differs. Expected: <out>10,11,12,13,14,15,16,17,18,19,20</out> Actual: <?xml version="1.0" encod...
-number/number-0405  # [Compare] XML differs. Expected: <out>
-number/number-0406  # [Compare] XML differs. Expected: <out>
-number/number-0407  # [Compare] XML differs. Expected: <out>
-number/number-0501  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out xmlns:fo="http://www.w3.org/XSL/Fo...
-number/number-0601  # [Compare] XML differs. Expected: <out>[0100]</out> Actual: <?xml version="1.0" encoding="UTF-8"?><out />
-number/number-0602  # [Compare] XML differs. Expected: <out>1/00/00/00</out> Actual: <?xml version="1.0" encoding="UTF-8"?><out />
-number/number-0603  # [Compare] XML differs. Expected: <out>xiii;
-number/number-0604  # [Compare] expected error XTDE0980 but the transformation succeeded
+number/number-0403  # [Compare] assert was false: /out/fo:block[2] = "(2) [2] {2} bbb"
 number/number-0701  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out xmlns:fo="http://www.w3.org/XSL/Fo...
-number/number-0801  # [Compare] XML differs. Expected: <out>m;
 number/number-0802  # [Compare] XML differs. Expected: <out>drei;
 number/number-0803  # [Compare] XML differs. Expected: <out>00/00/00/01/00/00/00</out> Actual: <?xml version="1.0" encoding="UTF-8"?...
 number/number-0804  # [Run] expected a result but got XPTY0004: A path step is being applied to an atomic value
-number/number-0805  # [Compare] XML differs. Expected: <out>
-number/number-0806  # [Compare] XML differs. Expected: <out>[];
-number/number-0807  # [Compare] any-of: XML differs. Expected: <out>[100000000000000000000000000000000000000000000000000000000000000...
+number/number-0807  # [Run] any-of: expected a result but got XTDE0980: xsl:number value '1E100' cannot be converted to a non-negati...
 number/number-0808  # [Run] expected a result but got XPTY0004: A path step is being applied to an atomic value
-number/number-0809  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
 number/number-0810  # [Compare] XML differs. Expected: <doc>*1*</doc> Actual: <?xml version="1.0" encoding="UTF-8"?>
 number/number-0811  # [Compare] XML differs. Expected: <doc>1</doc> Actual: <?xml version="1.0" encoding="UTF-8"?>
 number/number-0812  # [Compare] assert was false: //n3 = "drei"
 number/number-0813  # [Compare] assert was false: //n3 = "dritte"
 number/number-0814  # [Compare] XML differs. Expected: <out><v2/><v1>NaN</v1></out> Actual: <?xml version="1.0" encoding="ISO-8859-1...
-number/number-0815  # [Compare] XML differs. Expected: <out><v1>NaN</v1></out> Actual: <?xml version="1.0" encoding="ISO-8859-1"?><o...
-number/number-0816  # [Compare] XML differs. Expected: <a>(5.6.7.8)</a> Actual: <?xml version="1.0" encoding="UTF-8"?><a />
-number/number-0817  # [Compare] XML differs. Expected: <a>5;6;7;8)</a> Actual: <?xml version="1.0" encoding="UTF-8"?><a />
-number/number-0818  # [Compare] XML differs. Expected: <z>5</z> Actual: <?xml version="1.0" encoding="UTF-8"?><z />
-number/number-0819  # [Compare] any-of: string value differs. Expected: ⓪ ① ② ③ ④ ⑤ ⑥ ⑦ ⑧ ⑨ ⑩ ⑪ ⑫ ⑬ ⑭ ⑮ ⑯ ⑰ ⑱ ⑲ ⑳ ㉑ ㉒ ㉓ ㉔ ㉕ Actual: ...
-number/number-0820  # [Compare] string value differs. Expected: 0 ⑴ ⑵ ⑶ ⑷ ⑸ ⑹ ⑺ ⑻ ⑼ ⑽ ⑾ ⑿ ⒀ ⒁ ⒂ ⒃ ⒄ ⒅ ⒆ ⒇ 21 22 23 24 25 Actual:
-number/number-0821  # [Compare] any-of: string value differs. Expected: 0 ⒈ ⒉ ⒊ ⒋ ⒌ ⒍ ⒎ ⒏ ⒐ ⒑ ⒒ ⒓ ⒔ ⒕ ⒖ ⒗ ⒘ ⒙ ⒚ ⒛ 21 22 23 24 25 Act...
+number/number-0815  # [Run] expected a result but got XTDE0980: xsl:number value 'fizz' cannot be converted to a non-negative intege...
+number/number-0818  # [Run] expected a result but got XTTE1000: The select attribute of xsl:number must yield a single node
 number/number-0822  # [Compare] XML differs. Expected: <out xmlns:xs="http://www.w3.org/2001/XMLSchema">1&#65792;234&#65792;567</out...
-number/number-0823  # [Compare] expected error XTTE0990 but the transformation succeeded
-number/number-0824  # [Compare] expected error XTTE0990 but the transformation succeeded
-number/number-0825  # [Compare] any-of: expected error XTDE0030 but the transformation succeeded | expected error XTSE0020 but the t...
+number/number-0825  # [Run] any-of: expected error XTDE0030, got XTTE1000: The select attribute of xsl:number must yield a single no...
 number/number-0826  # [Compare] expected error XTDE0030 but the transformation succeeded
-number/number-0827  # [Compare] expected error XTDE0980 but the transformation succeeded
 number/number-0828  # [Compare] assert was false: //n3 = "dritte"
 number/number-0829  # [Compare] assert was false: /out/m = "primo;secondo;terzo;quarto;quinto;sesto;settimo;ottavo;nono;decimo;"
 number/number-0901  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?>
 number/number-0902  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="iso-8859-1"?><out>
-number/number-1001  # [Compare] XML differs. Expected: <out>
-number/number-1002  # [Compare] expected error XTTE1000 but the transformation succeeded
-number/number-1003  # [Compare] expected error XTTE1000 but the transformation succeeded
 number/number-1004  # [Compile] expected error XTTE0990, got XTSE0805: Unknown XSLT element xsl:iterate; XTSE0805: Unknown XSLT elem...
-number/number-1005  # [Compare] assert was false: /out='1'
-number/number-1101  # [Compare] XML differs. Expected: <o xmlns:msp="urn:us:gov:ic:msp">
-number/number-1201  # [Compare] XML differs. Expected: <out>(1.3.3.1)</out> Actual: <?xml version="1.0" encoding="UTF-8"?><out />
+number/number-1005  # [Run] expected a result but got XTTE1000: The select attribute of xsl:number must yield a single node
 number/number-1301  # [Compare] XML differs. Expected: <list><number>1</number><number>2<nonumber/></number><number>3</number></list...
 number/number-1401  # [Compile] expected a result but got XPST0017: Unknown function 'key' with arity 3
-number/number-1501  # [Compare] XML differs. Expected: <z><n>2</n><n>3</n><n>7</n><n>31</n><n>150</n><n>192</n><n>225</n><n>271</n><...
-number/number-1502  # [Compare] XML differs. Expected: <z><n>2</n><n>3</n><n>1</n><n>1</n><n>1</n><n>1</n><n>1</n><n>1</n></z> Actua...
 number/number-1601  # [Compare] XML differs. Expected: <out>(1)
 number/number-1701  # [Compare] XML differs. Expected: <doc nr=""><a nr=""><a nr="1"/></a><a nr="1"><b nr="1"/></a><a nr="1"><a nr="...
 number/number-1702  # [Compare] XML differs. Expected: <doc nr="1"><a nr="1"><a nr="1"/></a><a nr="2"><b nr="1"/></a><a nr="3"><a nr...
 number/number-1801  # [Compare] XML differs. Expected: <doc nr=""><a mark="true" nr="1"/><a nr="2"/><a nr="3"/><a nr="4"/><a mark="t...
 number/number-1901  # [Compare] XML differs. Expected: <out>1|2|3|</out> Actual: <?xml version="1.0" encoding="UTF-8"?><out>|||</out...
-number/number-1902  # [Compare] XML differs. Expected: <out>1|1|1|</out> Actual: <?xml version="1.0" encoding="UTF-8"?><out>|||</out...
-number/number-1903  # [Compare] XML differs. Expected: <out>1|1|1|</out> Actual: <?xml version="1.0" encoding="UTF-8"?><out>|||</out...
-number/number-2001  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>1. Test for source tree numbering
-number/number-2002  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>. Test for source tree numbering
-number/number-2003  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>. Test for source tree numbering
-number/number-2101  # [Compare] XML differs. Expected: <out>1. aaa
-number/number-2201  # [Compare] XML differs. Expected: <out>
-number/number-2301  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
-number/number-2401  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
-number/number-2402  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
-number/number-2501  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
-number/number-2502  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
-number/number-2503  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
-number/number-2504  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
-number/number-2505  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
+number/number-1902  # [Compare] XML differs. Expected: <out>1|1|1|</out> Actual: <?xml version="1.0" encoding="UTF-8"?><out>1|2|3|</...
+number/number-1903  # [Compare] XML differs. Expected: <out>1|1|1|</out> Actual: <?xml version="1.0" encoding="UTF-8"?><out>1|2|3|</...
 number/number-2506  # [Compare] assert was false: /out/n[1] = ("Ein", "Eins")
-number/number-2601  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
-number/number-2602  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
-number/number-2701  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
-number/number-2801  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
-number/number-2802  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
-number/number-2803  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
 number/number-2804  # [Compare] XML differs. Expected: <out>1: aaa
-number/number-2805  # [Compare] XML differs. Expected: <out>1: aaa
-number/number-2806  # [Compare] XML differs. Expected: <out>1: aaa
-number/number-2807  # [Compare] XML differs. Expected: <out>1: aaa
-number/number-2808  # [Compare] XML differs. Expected: <out>: aaa
-number/number-2809  # [Compare] XML differs. Expected: <out>: aaa
 number/number-2810  # [Compare] XML differs. Expected: <out>1: aaa
-number/number-2811  # [Compare] XML differs. Expected: <out>1: aaa
-number/number-2812  # [Compare] XML differs. Expected: <out>1: aaa
-number/number-2813  # [Compare] XML differs. Expected: <out>1: aaa
 number/number-2901  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
 number/number-2902  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
-number/number-3001  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
 number/number-3002  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
 number/number-3003  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
 number/number-3101  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
-number/number-3201  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>: Test for source tree numbering
-number/number-3202  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>: Test for source tree numbering
-number/number-3203  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>: Test for source tree numbering
-number/number-3204  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>: Test for source tree numbering
-number/number-3205  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>.: Test for source tree numbering
-number/number-3206  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>: Test for source tree numbering
-number/number-3207  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>+: Test for source tree numbering
-number/number-3208  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>.: Test for source tree numbering
-number/number-3209  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>**: Test for source tree numbering
-number/number-3210  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>*: Test for source tree numbering
-number/number-3211  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>......: Test for source tree numbe...
-number/number-3212  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>....: Test for source tree numberi...
-number/number-3213  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>****: Test for source tree numberi...
-number/number-3214  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>*%|+: Test for source tree numberi...
-number/number-3215  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>*%+?: Test for source tree numberi...
-number/number-3216  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>(.): Test for source tree numberin...
-number/number-3217  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>(): Test for source tree numbering
-number/number-3218  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>(?): Test for source tree numberin...
-number/number-3219  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>(): Test for source tree numbering
-number/number-3220  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>: Test for source tree numbering
-number/number-3221  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>: Test for source tree numbering
-number/number-3222  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>: Test for source tree numbering
-number/number-3223  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>: Test for source tree numbering
-number/number-3224  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>1: Test for source tree numbering
-number/number-3225  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>: Test for source tree numbering
-number/number-3226  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>: Test for source tree numbering
-number/number-3227  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>: Test for source tree numbering
-number/number-3228  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>: Test for source tree numbering
-number/number-3229  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>: Test for source tree numbering
 number/number-3301  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
 number/number-3401  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
 number/number-3402  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
@@ -1859,124 +1762,9 @@ number/number-3403  # [Compare] XML differs. Expected: <?xml version="1.0" encod
 number/number-3404  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
 number/number-3405  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
 number/number-3501  # [Compare] XML differs. Expected: <out>A. First Chapter
-number/number-3601  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>1: Test for source tree numbering
-number/number-3701  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>: Test for source tree numbering
-number/number-3702  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>: Test for source tree numbering
-number/number-3801  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
-number/number-3802  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
-number/number-3901  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
 number/number-4001  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>: Test for source tree numbering
-number/number-4101  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out><o>1</o>
-number/number-4201  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out xmlns:z="http://z.test.com/">
-number/number-4202  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
-number/number-4301  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out xmlns:z="http://z.test.com/">
-number/number-4401  # [Compare] XML differs. Expected: <out><chap number="1" position="2">aaa<sel number="1" position="1"/></chap><c...
-number/number-4402  # [Compare] assert was false: /out/chap[1][@number='1'][@position='2'][note='aaa']
 number/number-4501  # [Compare] XML differs. Expected: <out>(no) a(1) b(no) c(2) d(no) e(no) f(3) g(no) h</out> Actual: <?xml versio...
-number/number-4601  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
-number/number-4701  # [Compare] assert was false: deep-equal(/out/z/from-slash/number(), (1,2,3,4,5,6))
-number/number-5001  # [Compare] any-of: string value differs. Expected: ⓪ ① ② ③ ④ ⑤ ⑥ ⑦ ⑧ ⑨ ⑩ ⑪ ⑫ ⑬ ⑭ Actual: | string value differs...
-number/number-5002  # [Compare] string value differs. Expected: ⓪ ① ② ③ ④ ⑤ ⑥ ⑦ ⑧ ⑨ Actual:
-number/number-5003  # [Compare] any-of: string value differs. Expected: 0 ① ② ③ ④ ⑤ ⑥ ⑦ ⑧ ⑨ ⑩ ⑪ ⑫ ⑬ ⑭ Actual: | string value differs...
-number/number-5004  # [Compare] string value differs. Expected: ① ② ③ ④ ⑤ ⑥ ⑦ ⑧ ⑨ Actual:
-number/number-5005  # [Compare] any-of: string value differs. Expected: ⓪ ① ② ③ ④ ⑤ ⑥ ⑦ ⑧ ⑨ ⑩ ⑪ ⑫ ⑬ ⑭ ⑮ Actual: | string value diffe...
-number/number-5006  # [Compare] string value differs. Expected: ⓪ ① ② ③ ④ ⑤ ⑥ ⑦ ⑧ ⑨ ⑩ Actual:
-number/number-5007  # [Compare] any-of: string value differs. Expected: 0 ① ② ③ ④ ⑤ ⑥ ⑦ ⑧ ⑨ ⑩ ⑪ ⑫ ⑬ ⑭ ⑮ Actual: | string value diffe...
-number/number-5008  # [Compare] string value differs. Expected: ① ② ③ ④ ⑤ ⑥ ⑦ ⑧ ⑨ ⑩ Actual:
-number/number-5009  # [Compare] any-of: string value differs. Expected: ⓪ ① ② ③ ④ ⑤ ⑥ ⑦ ⑧ ⑨ ⑩ ⑪ ⑫ ⑬ ⑭ ⑮ ⑯ ⑰ ⑱ ⑲ ⑳ ㉑ ㉒ ㉓ ㉔ ㉕ Actual: ...
-number/number-5010  # [Compare] string value differs. Expected: ⓪ ① ② ③ ④ ⑤ ⑥ ⑦ ⑧ ⑨ ⑩ ⑪ ⑫ ⑬ ⑭ ⑮ ⑯ ⑰ ⑱ ⑲ ⑳ Actual:
-number/number-5011  # [Compare] any-of: string value differs. Expected: 0 ① ② ③ ④ ⑤ ⑥ ⑦ ⑧ ⑨ ⑩ ⑪ ⑫ ⑬ ⑭ ⑮ ⑯ ⑰ ⑱ ⑲ ⑳ ㉑ ㉒ ㉓ ㉔ ㉕ Actual: ...
-number/number-5012  # [Compare] string value differs. Expected: ① ② ③ ④ ⑤ ⑥ ⑦ ⑧ ⑨ ⑩ ⑪ ⑫ ⑬ ⑭ ⑮ ⑯ ⑰ ⑱ ⑲ ⑳ Actual:
-number/number-5013  # [Compare] string value differs. Expected: ⓪ ① ② ③ ④ ⑤ ⑥ ⑦ ⑧ ⑨ ⑩ ⑪ ⑫ ⑬ ⑭ ⑮ ⑯ ⑰ ⑱ ⑲ ⑳ ㉑ ㉒ ㉓ ㉔ ㉕ ㉖ ㉗ ㉘ ㉙ ㉚ ㉛ ㉜ ㉝ ...
-number/number-5014  # [Compare] string value differs. Expected: ⓪ ① ② ③ ④ ⑤ ⑥ ⑦ ⑧ ⑨ ⑩ ⑪ ⑫ ⑬ ⑭ ⑮ ⑯ ⑰ ⑱ ⑲ ⑳ ㉑ ㉒ ㉓ ㉔ ㉕ ㉖ ㉗ ㉘ ㉙ ㉚ ㉛ ㉜ ㉝ ...
-number/number-5015  # [Compare] any-of: string value differs. Expected: 0 ① ② ③ ④ ⑤ ⑥ ⑦ ⑧ ⑨ ⑩ ⑪ ⑫ ⑬ ⑭ ⑮ ⑯ ⑰ ⑱ ⑲ ⑳ ㉑ ㉒ ㉓ ㉔ ㉕ ㉖ ㉗ ㉘ ㉙ ...
-number/number-5016  # [Compare] string value differs. Expected: ① ② ③ ④ ⑤ ⑥ ⑦ ⑧ ⑨ ⑩ ⑪ ⑫ ⑬ ⑭ ⑮ ⑯ ⑰ ⑱ ⑲ ⑳ ㉑ ㉒ ㉓ ㉔ ㉕ ㉖ ㉗ ㉘ ㉙ ㉚ ㉛ ㉜ ㉝ ㉞ ...
-number/number-5017  # [Compare] any-of: string value differs. Expected: 0 ⑴ ⑵ ⑶ ⑷ ⑸ ⑹ ⑺ ⑻ ⑼ ⑽ ⑾ ⑿ ⒀ ⒁ Actual: | string value differs...
-number/number-5018  # [Compare] string value differs. Expected: ⑴ ⑵ ⑶ ⑷ ⑸ ⑹ ⑺ ⑻ ⑼ Actual:
-number/number-5019  # [Compare] any-of: string value differs. Expected: 0 ⑴ ⑵ ⑶ ⑷ ⑸ ⑹ ⑺ ⑻ ⑼ ⑽ ⑾ ⑿ ⒀ ⒁ ⒂ Actual: | string value diffe...
-number/number-5020  # [Compare] string value differs. Expected: ⑴ ⑵ ⑶ ⑷ ⑸ ⑹ ⑺ ⑻ ⑼ ⑽ Actual:
-number/number-5021  # [Compare] string value differs. Expected: 0 ⑴ ⑵ ⑶ ⑷ ⑸ ⑹ ⑺ ⑻ ⑼ ⑽ ⑾ ⑿ ⒀ ⒁ ⒂ ⒃ ⒄ ⒅ ⒆ ⒇ 21 22 23 24 25 Actual:
-number/number-5022  # [Compare] string value differs. Expected: ⑴ ⑵ ⑶ ⑷ ⑸ ⑹ ⑺ ⑻ ⑼ ⑽ ⑾ ⑿ ⒀ ⒁ ⒂ ⒃ ⒄ ⒅ ⒆ ⒇ Actual:
-number/number-5023  # [Compare] any-of: string value differs. Expected: 0 ⒈ ⒉ ⒊ ⒋ ⒌ ⒍ ⒎ ⒏ ⒐ ⒑ ⒒ ⒓ ⒔ ⒕ Actual: | string value differs...
-number/number-5024  # [Compare] string value differs. Expected: ⒈ ⒉ ⒊ ⒋ ⒌ ⒍ ⒎ ⒏ ⒐ Actual:
-number/number-5025  # [Compare] any-of: string value differs. Expected: 0 ⒈ ⒉ ⒊ ⒋ ⒌ ⒍ ⒎ ⒏ ⒐ ⒑ ⒒ ⒓ ⒔ ⒕ Actual: | string value differs...
-number/number-5026  # [Compare] string value differs. Expected: ⒈ ⒉ ⒊ ⒋ ⒌ ⒍ ⒎ ⒏ ⒐ Actual:
-number/number-5027  # [Compare] any-of: string value differs. Expected: 🄀 ⒈ ⒉ ⒊ ⒋ ⒌ ⒍ ⒎ ⒏ ⒐ ⒑ ⒒ ⒓ ⒔ ⒕ ⒖ Actual: | string value diff...
-number/number-5028  # [Compare] string value differs. Expected: 🄀 ⒈ ⒉ ⒊ ⒋ ⒌ ⒍ ⒎ ⒏ ⒐ ⒑ Actual:
-number/number-5029  # [Compare] any-of: string value differs. Expected: 0 ⒈ ⒉ ⒊ ⒋ ⒌ ⒍ ⒎ ⒏ ⒐ ⒑ ⒒ ⒓ ⒔ ⒕ ⒖ Actual: | string value diffe...
-number/number-5030  # [Compare] string value differs. Expected: ⒈ ⒉ ⒊ ⒋ ⒌ ⒍ ⒎ ⒏ ⒐ ⒑ Actual:
-number/number-5031  # [Compare] any-of: string value differs. Expected: 🄀 ⒈ ⒉ ⒊ ⒋ ⒌ ⒍ ⒎ ⒏ ⒐ ⒑ ⒒ ⒓ ⒔ ⒕ ⒖ Actual: | string value diff...
-number/number-5032  # [Compare] string value differs. Expected: 🄀 ⒈ ⒉ ⒊ ⒋ ⒌ ⒍ ⒎ ⒏ ⒐ ⒑ Actual:
-number/number-5033  # [Compare] any-of: string value differs. Expected: 0 ⒈ ⒉ ⒊ ⒋ ⒌ ⒍ ⒎ ⒏ ⒐ ⒑ ⒒ ⒓ ⒔ ⒕ ⒖ ⒗ ⒘ ⒙ ⒚ ⒛ 21 22 23 24 25 Act...
-number/number-5034  # [Compare] string value differs. Expected: ⒈ ⒉ ⒊ ⒋ ⒌ ⒍ ⒎ ⒏ ⒐ ⒑ ⒒ ⒓ ⒔ ⒕ ⒖ ⒗ ⒘ ⒙ ⒚ ⒛ Actual:
-number/number-5035  # [Compare] any-of: string value differs. Expected: ⓿ ❶ ❷ ❸ ❹ ❺ ❻ ❼ ❽ ❾ ❿ ⓫ ⓬ ⓭ ⓮ Actual: | string value differs...
-number/number-5036  # [Compare] string value differs. Expected: ⓿ ❶ ❷ ❸ ❹ ❺ ❻ ❼ ❽ ❾ Actual:
-number/number-5037  # [Compare] any-of: string value differs. Expected: 0 ❶ ❷ ❸ ❹ ❺ ❻ ❼ ❽ ❾ ❿ ⓫ ⓬ ⓭ ⓮ Actual: | string value differs...
-number/number-5038  # [Compare] string value differs. Expected: ❶ ❷ ❸ ❹ ❺ ❻ ❼ ❽ ❾ Actual:
-number/number-5039  # [Compare] any-of: string value differs. Expected: ⓿ ❶ ❷ ❸ ❹ ❺ ❻ ❼ ❽ ❾ ❿ ⓫ ⓬ ⓭ ⓮ ⓯ Actual: | string value diffe...
-number/number-5040  # [Compare] string value differs. Expected: ⓿ ❶ ❷ ❸ ❹ ❺ ❻ ❼ ❽ ❾ ❿ Actual:
-number/number-5041  # [Compare] any-of: string value differs. Expected: 0 ❶ ❷ ❸ ❹ ❺ ❻ ❼ ❽ ❾ ❿ ⓫ ⓬ ⓭ ⓮ ⓯ Actual: | string value diffe...
-number/number-5042  # [Compare] string value differs. Expected: ❶ ❷ ❸ ❹ ❺ ❻ ❼ ❽ ❾ ❿ Actual:
-number/number-5043  # [Compare] any-of: string value differs. Expected: ⓿ ❶ ❷ ❸ ❹ ❺ ❻ ❼ ❽ ❾ ❿ ⓫ ⓬ ⓭ ⓮ ⓯ Actual: | string value diffe...
-number/number-5044  # [Compare] string value differs. Expected: ⓿ ❶ ❷ ❸ ❹ ❺ ❻ ❼ ❽ ❾ ❿ Actual:
-number/number-5045  # [Compare] any-of: string value differs. Expected: 0 ❶ ❷ ❸ ❹ ❺ ❻ ❼ ❽ ❾ ❿ ⓫ ⓬ ⓭ ⓮ ⓯ ⓰ ⓱ ⓲ ⓳ ⓴ 21 22 23 24 25 Act...
-number/number-5046  # [Compare] string value differs. Expected: ❶ ❷ ❸ ❹ ❺ ❻ ❼ ❽ ❾ ❿ ⓫ ⓬ ⓭ ⓮ ⓯ ⓰ ⓱ ⓲ ⓳ ⓴ Actual:
-number/number-5047  # [Compare] any-of: string value differs. Expected: 0 ⓵ ⓶ ⓷ ⓸ ⓹ ⓺ ⓻ ⓼ ⓽ ⓾ 11 12 13 14 Actual: | string value dif...
-number/number-5048  # [Compare] string value differs. Expected: ⓵ ⓶ ⓷ ⓸ ⓹ ⓺ ⓻ ⓼ ⓽ Actual:
-number/number-5049  # [Compare] string value differs. Expected: 0 ⓵ ⓶ ⓷ ⓸ ⓹ ⓺ ⓻ ⓼ ⓽ ⓾ 11 12 13 14 15 Actual:
-number/number-5050  # [Compare] string value differs. Expected: ⓵ ⓶ ⓷ ⓸ ⓹ ⓺ ⓻ ⓼ ⓽ ⓾ Actual:
-number/number-5051  # [Compare] any-of: string value differs. Expected: 🄋 ➀ ➁ ➂ ➃ ➄ ➅ ➆ ➇ ➈ ➉ 11 12 13 14 Actual: | string value di...
-number/number-5052  # [Compare] string value differs. Expected: 🄋 ➀ ➁ ➂ ➃ ➄ ➅ ➆ ➇ ➈ Actual:
-number/number-5053  # [Compare] any-of: string value differs. Expected: 0 ➀ ➁ ➂ ➃ ➄ ➅ ➆ ➇ ➈ ➉ Actual: | string value differs. Expect...
-number/number-5054  # [Compare] string value differs. Expected: ➀ ➁ ➂ ➃ ➄ ➅ ➆ ➇ ➈ Actual:
-number/number-5055  # [Compare] string value differs. Expected: 🄋 ➀ ➁ ➂ ➃ ➄ ➅ ➆ ➇ ➈ ➉ 11 12 13 14 15 Actual:
-number/number-5056  # [Compare] string value differs. Expected: 🄋 ➀ ➁ ➂ ➃ ➄ ➅ ➆ ➇ ➈ ➉ Actual:
-number/number-5057  # [Compare] any-of: string value differs. Expected: 0 ➀ ➁ ➂ ➃ ➄ ➅ ➆ ➇ ➈ ➉ 11 12 13 14 15 Actual: | string value ...
-number/number-5058  # [Compare] string value differs. Expected: ➀ ➁ ➂ ➃ ➄ ➅ ➆ ➇ ➈ ➉ Actual:
-number/number-5059  # [Compare] any-of: string value differs. Expected: 0 ➊ ➋ ➌ ➍ ➎ ➏ ➐ ➑ ➒ ➓ Actual: | string value differs. Expect...
-number/number-5060  # [Compare] string value differs. Expected: ➊ ➋ ➌ ➍ ➎ ➏ ➐ ➑ ➒ Actual:
-number/number-5061  # [Compare] any-of: string value differs. Expected: 0 ➊ ➋ ➌ ➍ ➎ ➏ ➐ ➑ ➒ ➓ Actual: | string value differs. Expect...
-number/number-5062  # [Compare] string value differs. Expected: ➊ ➋ ➌ ➍ ➎ ➏ ➐ ➑ ➒ Actual:
-number/number-5063  # [Compare] string value differs. Expected: 🄌 ➊ ➋ ➌ ➍ ➎ ➏ ➐ ➑ ➒ ➓ 11 12 13 14 15 Actual:
-number/number-5064  # [Compare] string value differs. Expected: 🄌 ➊ ➋ ➌ ➍ ➎ ➏ ➐ ➑ ➒ ➓ Actual:
-number/number-5065  # [Compare] any-of: string value differs. Expected: 0 ➊ ➋ ➌ ➍ ➎ ➏ ➐ ➑ ➒ ➓ 11 12 13 14 15 Actual: | string value ...
-number/number-5066  # [Compare] string value differs. Expected: ➊ ➋ ➌ ➍ ➎ ➏ ➐ ➑ ➒ ➓ Actual:
-number/number-5067  # [Compare] any-of: string value differs. Expected: 0 ㈠ ㈡ ㈢ ㈣ ㈤ ㈥ ㈦ ㈧ ㈨ ㈩ 11 12 13 14 Actual: | string value dif...
-number/number-5068  # [Compare] string value differs. Expected: ㈠ ㈡ ㈢ ㈣ ㈤ ㈥ ㈦ ㈧ ㈨ Actual:
-number/number-5069  # [Compare] string value differs. Expected: 0 ㈠ ㈡ ㈢ ㈣ ㈤ ㈥ ㈦ ㈧ ㈨ ㈩ 11 12 13 14 15 Actual:
-number/number-5070  # [Compare] string value differs. Expected: ㈠ ㈡ ㈢ ㈣ ㈤ ㈥ ㈦ ㈧ ㈨ ㈩ Actual:
-number/number-5071  # [Compare] any-of: string value differs. Expected: 0 ㊀ ㊁ ㊂ ㊃ ㊄ ㊅ ㊆ ㊇ ㊈ ㊉ 11 12 13 14 Actual: | string value dif...
-number/number-5072  # [Compare] string value differs. Expected: ㊀ ㊁ ㊂ ㊃ ㊄ ㊅ ㊆ ㊇ ㊈ Actual:
-number/number-5073  # [Compare] string value differs. Expected: 0 ㊀ ㊁ ㊂ ㊃ ㊄ ㊅ ㊆ ㊇ ㊈ ㊉ 11 12 13 14 15 Actual:
-number/number-5074  # [Compare] string value differs. Expected: ㊀ ㊁ ㊂ ㊃ ㊄ ㊅ ㊆ ㊇ ㊈ ㊉ Actual:
-number/number-5075  # [Compare] any-of: string value differs. Expected: 0 𐄇 𐄈 𐄉 𐄊 𐄋 𐄌 𐄍 𐄎 𐄏 𐄐 11 12 13 14 Actual: | string...
-number/number-5076  # [Compare] string value differs. Expected: 𐄇 𐄈 𐄉 𐄊 𐄋 𐄌 𐄍 𐄎 𐄏 Actual:
-number/number-5077  # [Compare] string value differs. Expected: 0 𐄇 𐄈 𐄉 𐄊 𐄋 𐄌 𐄍 𐄎 𐄏 𐄐 11 12 13 14 15 Actual:
-number/number-5078  # [Compare] string value differs. Expected: 𐄇 𐄈 𐄉 𐄊 𐄋 𐄌 𐄍 𐄎 𐄏 𐄐 Actual:
-number/number-5079  # [Compare] any-of: string value differs. Expected: 0 𐋡 𐋢 𐋣 𐋤 𐋥 𐋦 𐋧 𐋨 𐋩 𐋪 11 12 13 14 Actual: | string...
-number/number-5080  # [Compare] string value differs. Expected: 𐋡 𐋢 𐋣 𐋤 𐋥 𐋦 𐋧 𐋨 𐋩 Actual:
-number/number-5081  # [Compare] string value differs. Expected: 0 𐋡 𐋢 𐋣 𐋤 𐋥 𐋦 𐋧 𐋨 𐋩 𐋪 11 12 13 14 15 Actual:
-number/number-5082  # [Compare] string value differs. Expected: 𐋡 𐋢 𐋣 𐋤 𐋥 𐋦 𐋧 𐋨 𐋩 𐋪 Actual:
-number/number-5083  # [Compare] any-of: string value differs. Expected: 0 𐹠 𐹡 𐹢 𐹣 𐹤 𐹥 𐹦 𐹧 𐹨 𐹩 11 12 13 14 Actual: | string...
-number/number-5084  # [Compare] string value differs. Expected: 𐹠 𐹡 𐹢 𐹣 𐹤 𐹥 𐹦 𐹧 𐹨 Actual:
-number/number-5085  # [Compare] string value differs. Expected: 0 𐹠 𐹡 𐹢 𐹣 𐹤 𐹥 𐹦 𐹧 𐹨 𐹩 11 12 13 14 15 Actual:
-number/number-5086  # [Compare] string value differs. Expected: 𐹠 𐹡 𐹢 𐹣 𐹤 𐹥 𐹦 𐹧 𐹨 𐹩 Actual:
-number/number-5087  # [Compare] any-of: string value differs. Expected: 0 𑁒 𑁓 𑁔 𑁕 𑁖 𑁗 𑁘 𑁙 𑁚 𑁛 11 12 13 14 Actual: | string...
-number/number-5088  # [Compare] string value differs. Expected: 𑁒 𑁓 𑁔 𑁕 𑁖 𑁗 𑁘 𑁙 𑁚 Actual:
-number/number-5089  # [Compare] string value differs. Expected: 0 𑁒 𑁓 𑁔 𑁕 𑁖 𑁗 𑁘 𑁙 𑁚 𑁛 11 12 13 14 15 Actual:
-number/number-5090  # [Compare] string value differs. Expected: 𑁒 𑁓 𑁔 𑁕 𑁖 𑁗 𑁘 𑁙 𑁚 𑁛 Actual:
-number/number-5091  # [Compare] any-of: string value differs. Expected: 0 𑇡 𑇢 𑇣 𑇤 𑇥 𑇦 𑇧 𑇨 𑇩 𑇪 11 12 13 14 Actual: | string...
-number/number-5092  # [Compare] string value differs. Expected: 𑇡 𑇢 𑇣 𑇤 𑇥 𑇦 𑇧 𑇨 𑇩 Actual:
-number/number-5093  # [Compare] string value differs. Expected: 0 𑇡 𑇢 𑇣 𑇤 𑇥 𑇦 𑇧 𑇨 𑇩 𑇪 11 12 13 14 15 Actual:
-number/number-5094  # [Compare] string value differs. Expected: 𑇡 𑇢 𑇣 𑇤 𑇥 𑇦 𑇧 𑇨 𑇩 𑇪 Actual:
-number/number-5095  # [Compare] string value differs. Expected: 0 𝍠 𝍡 𝍢 𝍣 𝍤 𝍥 𝍦 𝍧 𝍨 10 11 12 13 14 Actual:
-number/number-5096  # [Compare] string value differs. Expected: 𝍠 𝍡 𝍢 𝍣 𝍤 𝍥 𝍦 𝍧 𝍨 Actual:
-number/number-5097  # [Compare] string value differs. Expected: 0 𞣇 𞣈 𞣉 𞣊 𞣋 𞣌 𞣍 𞣎 𞣏 10 11 12 13 14 Actual:
-number/number-5098  # [Compare] string value differs. Expected: 𞣇 𞣈 𞣉 𞣊 𞣋 𞣌 𞣍 𞣎 𞣏 Actual:
-number/number-5099  # [Compare] string value differs. Expected: 🄁 🄂 🄃 🄄 🄅 🄆 🄇 🄈 🄉 🄊 10 11 12 13 14 Actual:
-number/number-5100  # [Compare] string value differs. Expected: 🄁 🄂 🄃 🄄 🄅 🄆 🄇 🄈 🄉 🄊 Actual:
-number/number-5101  # [Compare] any-of: string value differs. Expected: 0 🄂 🄃 🄄 🄅 🄆 🄇 🄈 🄉 🄊 10 11 12 13 14 Actual: | string...
-number/number-5102  # [Compare] string value differs. Expected: 🄂 🄃 🄄 🄅 🄆 🄇 🄈 🄉 🄊 Actual:
+number/number-4701  # [Compare] assert was false: deep-equal(/out/z/from-star/number(), (1,1,2,3,4,5))
 output/output-0130  # [Compare] output does not match /http-equiv="Content-Type"/: <?xml version="1.0" encoding="UTF-8"?><html xmlns...
 output/output-0132  # [Compare] output does not match /<html\s+xmlns="http://www.w3.org/1999/xhtml"><body><br />/: <?xml version="1....
 output/output-0133  # [Compare] output does not match /<html\s+xmlns="http://www.w3.org/1999/xhtml"><body><br />/: <?xml version="1....
@@ -2739,7 +2527,8 @@ tunnel/tunnel-0201  # [Compare] XML differs. Expected: <out>foo</out> Actual: <?
 tunnel/tunnel-0203  # [Compare] XML differs. Expected: <out>foo1 and foo2</out> Actual: <?xml version="1.0" encoding="UTF-8"?><out>b...
 tunnel/tunnel-0204  # [Compare] XML differs. Expected: <out>foo</out> Actual: <?xml version="1.0" encoding="UTF-8"?><out>bar</out>
 tunnel/tunnel-0205  # [Compare] XML differs. Expected: <out>foo1 and bar1</out> Actual: <?xml version="1.0" encoding="UTF-8"?><out>f...
-tunnel/tunnel-0207  # [Compare] XML differs. Expected: <out>123</out> Actual: <?xml version="1.0" encoding="UTF-8"?><out>xyz</out>
+tunnel/tunnel-0206  # [Run] expected a result but got XPDY0002: The context item is undefined
+tunnel/tunnel-0207  # [Run] expected a result but got XPDY0002: The context item is undefined
 tunnel/tunnel-0208  # [Compare] XML differs. Expected: <out>abc</out> Actual: <?xml version="1.0" encoding="UTF-8"?><out />
 tunnel/tunnel-0209  # [Compare] XML differs. Expected: <out>def</out> Actual: <?xml version="1.0" encoding="UTF-8"?>
 tunnel/tunnel-0210  # [Compare] XML differs. Expected: <out>abc</out> Actual: <?xml version="1.0" encoding="UTF-8"?><out />
