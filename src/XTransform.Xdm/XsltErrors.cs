@@ -80,6 +80,14 @@ public static class XsltErrors
     public static readonly QName XTDE0640 = new QName("err", XPathErrors.Namespace, "XTDE0640");
     /// <summary>XTDE1360: fn:current() was called when there is no current item.</summary>
     public static readonly QName XTDE1360 = new QName("err", XPathErrors.Namespace, "XTDE1360");
+    /// <summary>XTDE0980: an xsl:number value cannot be converted to a non-negative integer. (XSLT 2.0 §12.1)</summary>
+    public static readonly QName XTDE0980 = new QName("err", XPathErrors.Namespace, "XTDE0980");
+    /// <summary>XTTE0990: xsl:number has no value or select and the context item is not a node. (XSLT 2.0 §12.2)</summary>
+    public static readonly QName XTTE0990 = new QName("err", XPathErrors.Namespace, "XTTE0990");
+    /// <summary>XTTE1000: the select of xsl:number is not a single node. (XSLT 2.0 §12.2)</summary>
+    public static readonly QName XTTE1000 = new QName("err", XPathErrors.Namespace, "XTTE1000");
+    /// <summary>XTSE0975: xsl:number has a value attribute together with select, level, count or from. (XSLT 2.0 §12.1)</summary>
+    public static readonly QName XTSE0975 = new QName("err", XPathErrors.Namespace, "XTSE0975");
 
     /// <summary>It is a dynamic error if xsl:call-template is invoked without a value for a required xsl:param. (XSLT 2.0 §9.5)</summary>
     public static readonly QName XTDE0700 = new QName("err", XPathErrors.Namespace, "XTDE0700");

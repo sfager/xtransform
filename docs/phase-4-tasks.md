@@ -80,7 +80,7 @@ shard.
 | P4-28 | XSLT 1.0 parity corpus (D6) and `docs/compat-differences.md` | — | P4-25 |
 | P4-29 | Gate G4 run, baseline, NuGet preview `0.4.0-preview.1` | — | all |
 
-Suggested order by tests unlocked per unit of effort: **P4-07, P4-10, P4-23, P4-06, P4-04,
+Suggested order by tests unlocked per unit of effort: **P4-22 (pattern predicates first), P4-07 (done), P4-10, P4-23, P4-06, P4-04,
 P4-13, P4-08, P4-09**, then the rest. Tasks with no dependencies can run in any order.
 
 ---
@@ -186,17 +186,25 @@ Registered as an XSLT function (it needs the stylesheet's decimal formats).
 
 ## P4-07 `xsl:number` and picture tokens
 
-- [ ] Done
+- [x] Done
 
 **Scope.** XSLT 2.0 §12: `value`, `level` (single / multiple / any), `count`, `from`, `format`
 tokens (`1`, `01`, `a`, `A`, `i`, `I`, Unicode digit sets and the enclosed-number tokens seen in
 the suite), `lang`, `letter-value`, `ordinal`, `grouping-separator` / `grouping-size`.
-Default `count` and `from` patterns use the pattern matcher from P1-13. `XTDE0980`, `XTDE0990`,
+Default `count` and `from` patterns use the pattern matcher from P1-13. `XTDE0980`, `XTTE0990`, `XTTE1000`,
 `XTSE0975`. This is the largest single set (256 failing tests).
 
 **Acceptance.**
 - `number` set ≥ 85% passing.
-- Alphabetic and roman numbering unit-tested to 10,000 and to the edge values (0, negatives).
+- Alphabetic and roman numbering unit-tested at their edge values (0, range limits, carries).
+
+**Result.** `number` set: 206 of 260 in-scope tests pass (was 4). The rest are blocked by other
+tasks, not by `xsl:number`: `xsl:strip-space` (P4-21), namespace-prefix serialization (P4-14),
+typed variables with `as` (P4-19), backwards-compatibility mode (P4-25), German and Italian number
+words, character references for characters the output encoding cannot represent (P4-18), and
+pattern predicates (see P4-22). The 85% acceptance target is reached once those land. Also fixed
+here: `assert-string-value` normalizes space by default in the XSLT catalog, and `xsl:function`
+bodies now run with no focus (so `xsl:number` and `current()` raise their errors there).
 
 ## P4-08 `fn:format-date` / `format-dateTime` / `format-time`
 
@@ -391,7 +399,14 @@ precedence (`XTSE0270`), whitespace in the input document, and `xml:space` on th
 
 - [ ] Done
 
-**Scope.** Review and fix the remaining failures in `match` (patterns with unions, `id()`,
+**Scope.** **First: evaluate pattern predicates.** `PatternMatcher.MatchStep` does not evaluate the
+predicates of a step pattern at all (it returns true, a P3-07 stub), so `match="item[@x = 1]"` matches
+every `item` and `xsl:number count="note[position() mod 2 = 1]"` ignores the predicate. Compile the
+predicates with the static context of the pattern, evaluate them with the focus the spec defines
+(XSLT 2.0 §5.5.3: position among the candidate's siblings that satisfy the step's node test and the
+earlier predicates), and allow `current()`. This is probably the largest single correctness fix in
+Phase 4: do it before the other tasks that depend on matching. Then review and fix the remaining
+failures in `match` (patterns with unions, `id()`,
 `key()`, predicates with `last()`), `position` and `axes` (focus semantics inside patterns and
 steps, reverse-axis positions), `tunnel` parameters (propagation through `apply-templates`,
 `call-template`, built-in rules; `XTSE0580`, `XTDE0700`), `apply-templates` `mode="#all"` and

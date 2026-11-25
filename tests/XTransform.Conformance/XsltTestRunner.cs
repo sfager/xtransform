@@ -36,7 +36,10 @@ internal sealed record XsltTestResult(XsltOutcome Outcome, XsltFailureStage Stag
 
 internal static class XsltTestRunner
 {
-    private static readonly TimeSpan s_timeout = TimeSpan.FromSeconds(8);
+    // Per-test limit; XTRANSFORM_XSLT_TIMEOUT_SECONDS overrides it. The 54 MB unicode-90 inputs need
+    // headroom: several tests take 8 to 12 seconds on a loaded machine.
+    private static readonly TimeSpan s_timeout = TimeSpan.FromSeconds(
+        int.TryParse(Environment.GetEnvironmentVariable("XTRANSFORM_XSLT_TIMEOUT_SECONDS"), out int seconds) && seconds > 0 ? seconds : 20);
 
     private static readonly Dictionary<string, string> s_defaultPrefixes = new Dictionary<string, string>(StringComparer.Ordinal)
     {
@@ -160,6 +163,16 @@ internal static class XsltTestRunner
 
         // ── Compare ──────────────────────────────────────────────────────────
         XsltActual actual = new XsltActual(output, errorCodes, errorDetail, set.Directory);
+
+        // XTRANSFORM_XSLT_DUMP=<dir> writes each case's serialized output for inspection.
+        string? dumpDir = Environment.GetEnvironmentVariable("XTRANSFORM_XSLT_DUMP");
+        if (!string.IsNullOrEmpty(dumpDir))
+        {
+            Directory.CreateDirectory(dumpDir!);
+            File.WriteAllText(
+                Path.Combine(dumpDir!, set.Name + "__" + tc.Name + ".txt"),
+                output ?? ("ERROR " + errorDetail));
+        }
         (bool passed, string? detail) = XsltResultComparer.Check(tc.Result.Elements().FirstOrDefault(), actual);
         if (passed)
         {
@@ -571,7 +584,8 @@ internal static class XsltResultComparer
     {
         string text = StringValueOf(actual.Output!);
         string expected = assertion.Value;
-        if (string.Equals((string?)assertion.Attribute("normalize-space"), "true", StringComparison.Ordinal))
+        // catalog-schema.xsd: normalize-space defaults to true for assert-string-value.
+        if (!string.Equals((string?)assertion.Attribute("normalize-space"), "false", StringComparison.Ordinal))
         {
             text = Regex.Replace(text.Trim(), @"\s+", " ");
             expected = Regex.Replace(expected.Trim(), @"\s+", " ");
@@ -681,5 +695,9 @@ internal static class XsltResultComparer
         }
     }
 
-    private static string Trunc(string s) => s.Length <= 160 ? s : string.Concat(s.AsSpan(0, 160), "…");
+    // XTRANSFORM_XSLT_TRUNC=<n> widens the expected/actual excerpts in failure messages (default 160).
+    private static readonly int s_truncLength =
+        int.TryParse(Environment.GetEnvironmentVariable("XTRANSFORM_XSLT_TRUNC"), out int t) && t > 0 ? t : 160;
+
+    private static string Trunc(string s) => s.Length <= s_truncLength ? s : string.Concat(s.AsSpan(0, s_truncLength), "…");
 }

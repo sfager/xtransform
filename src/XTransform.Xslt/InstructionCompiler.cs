@@ -210,12 +210,122 @@ internal static class InstructionCompiler
             "comment" => CompileXslComment(element, scope, bag),
             "processing-instruction" => CompileXslPi(element, scope, bag),
             "document" => CompileXslDocument(element, scope, bag),
+            "number" => CompileNumber(element, scope, bag),
             // Deferred to later tasks:
-            "message" or "number" or "result-document" or
+            "message" or "result-document" or
             "analyze-string" or "for-each-group" or "next-match" or "fallback" or
             "apply-imports" or "perform-sort" => null,
             _ => null,
         };
+    }
+
+    // ── xsl:number (XSLT 2.0 §12) ──────────────────────────────────────────────
+
+    private static XsltInstruction? CompileNumber(StylesheetElement element, XsltCompileScope scope, DiagnosticBag bag)
+    {
+        string? valueAttr = GetAttribute(element, "value");
+        string? selectAttr = GetAttribute(element, "select");
+        string? levelAttr = GetAttribute(element, "level");
+        string? countAttr = GetAttribute(element, "count");
+        string? fromAttr = GetAttribute(element, "from");
+
+        // XTSE0975: value is allowed only when select, level, count and from are all absent.
+        if (valueAttr is not null && (selectAttr is not null || levelAttr is not null || countAttr is not null || fromAttr is not null))
+        {
+            bag.Error(
+                XsltErrors.XTSE0975,
+                "xsl:number: the value attribute cannot be combined with select, level, count or from",
+                element.Location);
+            return null;
+        }
+
+        NumberLevel level = NumberLevel.Single;
+        if (levelAttr is not null)
+        {
+            switch (levelAttr.Trim())
+            {
+                case "single": level = NumberLevel.Single; break;
+                case "multiple": level = NumberLevel.Multiple; break;
+                case "any": level = NumberLevel.Any; break;
+                default:
+                    bag.Error(XsltErrors.XTSE0020, $"xsl:number: invalid level '{levelAttr}'", element.Location);
+                    return null;
+            }
+        }
+
+        BoundExpression? value = null;
+        if (valueAttr is not null && !TryCompileXPath(valueAttr, element, scope, bag, out value))
+        {
+            return null;
+        }
+
+        BoundExpression? select = null;
+        if (selectAttr is not null && !TryCompileXPath(selectAttr, element, scope, bag, out select))
+        {
+            return null;
+        }
+
+        if (!TryParsePattern(countAttr, element, bag, out XTransform.XPath.Ast.PatternAst? count) ||
+            !TryParsePattern(fromAttr, element, bag, out XTransform.XPath.Ast.PatternAst? from))
+        {
+            return null;
+        }
+
+        CompiledAvt? format = CompileOptionalAvt(element, "format", scope, bag, out bool ok1);
+        CompiledAvt? lang = CompileOptionalAvt(element, "lang", scope, bag, out bool ok2);
+        CompiledAvt? letterValue = CompileOptionalAvt(element, "letter-value", scope, bag, out bool ok3);
+        CompiledAvt? ordinal = CompileOptionalAvt(element, "ordinal", scope, bag, out bool ok4);
+        CompiledAvt? groupSep = CompileOptionalAvt(element, "grouping-separator", scope, bag, out bool ok5);
+        CompiledAvt? groupSize = CompileOptionalAvt(element, "grouping-size", scope, bag, out bool ok6);
+        if (!(ok1 && ok2 && ok3 && ok4 && ok5 && ok6))
+        {
+            return null;
+        }
+
+        return new NumberInstruction(
+            value, select, level, count, from, format, lang, letterValue, ordinal, groupSep, groupSize, element.Location);
+    }
+
+    private static CompiledAvt? CompileOptionalAvt(
+        StylesheetElement element, string name, XsltCompileScope scope, DiagnosticBag bag, out bool ok)
+    {
+        string? raw = GetAttribute(element, name);
+        if (raw is null)
+        {
+            ok = true;
+            return null;
+        }
+
+        CompiledAvt? avt = CompileAvtString(raw, element, scope, bag);
+        ok = avt is not null;
+        return avt;
+    }
+
+    private static bool TryParsePattern(
+        string? text, StylesheetElement element, DiagnosticBag bag, out XTransform.XPath.Ast.PatternAst? pattern)
+    {
+        pattern = null;
+        if (text is null)
+        {
+            return true;
+        }
+
+        try
+        {
+            pattern = XPathParser.ParsePattern(
+                text,
+                element.Location,
+                new NamespaceBindingsResolver(
+                    element.InScopeNamespaces,
+                    defaultElementNamespace: string.Empty,
+                    defaultFunctionNamespace: BuiltInFunctionLibrary.FnNamespace));
+            return true;
+        }
+        catch (XTransformException ex)
+        {
+            bag.Error(ex.ErrorCode, ex.Message, element.Location);
+            return false;
+        }
     }
 
     // ── xsl:element / xsl:attribute / xsl:comment / xsl:processing-instruction / xsl:document ──
