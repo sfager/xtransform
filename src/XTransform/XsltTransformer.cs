@@ -78,6 +78,10 @@ public sealed class XsltTransformer
     public void Transform(Stream? input, Stream output) =>
         TransformStreams(input, output, CancellationToken.None);
 
+    // Synchronous, cancellable variant for the conformance harness (which supplies its own big-stack thread).
+    internal void Transform(Stream? input, Stream output, CancellationToken cancellationToken) =>
+        TransformStreams(input, output, cancellationToken);
+
     /// <summary>Transforms <paramref name="input"/>, writing the result to <paramref name="output"/> per <c>xsl:output</c> (the writer's own encoding applies).</summary>
     /// <param name="input">The source document reader, or <see langword="null"/> to start from <see cref="InitialTemplate"/>.</param>
     /// <param name="output">The destination writer.</param>

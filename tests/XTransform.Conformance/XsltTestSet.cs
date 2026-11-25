@@ -22,6 +22,10 @@ internal sealed record XsltTestSource(string Role, string? File, string? Content
 internal sealed class XsltTestEnvironment
 {
     public string Name { get; init; } = string.Empty;
+
+    /// <summary>Principal stylesheet supplied by the environment (absolute path), if any.</summary>
+    public string? StylesheetFile { get; set; }
+
     public List<XsltTestSource> Sources { get; } = new List<XsltTestSource>();
     public List<XsltTestParam> Params { get; } = new List<XsltTestParam>();
 }
@@ -138,7 +142,15 @@ internal sealed class XsltTestSet
         XsltTestEnvironment env = new XsltTestEnvironment { Name = (string?)el.Attribute("name") ?? string.Empty };
         foreach (XElement child in el.Elements())
         {
-            if (child.Name.LocalName == "source")
+            if (child.Name.LocalName == "stylesheet" && (string?)child.Attribute("role") is null or "principal")
+            {
+                string? sheet = (string?)child.Attribute("file");
+                if (sheet is not null)
+                {
+                    env.StylesheetFile = Path.GetFullPath(Path.Combine(dir, sheet));
+                }
+            }
+            else if (child.Name.LocalName == "source")
             {
                 string role = (string?)child.Attribute("role") ?? ".";
                 string? file = (string?)child.Attribute("file");

@@ -28,6 +28,9 @@ public static class XPathErrors
     /// <summary>It is a type error if the type of a value does not match the required type.</summary>
     public static readonly QName XPTY0004 = new QName("err", Namespace, "XPTY0004");
 
+    /// <summary>It is a type error if the last step of a path yields both nodes and non-nodes.</summary>
+    public static readonly QName XPTY0018 = new QName("err", Namespace, "XPTY0018");
+
     /// <summary>It is a dynamic error if the context item is undefined where it is needed.</summary>
     public static readonly QName XPDY0002 = new QName("err", Namespace, "XPDY0002");
 

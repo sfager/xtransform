@@ -84,7 +84,7 @@ internal static class GlobalVariableEvaluator
                     decl.SelectExpression!,
                     decl.Location,
                     resolver,
-                    BuiltInFunctionLibrary.Instance,
+                    run.Stylesheet.Functions,
                     externals);
 
                 // To evaluate, we need other globals it references to be cached. If an inner

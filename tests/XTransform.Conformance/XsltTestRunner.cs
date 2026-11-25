@@ -36,7 +36,7 @@ internal sealed record XsltTestResult(XsltOutcome Outcome, XsltFailureStage Stag
 
 internal static class XsltTestRunner
 {
-    private static readonly TimeSpan s_timeout = TimeSpan.FromSeconds(20);
+    private static readonly TimeSpan s_timeout = TimeSpan.FromSeconds(8);
 
     private static readonly Dictionary<string, string> s_defaultPrefixes = new Dictionary<string, string>(StringComparer.Ordinal)
     {
@@ -47,22 +47,59 @@ internal static class XsltTestRunner
         ["math"] = "http://www.w3.org/2005/xpath-functions/math",
     };
 
+    /// <summary>Runs one case under a watchdog: compile, run and comparison all count towards the limit.</summary>
     public static XsltTestResult Run(XsltTestCase tc, XsltTestSet set)
+    {
+        XsltTestResult? result = null;
+        Exception? crash = null;
+        Thread worker = new Thread(
+            () =>
+            {
+                try
+                {
+                    result = RunUnguarded(tc, set);
+                }
+                catch (Exception ex)
+                {
+                    crash = ex;
+                }
+            },
+            256 * 1024 * 1024)
+        {
+            IsBackground = true,
+        };
+        worker.Start();
+        if (!worker.Join(s_timeout + TimeSpan.FromSeconds(20)))
+        {
+            return new XsltTestResult(XsltOutcome.Fail, XsltFailureStage.Run, "hang: compile, run or comparison did not finish");
+        }
+
+        if (crash is not null)
+        {
+            return new XsltTestResult(XsltOutcome.Fail, XsltFailureStage.Run, "harness exception: " + crash.GetType().Name + ": " + crash.Message);
+        }
+
+        return result!;
+    }
+
+    private static XsltTestResult RunUnguarded(XsltTestCase tc, XsltTestSet set)
     {
         if (tc.UsesPackages)
         {
             return Skip("packages are XSLT 3.0");
         }
 
-        if (tc.StylesheetFile is null || tc.Result is null)
-        {
-            return Skip("no principal stylesheet file or result");
-        }
-
         XsltTestEnvironment? env = tc.InlineEnvironment;
         if (tc.EnvironmentRef is not null && !set.Environments.TryGetValue(tc.EnvironmentRef, out env))
         {
             return Skip($"unknown environment '{tc.EnvironmentRef}'");
+        }
+
+        // The principal stylesheet comes from the test, or else from its environment.
+        string? stylesheetFile = tc.StylesheetFile ?? env?.StylesheetFile;
+        if (stylesheetFile is null || tc.Result is null)
+        {
+            return Skip("no principal stylesheet file or result");
         }
 
         List<XsltTestParam> allParams = new List<XsltTestParam>();
@@ -84,7 +121,7 @@ internal static class XsltTestRunner
         bool isErrorStage = false;
         try
         {
-            exe = new XsltCompiler().Compile(new Uri(tc.StylesheetFile));
+            exe = new XsltCompiler().Compile(new Uri(stylesheetFile));
         }
         catch (Exception ex)
         {
@@ -210,12 +247,17 @@ internal static class XsltTestRunner
             // A dedicated thread with a large stack: deeply recursive stylesheets must reach the
             // engine's own depth limit (XTDE0810) rather than overflow the thread-pool stack.
             Exception? failure = null;
+            using CancellationTokenSource cts = new CancellationTokenSource(s_timeout);
             Thread worker = new Thread(
                 () =>
                 {
                     try
                     {
-                        transformer.Transform(input, output);
+                        transformer.Transform(input, output, cts.Token);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        failure = new TimeoutException("transformation timed out");
                     }
                     catch (Exception ex)
                     {
@@ -227,9 +269,12 @@ internal static class XsltTestRunner
                 IsBackground = true,
             };
             worker.Start();
-            if (!worker.Join(s_timeout))
+
+            // Cooperative cancellation stops the run at the next loop back-edge; the extra grace
+            // period only covers code that never checks the token.
+            if (!worker.Join(s_timeout + TimeSpan.FromSeconds(10)))
             {
-                throw new TimeoutException("transformation timed out");
+                throw new TimeoutException("transformation timed out and did not respond to cancellation");
             }
 
             if (failure is not null)

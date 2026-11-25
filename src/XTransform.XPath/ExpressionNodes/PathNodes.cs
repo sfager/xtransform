@@ -117,7 +117,7 @@ internal sealed class PathNode : ExpressionNode
                 // Multiple input nodes — buffer all step outputs, deduplicate, sort.
                 // This is required by XPath 2.0 §3.2: the result of a path is in document order
                 // with no duplicates regardless of how many input nodes produced output.
-                List<XdmNode> allOutput = new List<XdmNode>();
+                List<XdmItem> allOutput = new List<XdmItem>();
 
                 // Process first item (already consumed).
                 AppendStepOutput(first, step, context, allOutput);
@@ -132,11 +132,40 @@ internal sealed class PathNode : ExpressionNode
                     AppendStepOutput(more, step, context, allOutput);
                 }
 
-                // Deduplicate and sort by document order.
-                List<XdmNode> sorted = DeduplicateAndSort(allOutput);
+                // XPath 2.0 §3.2: if every step result is a node the result is deduplicated in
+                // document order; if every one is atomic they are returned as-is, in order (only
+                // valid for the last step); a mixture is a type error (XPTY0018).
+                int nodeCount = 0;
+                foreach (XdmItem produced in allOutput)
+                {
+                    if (produced is XdmNode)
+                    {
+                        nodeCount++;
+                    }
+                }
 
-                // For the final step the caller will consume the result lazily via ArrayIterator.
-                input = new ArrayIterator(sorted.ToArray());
+                if (nodeCount == 0)
+                {
+                    input = new ArrayIterator(allOutput.ToArray());
+                }
+                else if (nodeCount == allOutput.Count)
+                {
+                    List<XdmNode> nodes = new List<XdmNode>(allOutput.Count);
+                    foreach (XdmItem produced in allOutput)
+                    {
+                        nodes.Add((XdmNode)produced);
+                    }
+
+                    // For the final step the caller will consume the result lazily via ArrayIterator.
+                    input = new ArrayIterator(DeduplicateAndSort(nodes).ToArray());
+                }
+                else
+                {
+                    throw new XPathDynamicException(
+                        XPathErrors.XPTY0018,
+                        "The result of a path step contains both nodes and non-nodes",
+                        step.Location);
+                }
             }
         }
 
@@ -151,7 +180,7 @@ internal sealed class PathNode : ExpressionNode
         XdmItem inputItem,
         ExpressionNode step,
         DynamicContext parentContext,
-        List<XdmNode> output)
+        List<XdmItem> output)
     {
         if (inputItem is not XdmNode inputNode)
         {
@@ -166,17 +195,7 @@ internal sealed class PathNode : ExpressionNode
         XdmItem? item;
         while ((item = stepResult.Next()) is not null)
         {
-            if (item is XdmNode node)
-            {
-                output.Add(node);
-            }
-            else
-            {
-                throw new XPathDynamicException(
-                    XPathErrors.XPTY0004,
-                    "A path step produced an atomic value; steps must yield nodes",
-                    step.Location);
-            }
+            output.Add(item);
         }
     }
 
@@ -185,24 +204,14 @@ internal sealed class PathNode : ExpressionNode
     /// </summary>
     private static List<XdmNode> DeduplicateAndSort(List<XdmNode> nodes)
     {
-        // Insertion-sort-based dedup: check each candidate against the growing result.
-        // For typical small result sets (a handful of nodes) this is fine.
-        // For large sets a HashSet + Sort would be faster; can be changed if profiling warrants.
+        // Hash-based dedup: linear in the number of nodes (a quadratic scan took seconds on
+        // paths such as */c over tens of thousands of nodes).
         List<XdmNode> result = new List<XdmNode>(nodes.Count);
+        HashSet<XdmNode> seen = new HashSet<XdmNode>();
 
         foreach (XdmNode node in nodes)
         {
-            bool found = false;
-            foreach (XdmNode existing in result)
-            {
-                if (node.Equals(existing))
-                {
-                    found = true;
-                    break;
-                }
-            }
-
-            if (!found)
+            if (seen.Add(node))
             {
                 result.Add(node);
             }

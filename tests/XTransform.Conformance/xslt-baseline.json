@@ -1,0 +1,14 @@
+{
+  "description": "Pass-count floors for the XSLT conformance harness (gate G3). CI fails a shard whose passed count drops more than 5 below the figure here or whose in-scope count drifts by more than 1%, and fails the combined run if passed / in-scope falls below 'minimumPassRate'. Update this file only in a dedicated commit that explains the change (engine improvement, test-suite pin bump, filter revision).",
+  "gate": "G3",
+  "suite": "xslt30-test",
+  "xsltCommit": "see eng/test-suites.env",
+  "measuredAt": "2026-11-25",
+  "coreInScope": 6029,
+  "corePassed": 2802,
+  "unicode90InScope": 1460,
+  "unicode90Passed": 597,
+  "inScopeCount": 7489,
+  "passed": 3399,
+  "minimumPassRate": 0.40
+}

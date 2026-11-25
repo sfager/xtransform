@@ -33,8 +33,17 @@ internal sealed class XsltConformanceTests
             Path.Combine(TestContext.CurrentContext.TestDirectory, "known-failures", "xslt-g3.txt"));
 
         List<XsltTestInstance> cases = new List<XsltTestInstance>();
+        // XTRANSFORM_XSLT_SETS=a,b runs only those test sets; XTRANSFORM_XSLT_SKIP_SETS=c,d skips them.
+        HashSet<string> only = SplitEnv("XTRANSFORM_XSLT_SETS");
+        HashSet<string> skip = SplitEnv("XTRANSFORM_XSLT_SKIP_SETS");
+
         foreach (XsltTestSetRef setRef in XsltTestSet.LoadCatalog(root))
         {
+            if ((only.Count > 0 && !only.Contains(setRef.Name)) || skip.Contains(setRef.Name))
+            {
+                continue;
+            }
+
             string path = Path.Combine(root, setRef.File);
             if (!File.Exists(path))
             {
@@ -53,6 +62,14 @@ internal sealed class XsltConformanceTests
         }
 
         return new DiscoveryState(root, cases, known);
+    }
+
+    private static HashSet<string> SplitEnv(string name)
+    {
+        string? value = Environment.GetEnvironmentVariable(name);
+        return string.IsNullOrWhiteSpace(value)
+            ? new HashSet<string>(StringComparer.Ordinal)
+            : new HashSet<string>(value!.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries), StringComparer.Ordinal);
     }
 
     public static IEnumerable<TestCaseData> DiscoverCases()
@@ -174,6 +191,22 @@ internal sealed class XsltConformanceTests
             long ex = s.Passed + s.Failed;
             w.WriteLine($"| {kv.Key} | {ex:N0} | {s.Passed:N0} | {s.Failed:N0} | {s.CompileFailures:N0} | {s.RunFailures:N0} | {s.CompareFailures:N0} | {s.Unsupported + s.Known:N0} | {(ex > 0 ? (double)s.Passed / ex * 100 : 0):F1}% |");
         }
+
+        // Machine-readable summary for eng/check-conformance-baseline.sh; one file per shard
+        // (XTRANSFORM_XSLT_SHARD, default "full") so core and unicode-90 runs can be combined.
+        string shard = Environment.GetEnvironmentVariable("XTRANSFORM_XSLT_SHARD") ?? "full";
+        string jsonPath = Path.Combine(dir, $"xslt-summary-{shard}.json");
+        double rate = state.Cases.Count > 0 ? (double)passed / state.Cases.Count : 0;
+        File.WriteAllText(
+            jsonPath,
+            "{\n" +
+            $"  \"gate\": \"G3\",\n  \"suite\": \"xslt30-test\",\n  \"shard\": \"{shard}\",\n" +
+            $"  \"generatedUtc\": \"{DateTime.UtcNow:yyyy-MM-ddTHH:mm:ssZ}\",\n" +
+            $"  \"inScopeDiscovered\": {state.Cases.Count},\n  \"executed\": {executed},\n" +
+            $"  \"passed\": {passed},\n  \"failed\": {failed},\n  \"skipped\": {unsupported + known},\n" +
+            $"  \"knownFailures\": {known},\n  \"passRate\": {rate.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)}\n" +
+            "}\n",
+            new UTF8Encoding(false));
 
         TestContext.Out.WriteLine($"[xslt-summary] Executed {executed}, passed {passed}, failed {failed}, skipped {unsupported + known}. Report: {path}");
     }
