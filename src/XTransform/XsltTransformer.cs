@@ -73,27 +73,25 @@ public sealed class XsltTransformer
     }
 
     /// <summary>Transforms the XML in <paramref name="input"/>, writing the principal result to <paramref name="output"/> per <c>xsl:output</c>.</summary>
-    /// <param name="input">The source document; left open.</param>
+    /// <param name="input">The source document (left open), or <see langword="null"/> to start from <see cref="InitialTemplate"/>.</param>
     /// <param name="output">The destination; left open.</param>
-    public void Transform(Stream input, Stream output) =>
+    public void Transform(Stream? input, Stream output) =>
         TransformStreams(input, output, CancellationToken.None);
 
     /// <summary>Transforms <paramref name="input"/>, writing the result to <paramref name="output"/> per <c>xsl:output</c> (the writer's own encoding applies).</summary>
-    /// <param name="input">The source document reader.</param>
+    /// <param name="input">The source document reader, or <see langword="null"/> to start from <see cref="InitialTemplate"/>.</param>
     /// <param name="output">The destination writer.</param>
-    public void Transform(XmlReader input, TextWriter output)
+    public void Transform(XmlReader? input, TextWriter output)
     {
-        Require(input, nameof(input));
         Require(output, nameof(output));
         Execute(input, pool => OutputEmitterFactory.Create(_compiled.PrincipalOutput, output, pool), CancellationToken.None);
     }
 
     /// <summary>Transforms <paramref name="input"/> into <paramref name="output"/>; the writer's settings, not <c>xsl:output</c>, govern formatting.</summary>
-    /// <param name="input">The source document reader.</param>
+    /// <param name="input">The source document reader, or <see langword="null"/> to start from <see cref="InitialTemplate"/>.</param>
     /// <param name="output">The destination writer.</param>
-    public void Transform(XmlReader input, XmlWriter output)
+    public void Transform(XmlReader? input, XmlWriter output)
     {
-        Require(input, nameof(input));
         Require(output, nameof(output));
         Execute(input, pool => OutputEmitterFactory.CreateForXmlWriter(output, pool), CancellationToken.None);
     }
@@ -116,24 +114,22 @@ public sealed class XsltTransformer
     }
 
     /// <summary>Asynchronous <see cref="Transform(Stream, Stream)"/> that stops when <paramref name="cancellationToken"/> is cancelled.</summary>
-    /// <param name="input">The source document; left open.</param>
+    /// <param name="input">The source document (left open), or <see langword="null"/> to start from <see cref="InitialTemplate"/>.</param>
     /// <param name="output">The destination; left open.</param>
     /// <param name="cancellationToken">Cancels the run.</param>
     /// <returns>A task that completes when the transformation has finished.</returns>
-    public Task TransformAsync(Stream input, Stream output, CancellationToken cancellationToken = default)
+    public Task TransformAsync(Stream? input, Stream output, CancellationToken cancellationToken = default)
     {
-        Require(input, nameof(input));
         Require(output, nameof(output));
         return Task.Run(() => TransformStreams(input, output, cancellationToken), cancellationToken);
     }
 
     // ── Core ────────────────────────────────────────────────────────────────
 
-    private void TransformStreams(Stream input, Stream output, CancellationToken cancellationToken)
+    private void TransformStreams(Stream? input, Stream output, CancellationToken cancellationToken)
     {
-        Require(input, nameof(input));
         Require(output, nameof(output));
-        using XmlReader reader = XmlReader.Create(input, XsltInput.CreateReaderSettings());
+        using XmlReader? reader = input is null ? null : XmlReader.Create(input, XsltInput.CreateReaderSettings());
         Execute(reader, pool => OutputEmitterFactory.Create(_compiled.PrincipalOutput, output, pool), cancellationToken);
     }
 

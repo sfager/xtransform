@@ -374,13 +374,13 @@ accepts `Stream` / `XmlReader` / `XNode` input and `Stream` / `TextWriter` /
 
 ## P3-16 XSLT conformance harness
 
-- [ ] Done
+- [x] Done
 
 **Scope.** Parallel to P2-15's QT3 harness, add an NUnit fixture that walks
 the xslt30-test catalog (pinned by [decisions.md D2](decisions.md#d2-w3c-test-suites-pins-and-filters)),
 applies the D2 XSLT filter, runs each test through `XsltCompiler` +
 `XsltTransformer` and compares the serialized result to the expected output
-using the shared `Qt3ResultComparer` (XSLT uses the same assertion elements).
+using the QT3 assertion semantics (XSLT results are serialized documents, so the XSLT-specific assertions live in `XsltResultComparer`; `error` / `any-of` / `all-of` follow `Qt3ResultComparer`).
 Known-failures file `known-failures/xslt-g3.txt`. Summary at
 `artifacts/conformance/xslt-summary.md`.
 

@@ -1,0 +1,5 @@
+# xslt-g3.txt — known XSLT conformance misses for gate G3 (XSLT 2.0 filter).
+#
+# Format: one test-case full name per line ("test-set/test-case").
+# Text after '#' is a comment giving the failure reason.
+# Blank lines and '#' comment-only lines are ignored.
