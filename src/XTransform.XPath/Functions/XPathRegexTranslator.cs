@@ -1,50 +1,78 @@
-// F&O §7.6 — XPath 2.0 / XSD regex dialect translation to .NET regex.
+// F&O §7.6 — XPath 2.0 regular expressions.
+//
+// The dialect is the XML Schema 1.0 regular-expression language (Part 2, Appendix F) plus the
+// extensions of F&O 1.0 §7.6.1: the anchors ^ and $, reluctant quantifiers (*? +? ?? {n,m}?),
+// capturing groups with back-references (\1 .. \9 and longer), and the flags s, m, i and x.
+// Everything else — non-capturing groups, (?i) options, \b, \A, \z, \x41, A, octal escapes,
+// lookaround, atomic groups, conditionals, an unescaped { } ] — is an error (FORX0002); those
+// are XPath 3.0 or .NET constructs. This class parses a pattern with that grammar, rejects what
+// is invalid, and emits an equivalent .NET pattern that works on whole code points: a character
+// outside the Basic Multilingual Plane (a UTF-16 surrogate pair) is matched as one character.
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 using XTransform.Xdm;
 
 namespace XTransform.XPath.Functions;
 
-/// <summary>
-/// Translates an XPath 2.0 / XSD regex pattern to a .NET
-/// <see cref="System.Text.RegularExpressions.Regex"/> pattern plus a <see cref="RegexOptions"/> value.
-/// XPath 2.0 F&amp;O §7.6 defines the regex dialect.
-/// </summary>
-// F&O §7.6 / XSD 1.0 Part 2 Appendix F
+/// <summary>Validates an XPath 2.0 regex and translates it to a .NET pattern.</summary>
 internal static class XPathRegexTranslator
 {
+    private const string SurrogatePair = "[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]";
+
+    // A single UTF-16 unit that is not half of a surrogate pair: guards against matching the high or
+    // low half of a pair when matching starts mid-character.
+    private const string UnitGuard = "(?!" + SurrogatePair + ")(?<![\\uD800-\\uDBFF])";
+
+    private static readonly Lazy<List<CodePointRange>> s_punctuationSeparatorOther =
+        new Lazy<List<CodePointRange>>(() =>
+        {
+            List<CodePointRange> all = new List<CodePointRange>();
+            all.AddRange(RegexUnicodeTables.CategoryRanges("P"));
+            all.AddRange(RegexUnicodeTables.CategoryRanges("Z"));
+            all.AddRange(RegexUnicodeTables.CategoryRanges("C"));
+            return AstralCategories.Union(all);
+        });
+
     /// <summary>
-    /// Translates an XPath 2.0 regex pattern and flag string to a .NET-compatible
-    /// pattern and <see cref="RegexOptions"/>.
-    /// Throws <see cref="XPathDynamicException"/> with <see cref="XPathErrors.FORX0001"/>
-    /// for invalid flags and <see cref="XPathErrors.FORX0002"/> for invalid patterns.
-    /// Uses out parameters rather than a ValueTuple return to remain compatible with net462.
+    /// Translates an XPath 2.0 pattern and flag string to a .NET pattern plus <see cref="RegexOptions"/>.
+    /// Throws <see cref="XPathDynamicException"/> with <see cref="XPathErrors.FORX0001"/> for invalid
+    /// flags and <see cref="XPathErrors.FORX0002"/> for invalid patterns.
     /// </summary>
     /// <param name="xpathPattern">The XPath 2.0 / XSD regex pattern string.</param>
     /// <param name="flags">The flag string (characters 's', 'm', 'i', 'x').</param>
     /// <param name="location">Source location for error reporting.</param>
     /// <param name="dotNetPattern">The translated .NET-compatible pattern string.</param>
     /// <param name="options">The computed <see cref="RegexOptions"/>.</param>
-    // F&O §7.6
+    // F&O §7.6.1
     public static void Translate(
         string xpathPattern, string flags, SourceSpan location,
         out string dotNetPattern, out RegexOptions options)
     {
-        // Parse flags first so we know if 's' (dot-all) is active.
         options = ParseFlags(flags, location);
         bool dotAll = (options & RegexOptions.Singleline) != 0;
+        bool multiline = (options & RegexOptions.Multiline) != 0;
+        bool extended = (options & RegexOptions.IgnorePatternWhitespace) != 0;
 
-        dotNetPattern = TranslatePattern(xpathPattern, dotAll, location);
+        // The x flag only removes whitespace outside character classes (F&O §7.6.1); .NET's own
+        // IgnorePatternWhitespace would also make '#' start a comment, so it is not passed on.
+        options &= ~RegexOptions.IgnorePatternWhitespace;
+        if ((options & RegexOptions.IgnoreCase) != 0)
+        {
+            options |= RegexOptions.CultureInvariant;
+        }
+
+        string source = extended ? StripWhitespace(xpathPattern) : xpathPattern;
+        dotNetPattern = new Parser(source, dotAll, multiline, location).Parse();
     }
 
     /// <summary>
     /// Parses the XPath 2.0 flag string. Valid flags: s (dot-all), m (multiline),
-    /// i (case-insensitive), x (ignore-whitespace/comment mode).
-    /// Throws <see cref="XPathDynamicException"/> with <see cref="XPathErrors.FORX0001"/>
-    /// on unknown flags.
+    /// i (case-insensitive), x (ignore whitespace). Throws <see cref="XPathDynamicException"/>
+    /// with <see cref="XPathErrors.FORX0001"/> on unknown flags.
     /// </summary>
     /// <param name="flags">The flag string.</param>
     /// <param name="location">Source location for error reporting.</param>
@@ -59,24 +87,18 @@ internal static class XPathRegexTranslator
             switch (c)
             {
                 case 's':
-                    // F&O §7.6.1: 's' makes '.' match any character including newline.
-                    // .NET equivalent: RegexOptions.Singleline
                     options |= RegexOptions.Singleline;
                     break;
                 case 'm':
-                    // F&O §7.6.1: 'm' makes ^ and $ match start/end of line.
                     options |= RegexOptions.Multiline;
                     break;
                 case 'i':
-                    // F&O §7.6.1: 'i' makes matching case-insensitive.
                     options |= RegexOptions.IgnoreCase;
                     break;
                 case 'x':
-                    // F&O §7.6.1: 'x' causes whitespace to be ignored, allows # comments.
                     options |= RegexOptions.IgnorePatternWhitespace;
                     break;
                 default:
-                    // F&O §7.6.1: any other flag character is an error (FORX0001).
                     throw new XPathDynamicException(
                         XPathErrors.FORX0001,
                         $"Invalid regular expression flag '{c}'. Valid flags are: s, m, i, x.",
@@ -87,566 +109,785 @@ internal static class XPathRegexTranslator
         return options;
     }
 
-    /// <summary>
-    /// Translates the XPath 2.0 / XSD regex pattern to a .NET-compatible pattern.
-    /// </summary>
-    // F&O §7.6 / XSD 1.0 Part 2 Appendix F
-    private static string TranslatePattern(string pattern, bool dotAll, SourceSpan location)
+    // Removes #x9 #xA #xD #x20 outside character classes (the x flag).
+    private static string StripWhitespace(string pattern)
     {
-        if (pattern.Length == 0)
-        {
-            return pattern;
-        }
-
-        StringBuilder sb = new StringBuilder(pattern.Length + 8);
-        int i = 0;
-        int len = pattern.Length;
-
-        while (i < len)
+        StringBuilder sb = new StringBuilder(pattern.Length);
+        int depth = 0;
+        for (int i = 0; i < pattern.Length; i++)
         {
             char c = pattern[i];
-
-            switch (c)
+            if (c == '\\' && i + 1 < pattern.Length)
             {
-                case '.':
-                    // F&O §7.6: '.' matches any character except \n and \r by default.
-                    // With 's' flag, it matches everything — .NET Singleline handles that.
-                    // '.' matches one code point, so a surrogate pair is consumed as a unit.
-                    if (dotAll)
-                    {
-                        sb.Append("(?:").Append(SurrogatePair).Append('|').Append(UnitGuard).Append("[\\s\\S])");
-                    }
-                    else
-                    {
-                        // XSD 1.0 Part 2 §F.1.4: any character except \n and \r.
-                        sb.Append("(?:").Append(SurrogatePair).Append('|').Append(UnitGuard).Append("[^\\n\\r])");
-                    }
-
-                    i++;
-                    break;
-
-                case '\\':
-                    // Escape sequence: process the next character.
-                    i = TranslateEscape(pattern, i, sb, location);
-                    break;
-
-                case '[':
-                    // Character class: copy until closing ']', handling nesting and escapes.
-                    // .NET supports XSD character class subtraction [a-z-[aeiou]] natively.
-                    i = TranslateCharClass(pattern, i, sb, location);
-                    break;
-
-                case '(':
-                    // Check for lookaround assertions (not allowed in XPath 2.0).
-                    // F&O §7.6: lookaround is not part of the XPath 2.0 regex grammar.
-                    if (i + 1 < len && pattern[i + 1] == '?')
-                    {
-                        if (i + 2 < len)
-                        {
-                            char next2 = pattern[i + 2];
-                            if (next2 == '=' || next2 == '!')
-                            {
-                                // (?= lookahead or (?! negative lookahead
-                                throw new XPathDynamicException(
-                                    XPathErrors.FORX0002,
-                                    "Lookahead assertions (?= and (?! are not allowed in XPath 2.0 regular expressions.",
-                                    location);
-                            }
-
-                            if (next2 == '<' && i + 3 < len)
-                            {
-                                char next3 = pattern[i + 3];
-                                if (next3 == '=' || next3 == '!')
-                                {
-                                    // (?<= lookbehind or (?<! negative lookbehind
-                                    throw new XPathDynamicException(
-                                        XPathErrors.FORX0002,
-                                        "Lookbehind assertions (?<= and (?<! are not allowed in XPath 2.0 regular expressions.",
-                                        location);
-                                }
-                            }
-                        }
-                    }
-
-                    sb.Append(c);
-                    i++;
-                    break;
-
-                default:
-                    sb.Append(c);
-                    i++;
-                    break;
+                sb.Append(c).Append(pattern[++i]);
+                continue;
             }
+
+            if (c == '[')
+            {
+                depth++;
+            }
+            else if (c == ']' && depth > 0)
+            {
+                depth--;
+            }
+
+            if (depth == 0 && (c == ' ' || c == '\t' || c == '\n' || c == '\r'))
+            {
+                continue;
+            }
+
+            sb.Append(c);
         }
 
         return sb.ToString();
     }
 
-    /// <summary>
-    /// Processes an escape sequence starting at <paramref name="pos"/> (the backslash position).
-    /// Returns the new position after the escape.
-    /// </summary>
-    // XSD 1.0 Part 2 Appendix F §F.1.1
-    private static int TranslateEscape(string pattern, int pos, StringBuilder sb, SourceSpan location)
+    // ── A character class under construction ─────────────────────────────────────
+
+    private sealed class ClassBuilder
     {
-        int len = pattern.Length;
-        // pos is the backslash; pos+1 is the escape char.
-        if (pos + 1 >= len)
+        /// <summary>Items valid inside a .NET character class (basic-plane characters, ranges, \p{..}).</summary>
+        public StringBuilder Bmp { get; } = new StringBuilder();
+
+        /// <summary>Supplementary-plane members.</summary>
+        public List<CodePointRange> Astral { get; } = new List<CodePointRange>();
+
+        /// <summary>True when a BMP item could match half of a surrogate pair (\P{..}, \p{C}).</summary>
+        public bool NeedsGuard { get; set; }
+
+        public bool Negated { get; set; }
+
+        public ClassBuilder? Subtract { get; set; }
+
+        public void AddCodePoint(int cp)
         {
-            // Trailing backslash — invalid pattern.
-            throw new XPathDynamicException(
-                XPathErrors.FORX0002,
-                "Trailing backslash in regular expression pattern.",
-                location);
-        }
-
-        char escaped = pattern[pos + 1];
-
-        switch (escaped)
-        {
-            case 's':
-                // XSD §F.1.1: \s = [ \t\n\r] (exactly these 4 chars, not Unicode whitespace).
-                // .NET \s is Unicode-aware so we translate explicitly.
-                // XSD 1.0 Part 2 §F.1.1
-                sb.Append("[ \\t\\r\\n]");
-                return pos + 2;
-
-            case 'S':
-                // XSD §F.1.1: \S = complement of \s = [^ \t\n\r]
-                sb.Append("(?:").Append(SurrogatePair).Append("|[^ \\t\\r\\n\\uD800-\\uDFFF])");
-                return pos + 2;
-
-            case 'd':
-                // XSD §F.1.1: \d = \p{Nd} (decimal digit), including supplementary-plane digits.
-                TryAppendAstralCategory("\\p{Nd}", 0, 6, false, sb);
-                return pos + 2;
-
-            case 'D':
-                // XSD §F.1.1: \D = complement of \d = \P{Nd}
-                TryAppendAstralCategory("\\P{Nd}", 0, 6, true, sb);
-                return pos + 2;
-
-            case 'w':
-                // XSD §F.1.1: \w = everything except \p{P}, \p{Z}, \p{C}.
-                // .NET \w is roughly [a-zA-Z0-9_] unless Unicode mode is used.
-                // For P2-13 scope: pass through .NET \w as an approximation.
-                // Note: .NET \w with no ECMAScript flag matches Unicode letters/digits/connector punctuation.
-                // This is a reasonable approximation; exact XSD semantics would require
-                // [^\p{P}\p{Z}\p{C}] but that is equivalent for most practical patterns.
-                sb.Append("\\w");
-                return pos + 2;
-
-            case 'W':
-                // XSD §F.1.1: \W = complement of \w
-                sb.Append("\\W");
-                return pos + 2;
-
-            case 'i':
-                // XSD §F.1.3: \i = initial name character (letter | _ | :)
-                // Approximate: [a-zA-Z_:À-˿Ͱ-ͽͿ-῿‌-‍⁰-↏Ⰰ-⿯、-퟿豈-﷏ﷰ-�]
-                // For P2-13: use \p{L}|[_:] as a reasonable approximation.
-                sb.Append("[\\p{L}_:]");
-                return pos + 2;
-
-            case 'I':
-                // XSD §F.1.3: \I = complement of \i
-                sb.Append("[^\\p{L}_:]");
-                return pos + 2;
-
-            case 'c':
-                // XSD §F.1.3: \c = name character (letter | digit | . | - | _ | : | combining | extender)
-                // Approximate: \p{L}|\p{Nd}|[.\-_:·̀-ͯ‿-⁀]
-                sb.Append("[\\p{L}\\p{Nd}.\\-_:\\u00B7\\u0300-\\u036F\\u203F-\\u2040]");
-                return pos + 2;
-
-            case 'C':
-                // XSD §F.1.3: \C = complement of \c
-                sb.Append("[^\\p{L}\\p{Nd}.\\-_:\\u00B7\\u0300-\\u036F\\u203F-\\u2040]");
-                return pos + 2;
-
-            case 'p':
-            case 'P':
+            if (cp >= 0x10000)
             {
-                // Unicode category or block: \p{X} or \P{X}
-                // Both XPath 2.0 and .NET use the same syntax; pass through unchanged.
-                // XSD 1.0 Part 2 §F.1.1 / F&O §7.6
-                int end = FindCategoryEnd(pattern, pos + 2, location);
-                if (!TryAppendAstralCategory(pattern, pos, end, escaped == 'P', sb))
-                {
-                    sb.Append(pattern, pos, end - pos);
-                }
-
-                return end;
-            }
-
-            case '0':
-                // F&O §7.6: \0 is not a valid backreference in XPath 2.0.
-                throw new XPathDynamicException(
-                    XPathErrors.FORX0002,
-                    "\\0 is not a valid escape in XPath 2.0 regular expressions. Backreferences start at \\1.",
-                    location);
-
-            case '1':
-            case '2':
-            case '3':
-            case '4':
-            case '5':
-            case '6':
-            case '7':
-            case '8':
-            case '9':
-                // Backreferences \1..\9 are supported. Pass through.
-                sb.Append('\\');
-                sb.Append(escaped);
-                return pos + 2;
-
-            default:
-                // All other escapes: pass through to .NET (e.g. \n, \r, \t, \^, \$, etc.)
-                sb.Append('\\');
-                sb.Append(escaped);
-                return pos + 2;
-        }
-    }
-
-    /// <summary>
-    /// Finds the end position (exclusive) of a \p{...} or \P{...} category escape
-    /// starting at <paramref name="bracePos"/> (the character after \p or \P).
-    /// </summary>
-    private static int FindCategoryEnd(string pattern, int bracePos, SourceSpan location)
-    {
-        if (bracePos >= pattern.Length || pattern[bracePos] != '{')
-        {
-            throw new XPathDynamicException(
-                XPathErrors.FORX0002,
-                "Expected '{' after \\p or \\P in regular expression pattern.",
-                location);
-        }
-
-        int close = pattern.IndexOf('}', bracePos + 1);
-        if (close < 0)
-        {
-            throw new XPathDynamicException(
-                XPathErrors.FORX0002,
-                "Unclosed \\p{...} or \\P{...} in regular expression pattern.",
-                location);
-        }
-
-        return close + 1;
-    }
-
-    /// <summary>
-    /// Copies a character class <c>[...]</c> starting at <paramref name="pos"/> (the '[' position)
-    /// into <paramref name="sb"/>. Handles nested character classes (for subtraction)
-    /// and escape sequences within the class.
-    /// .NET supports XSD character class subtraction <c>[a-z-[aeiou]]</c> natively.
-    /// Returns the new position after the closing ']'.
-    /// </summary>
-    // XSD 1.0 Part 2 §F.1.2
-    private static int TranslateCharClass(string pattern, int pos, StringBuilder sb, SourceSpan location)
-    {
-        if (TryTranslateAstralClass(pattern, pos, sb, location, out int astralEnd))
-        {
-            return astralEnd;
-        }
-
-        int len = pattern.Length;
-        // Track nesting depth: '[' increases, ']' decreases.
-        int depth = 0;
-
-        while (pos < len)
-        {
-            char c = pattern[pos];
-
-            if (c == '[')
-            {
-                depth++;
-                sb.Append(c);
-                pos++;
-            }
-            else if (c == ']')
-            {
-                depth--;
-                sb.Append(c);
-                pos++;
-                if (depth == 0)
-                {
-                    // End of outermost character class.
-                    return pos;
-                }
-            }
-            else if (c == '\\')
-            {
-                // Inside a character class, process escape sequences.
-                // Note: '.' inside a character class is a literal dot, so only escapes matter.
-                if (pos + 1 >= len)
-                {
-                    throw new XPathDynamicException(
-                        XPathErrors.FORX0002,
-                        "Trailing backslash inside character class in regular expression pattern.",
-                        location);
-                }
-
-                char escaped = pattern[pos + 1];
-                switch (escaped)
-                {
-                    case 's':
-                        // \s inside a class: expand to literal set (no wrapping [] needed in a class).
-                        sb.Append(" \\t\\r\\n");
-                        pos += 2;
-                        break;
-                    case 'S':
-                        // \S is [^ \t\r\n]; but inside a class we can't nest a negated class.
-                        // .NET does not support [^\S] inline — this is a known limitation.
-                        // For P2-13: pass through \S and let .NET handle it inside the class.
-                        // This may not be exactly correct for deeply nested cases but handles common patterns.
-                        sb.Append("\\S");
-                        pos += 2;
-                        break;
-                    case 'p':
-                    case 'P':
-                    {
-                        int end = FindCategoryEnd(pattern, pos + 2, location);
-                        sb.Append(pattern, pos, end - pos);
-                        pos = end;
-                        break;
-                    }
-                    case '0':
-                        throw new XPathDynamicException(
-                            XPathErrors.FORX0002,
-                            "\\0 is not a valid escape in XPath 2.0 regular expressions.",
-                            location);
-                    default:
-                        sb.Append('\\');
-                        sb.Append(escaped);
-                        pos += 2;
-                        break;
-                }
+                Astral.Add(new CodePointRange(cp, cp));
             }
             else
             {
-                sb.Append(c);
-                pos++;
+                AppendUnit(cp);
             }
         }
 
-        // Reached end of pattern without closing ']'.
-        throw new XPathDynamicException(
-            XPathErrors.FORX0002,
-            "Unclosed character class '[' in regular expression pattern.",
-            location);
+        public void AddRange(int lo, int hi)
+        {
+            // Basic plane without the surrogate code points, then the supplementary planes.
+            AddBmpRange(lo, Math.Min(hi, 0xD7FF));
+            AddBmpRange(Math.Max(lo, 0xE000), Math.Min(hi, 0xFFFF));
+            if (hi >= 0x10000)
+            {
+                Astral.Add(new CodePointRange(Math.Max(lo, 0x10000), hi));
+            }
+        }
+
+        public void AddRanges(IEnumerable<CodePointRange> ranges)
+        {
+            foreach (CodePointRange r in ranges)
+            {
+                AddRange(r.First, r.Last);
+            }
+        }
+
+        public void AddCategory(string name, bool negate)
+        {
+            if (negate)
+            {
+                Bmp.Append("\\P{").Append(name).Append('}');
+                NeedsGuard = true;
+                AddAstral(AstralCategories.GetRanges(name, negate: true));
+            }
+            else
+            {
+                Bmp.Append("\\p{").Append(name).Append('}');
+
+                // .NET's C includes the surrogates (Cs), which XSD's C does not.
+                NeedsGuard |= name == "C";
+                AddAstral(AstralCategories.GetRanges(name, negate: false));
+            }
+        }
+
+        public void AddBlock(string name, bool negate)
+        {
+            CodePointRange[]? own = RegexUnicodeTables.GetOwnBlock(name);
+            if (own is not null)
+            {
+                AddRanges(negate ? RegexUnicodeTables.Complement(AstralCategories.Union(own)) : new List<CodePointRange>(own));
+            }
+            else if (negate)
+            {
+                Bmp.Append("\\P{").Append(name).Append('}');
+                NeedsGuard = true;
+                Astral.Add(new CodePointRange(0x10000, 0x10FFFF));
+            }
+            else
+            {
+                Bmp.Append("\\p{").Append(name).Append('}');
+            }
+        }
+
+        private void AddAstral(List<CodePointRange>? ranges)
+        {
+            if (ranges is not null)
+            {
+                Astral.AddRange(ranges);
+            }
+        }
+
+        private void AddBmpRange(int lo, int hi)
+        {
+            if (lo > hi)
+            {
+                return;
+            }
+
+            AppendUnit(lo);
+            if (hi > lo)
+            {
+                Bmp.Append('-');
+                AppendUnit(hi);
+            }
+        }
+
+        private void AppendUnit(int unit) =>
+            Bmp.Append("\\u").Append(unit.ToString("X4", CultureInfo.InvariantCulture));
     }
 
-    // ── Supplementary-plane (surrogate pair) support ─────────────────────────────
+    // ── The parser ───────────────────────────────────────────────────────────────
 
-    private const string SurrogatePair = "[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]";
-
-    // A single UTF-16 unit that is not part of a surrogate pair: guards against matching the
-    // high or low half of a pair when matching starts mid-character.
-    private const string UnitGuard = "(?!" + SurrogatePair + ")(?<![\\uD800-\\uDBFF])";
-
-    /// <summary>
-    /// Translates <c>\p{X}</c> / <c>\P{X}</c> (outside a class) so that it also matches
-    /// supplementary-plane code points. Returns false for non-category names (blocks).
-    /// </summary>
-    private static bool TryAppendAstralCategory(string pattern, int pos, int end, bool negate, StringBuilder sb)
+    private sealed class Parser
     {
-        string name = pattern.Substring(pos + 3, end - pos - 4);
-        List<CodePointRange>? ranges = AstralCategories.GetRanges(name, negate);
-        if (ranges is null)
+        private readonly string _s;
+        private readonly bool _dotAll;
+        private readonly bool _multiline;
+        private readonly SourceSpan _location;
+        private readonly StringBuilder _sb = new StringBuilder();
+        private readonly List<bool> _groupClosed = new List<bool>();
+        private int _pos;
+
+        public Parser(string source, bool dotAll, bool multiline, SourceSpan location)
         {
-            return false;
+            _s = source;
+            _dotAll = dotAll;
+            _multiline = multiline;
+            _location = location;
         }
 
-        string? astral = AstralCategories.ToPattern(ranges);
-        sb.Append("(?:").Append(UnitGuard).Append('\\').Append(negate ? 'P' : 'p').Append('{').Append(name).Append('}');
-        if (astral is not null)
+        public string Parse()
         {
-            sb.Append('|').Append(astral);
-        }
-
-        sb.Append(')');
-        return true;
-    }
-
-    /// <summary>
-    /// Translates a character class that mentions Unicode categories or supplementary-plane
-    /// characters into an alternation of a BMP class and surrogate-pair patterns. Classes with
-    /// subtraction (nested '[') and classes needing no astral handling return false and are
-    /// translated by the ordinary path.
-    /// </summary>
-    private static bool TryTranslateAstralClass(string pattern, int pos, StringBuilder sb, SourceSpan location, out int newPos)
-    {
-        newPos = pos;
-        int len = pattern.Length;
-        int i = pos + 1;
-        bool negated = i < len && pattern[i] == '^';
-        if (negated)
-        {
-            i++;
-        }
-
-        StringBuilder bmp = new StringBuilder();
-        List<CodePointRange> astral = new List<CodePointRange>();
-        bool needsAstral = false;
-        bool first = true;
-
-        while (i < len)
-        {
-            char c = pattern[i];
-            if (c == ']' && !first)
+            ParseRegExp();
+            if (_pos < _s.Length)
             {
-                break;
+                throw Error("unmatched ')'");
             }
 
-            first = false;
-            if (c == '[')
+            return _sb.ToString();
+        }
+
+        // regExp ::= branch ( '|' branch )*
+        private void ParseRegExp()
+        {
+            ParseBranch();
+            while (_pos < _s.Length && _s[_pos] == '|')
             {
-                return false; // subtraction: leave to the ordinary path
+                _pos++;
+                _sb.Append('|');
+                ParseBranch();
+            }
+        }
+
+        // branch ::= piece*
+        private void ParseBranch()
+        {
+            while (_pos < _s.Length && _s[_pos] != '|' && _s[_pos] != ')')
+            {
+                ParsePiece();
+            }
+        }
+
+        // piece ::= atom quantifier?
+        private void ParsePiece()
+        {
+            ParseAtom();
+            ParseQuantifier();
+        }
+
+        private void ParseAtom()
+        {
+            char c = _s[_pos];
+            switch (c)
+            {
+                case '(':
+                    ParseGroup();
+                    return;
+
+                case '[':
+                    _sb.Append(Emit(ParseClass()));
+                    return;
+
+                case '.':
+                    _pos++;
+                    _sb.Append("(?:").Append(SurrogatePair).Append('|').Append(UnitGuard)
+                       .Append(_dotAll ? "[\\s\\S]" : "[^\\n\\r]").Append(')');
+                    return;
+
+                case '\\':
+                    ParseEscape();
+                    return;
+
+                case '^':
+                    _pos++;
+                    _sb.Append('^');
+                    return;
+
+                case '$':
+                    // Without the m flag, $ matches only at the very end of the string (.NET's $ would
+                    // also match before a final newline).
+                    _pos++;
+                    _sb.Append(_multiline ? "$" : "\\z");
+                    return;
+
+                case '?':
+                case '*':
+                case '+':
+                case '{':
+                case '}':
+                case ']':
+                    throw Error($"'{c}' is not allowed here and must be escaped");
+
+                default:
+                    AppendLiteral(ReadCodePoint());
+                    return;
+            }
+        }
+
+        private void ParseGroup()
+        {
+            _pos++; // '('
+            if (_pos < _s.Length && _s[_pos] == '?')
+            {
+                throw Error("'(?' constructs (non-capturing groups, options, lookaround, conditionals) are not part of XPath 2.0 regular expressions");
             }
 
-            if (c == '\\')
+            int index = _groupClosed.Count;
+            _groupClosed.Add(false);
+            _sb.Append('(');
+            ParseRegExp();
+            if (_pos >= _s.Length || _s[_pos] != ')')
             {
-                if (i + 1 >= len)
-                {
-                    return false;
-                }
+                throw Error("unclosed '('");
+            }
 
-                char e = pattern[i + 1];
-                if (e == 'p' || e == 'P')
-                {
-                    int end = FindCategoryEnd(pattern, i + 2, location);
-                    string name = pattern.Substring(i + 3, end - i - 4);
-                    List<CodePointRange>? ranges = AstralCategories.GetRanges(name, e == 'P');
-                    bmp.Append(pattern, i, end - i);
-                    if (ranges is not null)
-                    {
-                        astral.AddRange(ranges);
-                        needsAstral = true;
-                    }
+            _pos++;
+            _groupClosed[index] = true;
+            _sb.Append(')');
+        }
 
-                    i = end;
-                    continue;
-                }
+        // quantifier ::= ( [?*+] | '{' n (',' m?)? '}' ) '?'?
+        private void ParseQuantifier()
+        {
+            if (_pos >= _s.Length)
+            {
+                return;
+            }
 
-                if (e == 's')
+            char c = _s[_pos];
+            if (c == '?' || c == '*' || c == '+')
+            {
+                _pos++;
+                _sb.Append(c);
+            }
+            else if (c == '{')
+            {
+                ParseBraceQuantifier();
+            }
+            else
+            {
+                return;
+            }
+
+            if (_pos < _s.Length && _s[_pos] == '?')
+            {
+                _pos++;
+                _sb.Append('?'); // reluctant
+            }
+        }
+
+        private void ParseBraceQuantifier()
+        {
+            _pos++; // '{'
+            long min = ReadNumber("a quantifier needs a number after '{'");
+            long max = min;
+            bool unbounded = false;
+            if (_pos < _s.Length && _s[_pos] == ',')
+            {
+                _pos++;
+                if (_pos < _s.Length && _s[_pos] == '}')
                 {
-                    bmp.Append(" \\t\\r\\n");
-                }
-                else if (e == '0')
-                {
-                    return false;
+                    unbounded = true;
                 }
                 else
                 {
-                    bmp.Append('\\').Append(e);
+                    max = ReadNumber("a quantifier needs a number after ','");
                 }
-
-                i += 2;
-                continue;
             }
 
-            // Literal code point (possibly a surrogate pair), possibly the start of a range.
-            int cp = ReadCodePoint(pattern, i, out int width);
-            int next = i + width;
-            if (next + 1 < len && pattern[next] == '-' && pattern[next + 1] != ']' && pattern[next + 1] != '[')
+            if (_pos >= _s.Length || _s[_pos] != '}')
             {
-                int lastCp = pattern[next + 1] == '\\' ? -1 : ReadCodePoint(pattern, next + 1, out int w2);
-                if (lastCp >= 0)
+                throw Error("unclosed quantifier '{'");
+            }
+
+            _pos++;
+            if (!unbounded && max < min)
+            {
+                throw Error("the minimum of a quantifier exceeds its maximum");
+            }
+
+            _sb.Append('{').Append(min);
+            if (unbounded)
+            {
+                _sb.Append(',');
+            }
+            else if (max != min)
+            {
+                _sb.Append(',').Append(max);
+            }
+
+            _sb.Append('}');
+        }
+
+        private long ReadNumber(string message)
+        {
+            int start = _pos;
+            long value = 0;
+            while (_pos < _s.Length && _s[_pos] >= '0' && _s[_pos] <= '9')
+            {
+                value = (value * 10) + (_s[_pos] - '0');
+                if (value > int.MaxValue)
                 {
-                    int rangeEnd = next + 1 + (lastCp >= 0x10000 ? 2 : 1);
-                    if (cp >= 0x10000 || lastCp >= 0x10000)
-                    {
-                        needsAstral = true;
-                        if (cp < 0x10000)
-                        {
-                            AppendUnitRange(bmp, cp, 0xFFFF);
-                        }
-
-                        astral.Add(new CodePointRange(Math.Max(cp, 0x10000), lastCp));
-                    }
-                    else
-                    {
-                        bmp.Append(pattern, i, rangeEnd - i);
-                    }
-
-                    i = rangeEnd;
-                    continue;
+                    throw Error("a quantifier is too large");
                 }
+
+                _pos++;
             }
 
-            if (cp >= 0x10000)
+            if (_pos == start)
             {
-                needsAstral = true;
-                astral.Add(new CodePointRange(cp, cp));
+                throw Error(message);
+            }
+
+            return value;
+        }
+
+        // ── Escapes outside a character class ───────────────────────────────────────
+
+        private void ParseEscape()
+        {
+            _pos++; // '\'
+            if (_pos >= _s.Length)
+            {
+                throw Error("a trailing backslash");
+            }
+
+            char c = _s[_pos];
+            if (c >= '1' && c <= '9')
+            {
+                ParseBackReference();
+                return;
+            }
+
+            ClassBuilder? set = TryParseSetEscape(c);
+            if (set is not null)
+            {
+                _sb.Append(Emit(set));
+                return;
+            }
+
+            AppendLiteral(ReadSingleCharEscape());
+        }
+
+        // F&O §7.6.1: \N refers to the Nth capturing group, which must already be closed.
+        private void ParseBackReference()
+        {
+            int n = _s[_pos] - '0';
+            _pos++;
+            while (_pos < _s.Length && _s[_pos] >= '0' && _s[_pos] <= '9' &&
+                   (n * 10) + (_s[_pos] - '0') <= _groupClosed.Count)
+            {
+                n = (n * 10) + (_s[_pos] - '0');
+                _pos++;
+            }
+
+            if (n > _groupClosed.Count || !_groupClosed[n - 1])
+            {
+                throw Error($"back-reference \\{n} refers to a group that is not closed");
+            }
+
+            _sb.Append("(?:\\").Append(n).Append(')');
+        }
+
+        // Parses \s \S \i \I \c \C \d \D \w \W \p{..} \P{..} when the escape (positioned at its letter) is one.
+        private ClassBuilder? TryParseSetEscape(char c)
+        {
+            ClassBuilder cb = new ClassBuilder();
+            switch (c)
+            {
+                case 's':
+                    _pos++;
+                    cb.Bmp.Append(" \\t\\n\\r");
+                    return cb;
+                case 'S':
+                    _pos++;
+                    cb.AddRanges(RegexUnicodeTables.Complement(new[]
+                    {
+                        new CodePointRange(9, 10), new CodePointRange(13, 13), new CodePointRange(32, 32),
+                    }));
+                    return cb;
+                case 'd':
+                    _pos++;
+                    cb.AddCategory("Nd", negate: false);
+                    return cb;
+                case 'D':
+                    _pos++;
+                    cb.AddCategory("Nd", negate: true);
+                    return cb;
+                case 'w':
+                    _pos++;
+                    cb.AddRanges(RegexUnicodeTables.Complement(s_punctuationSeparatorOther.Value));
+                    return cb;
+                case 'W':
+                    _pos++;
+                    cb.AddRanges(s_punctuationSeparatorOther.Value);
+                    return cb;
+                case 'i':
+                    _pos++;
+                    cb.AddRanges(RegexUnicodeTables.InitialNameChars());
+                    return cb;
+                case 'I':
+                    _pos++;
+                    cb.AddRanges(RegexUnicodeTables.Complement(RegexUnicodeTables.InitialNameChars()));
+                    return cb;
+                case 'c':
+                    _pos++;
+                    cb.AddRanges(RegexUnicodeTables.NameChars());
+                    return cb;
+                case 'C':
+                    _pos++;
+                    cb.AddRanges(RegexUnicodeTables.Complement(RegexUnicodeTables.NameChars()));
+                    return cb;
+                case 'p':
+                case 'P':
+                    _pos++;
+                    ParseCategoryOrBlock(cb, negate: c == 'P');
+                    return cb;
+                default:
+                    return null;
+            }
+        }
+
+        // \p{Lu} or \p{IsBasicLatin}; positioned just after the 'p' / 'P'.
+        private void ParseCategoryOrBlock(ClassBuilder cb, bool negate)
+        {
+            if (_pos >= _s.Length || _s[_pos] != '{')
+            {
+                throw Error("expected '{' after \\p or \\P");
+            }
+
+            int close = _s.IndexOf('}', _pos + 1);
+            if (close < 0)
+            {
+                throw Error("unclosed \\p{...}");
+            }
+
+            string name = _s.Substring(_pos + 1, close - _pos - 1);
+            _pos = close + 1;
+            if (RegexUnicodeTables.IsCategory(name))
+            {
+                cb.AddCategory(name, negate);
+            }
+            else if (RegexUnicodeTables.IsBlock(name))
+            {
+                cb.AddBlock(name, negate);
             }
             else
             {
-                bmp.Append(pattern, i, width);
+                throw Error($"'{name}' is not a recognised Unicode category or block");
+            }
+        }
+
+        // SingleCharEsc: \n \r \t and \ | . - ^ ? * + { } ( ) [ ] $ ; positioned at the character after '\'.
+        private int ReadSingleCharEscape()
+        {
+            char c = _s[_pos];
+            _pos++;
+            switch (c)
+            {
+                case 'n': return '\n';
+                case 'r': return '\r';
+                case 't': return '\t';
+                case '\\':
+                case '|':
+                case '.':
+                case '-':
+                case '^':
+                case '?':
+                case '*':
+                case '+':
+                case '{':
+                case '}':
+                case '(':
+                case ')':
+                case '[':
+                case ']':
+                case '$':
+                    return c;
+                default:
+                    throw Error($"'\\{c}' is not a valid escape");
+            }
+        }
+
+        // ── Character classes ──────────────────────────────────────────────────────
+
+        // charClassExpr ::= '[' charGroup ']' with optional '^' and '-[' subtraction; positioned at '['.
+        private ClassBuilder ParseClass()
+        {
+            _pos++; // '['
+            ClassBuilder cb = new ClassBuilder();
+            if (_pos < _s.Length && _s[_pos] == '^')
+            {
+                cb.Negated = true;
+                _pos++;
             }
 
-            i = next;
-        }
-
-        // A negated class must consume a whole code point even when it names no astral members.
-        if (i >= len || (!needsAstral && !negated))
-        {
-            return false;
-        }
-
-        string? astralPattern = astral.Count == 0 ? null : AstralCategories.ToPattern(AstralCategories.Union(astral));
-        if (negated)
-        {
-            sb.Append("(?:[^").Append(bmp).Append("\\uD800-\\uDFFF]|");
-            if (astralPattern is not null)
+            bool any = false;
+            while (true)
             {
-                sb.Append("(?!").Append(astralPattern).Append(')');
-            }
-
-            sb.Append(SurrogatePair).Append(')');
-        }
-        else
-        {
-            sb.Append("(?:");
-            if (bmp.Length > 0)
-            {
-                sb.Append('[').Append(bmp).Append(']');
-                if (astralPattern is not null)
+                if (_pos >= _s.Length)
                 {
-                    sb.Append('|');
+                    throw Error("unclosed '['");
+                }
+
+                char c = _s[_pos];
+                if (c == ']')
+                {
+                    if (!any)
+                    {
+                        throw Error("empty character class");
+                    }
+
+                    _pos++;
+                    return cb;
+                }
+
+                if (c == '[')
+                {
+                    throw Error("'[' must be escaped inside a character class");
+                }
+
+                if (c == '-' && any && _pos + 1 < _s.Length && _s[_pos + 1] == '[')
+                {
+                    // Subtraction: [a-z-[aeiou]]
+                    _pos++;
+                    cb.Subtract = ParseClass();
+                    if (_pos >= _s.Length || _s[_pos] != ']')
+                    {
+                        throw Error("a subtracted class must end the character class");
+                    }
+
+                    _pos++;
+                    return cb;
+                }
+
+                ParseClassItem(cb);
+                any = true;
+            }
+        }
+
+        private void ParseClassItem(ClassBuilder cb)
+        {
+            int lo;
+            if (_s[_pos] == '\\')
+            {
+                _pos++;
+                if (_pos >= _s.Length)
+                {
+                    throw Error("a trailing backslash");
+                }
+
+                ClassBuilder? set = TryParseSetEscape(_s[_pos]);
+                if (set is not null)
+                {
+                    Merge(cb, set);
+                    return;
+                }
+
+                lo = ReadSingleCharEscape();
+            }
+            else
+            {
+                lo = ReadCodePoint();
+            }
+
+            // A range: lo '-' hi (the '-' is literal when last in the class or before a subtraction).
+            if (_pos + 1 < _s.Length && _s[_pos] == '-' && _s[_pos + 1] != ']' && _s[_pos + 1] != '[')
+            {
+                _pos++;
+                int hi;
+                if (_s[_pos] == '\\')
+                {
+                    _pos++;
+                    if (_pos >= _s.Length)
+                    {
+                        throw Error("a trailing backslash");
+                    }
+
+                    if (IsOneOf("sSdDwWiIcCpP", _s[_pos]))
+                    {
+                        throw Error("a multi-character escape cannot end a range");
+                    }
+
+                    hi = ReadSingleCharEscape();
+                }
+                else if (_s[_pos] == '-')
+                {
+                    throw Error("'-' must be escaped as the end of a range");
+                }
+                else
+                {
+                    hi = ReadCodePoint();
+                }
+
+                if (hi < lo)
+                {
+                    throw Error("the end of a character range precedes its start");
+                }
+
+                cb.AddRange(lo, hi);
+                return;
+            }
+
+            cb.AddCodePoint(lo);
+        }
+
+        private static void Merge(ClassBuilder target, ClassBuilder source)
+        {
+            target.Bmp.Append(source.Bmp);
+            target.Astral.AddRange(source.Astral);
+            target.NeedsGuard |= source.NeedsGuard;
+        }
+
+        // ── Emission ────────────────────────────────────────────────────────────────
+
+        private static string Emit(ClassBuilder cb)
+        {
+            string body = EmitGroup(cb);
+            return cb.Subtract is null
+                ? body
+                : "(?:(?!" + Emit(cb.Subtract) + ")" + body + ")";
+        }
+
+        private static string EmitGroup(ClassBuilder cb)
+        {
+            string? astral = cb.Astral.Count == 0 ? null : AstralCategories.ToPattern(AstralCategories.Union(cb.Astral));
+            string bmp = cb.Bmp.ToString();
+
+            if (cb.Negated)
+            {
+                string unit = "[^" + bmp + "\\uD800-\\uDFFF]";
+                string pair = astral is null ? SurrogatePair : "(?!" + astral + ")" + SurrogatePair;
+                return "(?:" + unit + "|" + pair + ")";
+            }
+
+            if (bmp.Length == 0 && astral is null)
+            {
+                return "(?!)"; // an empty set matches nothing
+            }
+
+            if (astral is null)
+            {
+                return cb.NeedsGuard ? "(?:" + UnitGuard + "[" + bmp + "])" : "[" + bmp + "]";
+            }
+
+            if (bmp.Length == 0)
+            {
+                return "(?:" + astral + ")";
+            }
+
+            return "(?:" + (cb.NeedsGuard ? UnitGuard : string.Empty) + "[" + bmp + "]|" + astral + ")";
+        }
+
+        private void AppendLiteral(int cp)
+        {
+            if (cp >= 0x10000)
+            {
+                string pair = char.ConvertFromUtf32(cp);
+                _sb.Append("(?:\\u").Append(((int)pair[0]).ToString("X4", CultureInfo.InvariantCulture))
+                   .Append("\\u").Append(((int)pair[1]).ToString("X4", CultureInfo.InvariantCulture)).Append(')');
+                return;
+            }
+
+            char c = (char)cp;
+            if (IsOneOf("\\*+?|{}[]()^$.#", c))
+            {
+                _sb.Append('\\').Append(c);
+            }
+            else if (c == '\n')
+            {
+                _sb.Append("\\n");
+            }
+            else if (c == '\r')
+            {
+                _sb.Append("\\r");
+            }
+            else if (c == '\t')
+            {
+                _sb.Append("\\t");
+            }
+            else
+            {
+                _sb.Append(c);
+            }
+        }
+
+        private static bool IsOneOf(string set, char c)
+        {
+            for (int i = 0; i < set.Length; i++)
+            {
+                if (set[i] == c)
+                {
+                    return true;
                 }
             }
 
-            if (astralPattern is not null)
-            {
-                sb.Append(astralPattern);
-            }
-            else if (bmp.Length == 0)
-            {
-                sb.Append("(?!)");
-            }
-
-            sb.Append(')');
+            return false;
         }
 
-        newPos = i + 1;
-        return true;
-    }
-
-    private static int ReadCodePoint(string s, int index, out int width)
-    {
-        if (char.IsHighSurrogate(s[index]) && index + 1 < s.Length && char.IsLowSurrogate(s[index + 1]))
+        // Reads one code point (a surrogate pair counts as one) and advances.
+        private int ReadCodePoint()
         {
-            width = 2;
-            return char.ConvertToUtf32(s[index], s[index + 1]);
+            char c = _s[_pos];
+            if (char.IsHighSurrogate(c) && _pos + 1 < _s.Length && char.IsLowSurrogate(_s[_pos + 1]))
+            {
+                int cp = char.ConvertToUtf32(c, _s[_pos + 1]);
+                _pos += 2;
+                return cp;
+            }
+
+            if (char.IsSurrogate(c))
+            {
+                throw Error("an unpaired surrogate");
+            }
+
+            _pos++;
+            return c;
         }
 
-        width = 1;
-        return s[index];
-    }
-
-    private static void AppendUnitRange(StringBuilder sb, int first, int last)
-    {
-        sb.Append("\\u").Append(first.ToString("X4", System.Globalization.CultureInfo.InvariantCulture))
-          .Append("-\\u").Append(last.ToString("X4", System.Globalization.CultureInfo.InvariantCulture));
+        private XPathDynamicException Error(string message) =>
+            new XPathDynamicException(
+                XPathErrors.FORX0002,
+                $"Invalid regular expression: {message} (at offset {_pos}).",
+                _location);
     }
 }
