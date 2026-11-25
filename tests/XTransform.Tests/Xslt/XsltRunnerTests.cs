@@ -307,7 +307,7 @@ internal sealed class XsltRunnerTests
         InMemoryResolver resolver = new InMemoryResolver();
         resolver.Add("a.xsl", xml);
         StylesheetAssembly asm = StylesheetLinker.Link(new Uri("file:///suite/a.xsl"), resolver);
-        CompiledStylesheet compiled = XsltCompiler.Compile(asm);
+        CompiledStylesheet compiled = StylesheetCompiler.Compile(asm);
 
         Dictionary<TemplateDecl, CompiledTemplate> replaced =
             new Dictionary<TemplateDecl, CompiledTemplate>();

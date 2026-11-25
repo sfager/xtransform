@@ -60,7 +60,7 @@ public sealed class XsltDynamicException : XPathDynamicException
     public IReadOnlyList<SourceSpan> TemplateStack { get; init; }
 }
 
-/// <summary>Thrown once by XsltCompiler.Compile with every static error collected.</summary>
+/// <summary>Thrown once by the XSLT compiler with every static error collected.</summary>
 public sealed class XsltStaticException : XTransformException
 {
     /// <summary>Initializes from a non-empty list of diagnostics; the first error supplies ErrorCode and Location.</summary>

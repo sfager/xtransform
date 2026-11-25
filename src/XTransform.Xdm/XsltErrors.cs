@@ -10,6 +10,15 @@ public static class XsltErrors
     /// <summary>It is a static error if the stylesheet contains a construct that is not permitted at that point. (XSLT 2.0 §2.5)</summary>
     public static readonly QName XTSE0010 = new QName("err", XPathErrors.Namespace, "XTSE0010");
 
+    /// <summary>It is a static error if an attribute value does not match the type the XSLT specification requires for it (for example a yes/no attribute). (XSLT 2.0 §3.5)</summary>
+    public static readonly QName XTSE0020 = new QName("err", XPathErrors.Namespace, "XTSE0020");
+
+    /// <summary>It is a static error if two xsl:output declarations with the same name and import precedence specify different values for the same attribute. (XSLT 2.0 §20)</summary>
+    public static readonly QName XTSE1560 = new QName("err", XPathErrors.Namespace, "XTSE1560");
+
+    /// <summary>Serialization error: the requested output encoding is not supported. (Serialization 1.0 §3)</summary>
+    public static readonly QName SESU0007 = new QName("err", XPathErrors.Namespace, "SESU0007");
+
     /// <summary>It is a static error if the value of the version attribute on xsl:stylesheet is not a valid xs:decimal. (XSLT 2.0 §3.6)</summary>
     public static readonly QName XTSE0110 = new QName("err", XPathErrors.Namespace, "XTSE0110");
 
@@ -58,11 +67,19 @@ public static class XsltErrors
     /// <summary>Recoverable dynamic error: multiple template rules match a node with equal import precedence and priority. (XSLT 2.0 §6.4)</summary>
     public static readonly QName XTRE0540 = new QName("err", XPathErrors.Namespace, "XTRE0540");
 
+    /// <summary>It is a dynamic error if the initial named template does not exist in the stylesheet. (XSLT 2.0 §2.3)</summary>
+    public static readonly QName XTDE0040 = new QName("err", XPathErrors.Namespace, "XTDE0040");
+
+    /// <summary>It is a dynamic error if the initial mode is not used by any template rule. (XSLT 2.0 §2.3)</summary>
+    public static readonly QName XTDE0045 = new QName("err", XPathErrors.Namespace, "XTDE0045");
+
     /// <summary>It is a dynamic error if no value is supplied for a required global stylesheet parameter. (XSLT 2.0 §9.5)</summary>
     public static readonly QName XTDE0050 = new QName("err", XPathErrors.Namespace, "XTDE0050");
 
     /// <summary>It is a dynamic error if a global variable depends on itself. (XSLT 2.0 §9.3)</summary>
     public static readonly QName XTDE0640 = new QName("err", XPathErrors.Namespace, "XTDE0640");
+    /// <summary>XTDE1360: fn:current() was called when there is no current item.</summary>
+    public static readonly QName XTDE1360 = new QName("err", XPathErrors.Namespace, "XTDE1360");
 
     /// <summary>It is a dynamic error if xsl:call-template is invoked without a value for a required xsl:param. (XSLT 2.0 §9.5)</summary>
     public static readonly QName XTDE0700 = new QName("err", XPathErrors.Namespace, "XTDE0700");

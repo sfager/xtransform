@@ -1,1 +1,54 @@
 #nullable enable
+XTransform.IExtensionFunction
+XTransform.IExtensionFunction.ArgumentTypes.get -> System.Collections.Generic.IReadOnlyList<XTransform.Xdm.SequenceType!>!
+XTransform.IExtensionFunction.Invoke(System.Collections.Generic.IReadOnlyList<XTransform.Xdm.XdmSequence!>! arguments) -> XTransform.Xdm.XdmSequence!
+XTransform.IExtensionFunction.Name.get -> XTransform.Xdm.QName
+XTransform.IExtensionFunction.ResultType.get -> XTransform.Xdm.SequenceType!
+XTransform.IResultDocumentHandler
+XTransform.IResultDocumentHandler.Close(System.Uri! href, System.IO.Stream! stream) -> void
+XTransform.IResultDocumentHandler.Open(System.Uri! href) -> System.IO.Stream!
+XTransform.XsltCompiler
+XTransform.XsltCompiler.Compile(System.IO.TextReader! stylesheet, System.Uri? baseUri = null) -> XTransform.XsltExecutable!
+XTransform.XsltCompiler.Compile(System.Uri! stylesheetUri) -> XTransform.XsltExecutable!
+XTransform.XsltCompiler.Compile(System.Xml.XmlReader! stylesheet, System.Uri? baseUri = null) -> XTransform.XsltExecutable!
+XTransform.XsltCompiler.Warnings.get -> System.Collections.Generic.IReadOnlyList<XTransform.Xdm.Diagnostic!>!
+XTransform.XsltCompiler.XsltCompiler(XTransform.XsltCompilerOptions? options = null) -> void
+XTransform.XsltCompilerOptions
+XTransform.XsltCompilerOptions.BaseUri.get -> System.Uri?
+XTransform.XsltCompilerOptions.BaseUri.init -> void
+XTransform.XsltCompilerOptions.ExtensionFunctions.get -> System.Collections.Generic.IReadOnlyDictionary<string!, XTransform.IExtensionFunction!>?
+XTransform.XsltCompilerOptions.ExtensionFunctions.init -> void
+XTransform.XsltCompilerOptions.ResourceResolver.get -> XTransform.IResourceResolver?
+XTransform.XsltCompilerOptions.ResourceResolver.init -> void
+XTransform.XsltCompilerOptions.TreatWarningsAsErrors.get -> bool
+XTransform.XsltCompilerOptions.TreatWarningsAsErrors.init -> void
+XTransform.XsltCompilerOptions.XsltCompilerOptions() -> void
+XTransform.XsltExecutable
+XTransform.XsltExecutable.CreateTransformer() -> XTransform.XsltTransformer!
+XTransform.XsltExecutable.GlobalParameters.get -> System.Collections.Generic.IReadOnlyCollection<XTransform.Xdm.QName>!
+XTransform.XsltExecutable.OutputSettings.get -> XTransform.XsltOutputSettings!
+XTransform.XsltMessage
+XTransform.XsltMessage.Content.get -> XTransform.Xdm.XdmSequence!
+XTransform.XsltMessage.Location.get -> XTransform.Xdm.SourceSpan
+XTransform.XsltMessage.Terminate.get -> bool
+XTransform.XsltMessage.Text.get -> string!
+XTransform.XsltTransformer
+XTransform.XsltTransformer.BaseOutputUri.get -> System.Uri?
+XTransform.XsltTransformer.BaseOutputUri.set -> void
+XTransform.XsltTransformer.InitialMode.get -> XTransform.Xdm.QName?
+XTransform.XsltTransformer.InitialMode.set -> void
+XTransform.XsltTransformer.InitialTemplate.get -> XTransform.Xdm.QName?
+XTransform.XsltTransformer.InitialTemplate.set -> void
+XTransform.XsltTransformer.MaxRecursionDepth.get -> int
+XTransform.XsltTransformer.MaxRecursionDepth.set -> void
+XTransform.XsltTransformer.MessageListener.get -> System.Action<XTransform.XsltMessage!>?
+XTransform.XsltTransformer.MessageListener.set -> void
+XTransform.XsltTransformer.ResultDocumentHandler.get -> XTransform.IResultDocumentHandler?
+XTransform.XsltTransformer.ResultDocumentHandler.set -> void
+XTransform.XsltTransformer.SetParameter(XTransform.Xdm.QName name, XTransform.Xdm.XdmItem! value) -> void
+XTransform.XsltTransformer.SetParameter(XTransform.Xdm.QName name, XTransform.Xdm.XdmSequence! value) -> void
+XTransform.XsltTransformer.Transform(System.IO.Stream? input, System.IO.Stream! output) -> void
+XTransform.XsltTransformer.Transform(System.Xml.XmlReader? input, System.IO.TextWriter! output) -> void
+XTransform.XsltTransformer.Transform(System.Xml.XmlReader? input, System.Xml.XmlWriter! output) -> void
+XTransform.XsltTransformer.TransformAsync(System.IO.Stream? input, System.IO.Stream! output, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+XTransform.XsltTransformer.TransformToSequence(System.Xml.XmlReader? input) -> XTransform.Xdm.XdmSequence!

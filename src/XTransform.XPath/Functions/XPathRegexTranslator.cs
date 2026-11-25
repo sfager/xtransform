@@ -1,6 +1,7 @@
 // F&O §7.6 — XPath 2.0 / XSD regex dialect translation to .NET regex.
 
 using System;
+using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
 using XTransform.Xdm;
@@ -110,17 +111,15 @@ internal static class XPathRegexTranslator
                 case '.':
                     // F&O §7.6: '.' matches any character except \n and \r by default.
                     // With 's' flag, it matches everything — .NET Singleline handles that.
+                    // '.' matches one code point, so a surrogate pair is consumed as a unit.
                     if (dotAll)
                     {
-                        // .NET Singleline makes '.' match \n but also \r — desired per F&O §7.6.1.
-                        sb.Append('.');
+                        sb.Append("(?:").Append(SurrogatePair).Append('|').Append(UnitGuard).Append("[\\s\\S])");
                     }
                     else
                     {
-                        // XSD regex: '.' matches any char except \n and \r.
-                        // .NET default '.' already excludes \n but includes \r — translate explicitly.
-                        // XSD 1.0 Part 2 §F.1.4
-                        sb.Append("[^\\n\\r]");
+                        // XSD 1.0 Part 2 §F.1.4: any character except \n and \r.
+                        sb.Append("(?:").Append(SurrogatePair).Append('|').Append(UnitGuard).Append("[^\\n\\r])");
                     }
 
                     i++;
@@ -214,18 +213,17 @@ internal static class XPathRegexTranslator
 
             case 'S':
                 // XSD §F.1.1: \S = complement of \s = [^ \t\n\r]
-                sb.Append("[^ \\t\\r\\n]");
+                sb.Append("(?:").Append(SurrogatePair).Append("|[^ \\t\\r\\n\\uD800-\\uDFFF])");
                 return pos + 2;
 
             case 'd':
-                // XSD §F.1.1: \d = \p{Nd} (decimal digit)
-                // .NET \d with Unicode is equivalent to \p{Nd}. Pass through.
-                sb.Append("\\d");
+                // XSD §F.1.1: \d = \p{Nd} (decimal digit), including supplementary-plane digits.
+                TryAppendAstralCategory("\\p{Nd}", 0, 6, false, sb);
                 return pos + 2;
 
             case 'D':
-                // XSD §F.1.1: \D = complement of \d = [^\p{Nd}]
-                sb.Append("\\D");
+                // XSD §F.1.1: \D = complement of \d = \P{Nd}
+                TryAppendAstralCategory("\\P{Nd}", 0, 6, true, sb);
                 return pos + 2;
 
             case 'w':
@@ -273,7 +271,11 @@ internal static class XPathRegexTranslator
                 // Both XPath 2.0 and .NET use the same syntax; pass through unchanged.
                 // XSD 1.0 Part 2 §F.1.1 / F&O §7.6
                 int end = FindCategoryEnd(pattern, pos + 2, location);
-                sb.Append(pattern, pos, end - pos);
+                if (!TryAppendAstralCategory(pattern, pos, end, escaped == 'P', sb))
+                {
+                    sb.Append(pattern, pos, end - pos);
+                }
+
                 return end;
             }
 
@@ -342,6 +344,11 @@ internal static class XPathRegexTranslator
     // XSD 1.0 Part 2 §F.1.2
     private static int TranslateCharClass(string pattern, int pos, StringBuilder sb, SourceSpan location)
     {
+        if (TryTranslateAstralClass(pattern, pos, sb, location, out int astralEnd))
+        {
+            return astralEnd;
+        }
+
         int len = pattern.Length;
         // Track nesting depth: '[' increases, ']' decreases.
         int depth = 0;
@@ -427,5 +434,219 @@ internal static class XPathRegexTranslator
             XPathErrors.FORX0002,
             "Unclosed character class '[' in regular expression pattern.",
             location);
+    }
+
+    // ── Supplementary-plane (surrogate pair) support ─────────────────────────────
+
+    private const string SurrogatePair = "[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]";
+
+    // A single UTF-16 unit that is not part of a surrogate pair: guards against matching the
+    // high or low half of a pair when matching starts mid-character.
+    private const string UnitGuard = "(?!" + SurrogatePair + ")(?<![\\uD800-\\uDBFF])";
+
+    /// <summary>
+    /// Translates <c>\p{X}</c> / <c>\P{X}</c> (outside a class) so that it also matches
+    /// supplementary-plane code points. Returns false for non-category names (blocks).
+    /// </summary>
+    private static bool TryAppendAstralCategory(string pattern, int pos, int end, bool negate, StringBuilder sb)
+    {
+        string name = pattern.Substring(pos + 3, end - pos - 4);
+        List<CodePointRange>? ranges = AstralCategories.GetRanges(name, negate);
+        if (ranges is null)
+        {
+            return false;
+        }
+
+        string? astral = AstralCategories.ToPattern(ranges);
+        sb.Append("(?:").Append(UnitGuard).Append('\\').Append(negate ? 'P' : 'p').Append('{').Append(name).Append('}');
+        if (astral is not null)
+        {
+            sb.Append('|').Append(astral);
+        }
+
+        sb.Append(')');
+        return true;
+    }
+
+    /// <summary>
+    /// Translates a character class that mentions Unicode categories or supplementary-plane
+    /// characters into an alternation of a BMP class and surrogate-pair patterns. Classes with
+    /// subtraction (nested '[') and classes needing no astral handling return false and are
+    /// translated by the ordinary path.
+    /// </summary>
+    private static bool TryTranslateAstralClass(string pattern, int pos, StringBuilder sb, SourceSpan location, out int newPos)
+    {
+        newPos = pos;
+        int len = pattern.Length;
+        int i = pos + 1;
+        bool negated = i < len && pattern[i] == '^';
+        if (negated)
+        {
+            i++;
+        }
+
+        StringBuilder bmp = new StringBuilder();
+        List<CodePointRange> astral = new List<CodePointRange>();
+        bool needsAstral = false;
+        bool first = true;
+
+        while (i < len)
+        {
+            char c = pattern[i];
+            if (c == ']' && !first)
+            {
+                break;
+            }
+
+            first = false;
+            if (c == '[')
+            {
+                return false; // subtraction: leave to the ordinary path
+            }
+
+            if (c == '\\')
+            {
+                if (i + 1 >= len)
+                {
+                    return false;
+                }
+
+                char e = pattern[i + 1];
+                if (e == 'p' || e == 'P')
+                {
+                    int end = FindCategoryEnd(pattern, i + 2, location);
+                    string name = pattern.Substring(i + 3, end - i - 4);
+                    List<CodePointRange>? ranges = AstralCategories.GetRanges(name, e == 'P');
+                    bmp.Append(pattern, i, end - i);
+                    if (ranges is not null)
+                    {
+                        astral.AddRange(ranges);
+                        needsAstral = true;
+                    }
+
+                    i = end;
+                    continue;
+                }
+
+                if (e == 's')
+                {
+                    bmp.Append(" \\t\\r\\n");
+                }
+                else if (e == '0')
+                {
+                    return false;
+                }
+                else
+                {
+                    bmp.Append('\\').Append(e);
+                }
+
+                i += 2;
+                continue;
+            }
+
+            // Literal code point (possibly a surrogate pair), possibly the start of a range.
+            int cp = ReadCodePoint(pattern, i, out int width);
+            int next = i + width;
+            if (next + 1 < len && pattern[next] == '-' && pattern[next + 1] != ']' && pattern[next + 1] != '[')
+            {
+                int lastCp = pattern[next + 1] == '\\' ? -1 : ReadCodePoint(pattern, next + 1, out int w2);
+                if (lastCp >= 0)
+                {
+                    int rangeEnd = next + 1 + (lastCp >= 0x10000 ? 2 : 1);
+                    if (cp >= 0x10000 || lastCp >= 0x10000)
+                    {
+                        needsAstral = true;
+                        if (cp < 0x10000)
+                        {
+                            AppendUnitRange(bmp, cp, 0xFFFF);
+                        }
+
+                        astral.Add(new CodePointRange(Math.Max(cp, 0x10000), lastCp));
+                    }
+                    else
+                    {
+                        bmp.Append(pattern, i, rangeEnd - i);
+                    }
+
+                    i = rangeEnd;
+                    continue;
+                }
+            }
+
+            if (cp >= 0x10000)
+            {
+                needsAstral = true;
+                astral.Add(new CodePointRange(cp, cp));
+            }
+            else
+            {
+                bmp.Append(pattern, i, width);
+            }
+
+            i = next;
+        }
+
+        // A negated class must consume a whole code point even when it names no astral members.
+        if (i >= len || (!needsAstral && !negated))
+        {
+            return false;
+        }
+
+        string? astralPattern = astral.Count == 0 ? null : AstralCategories.ToPattern(AstralCategories.Union(astral));
+        if (negated)
+        {
+            sb.Append("(?:[^").Append(bmp).Append("\\uD800-\\uDFFF]|");
+            if (astralPattern is not null)
+            {
+                sb.Append("(?!").Append(astralPattern).Append(')');
+            }
+
+            sb.Append(SurrogatePair).Append(')');
+        }
+        else
+        {
+            sb.Append("(?:");
+            if (bmp.Length > 0)
+            {
+                sb.Append('[').Append(bmp).Append(']');
+                if (astralPattern is not null)
+                {
+                    sb.Append('|');
+                }
+            }
+
+            if (astralPattern is not null)
+            {
+                sb.Append(astralPattern);
+            }
+            else if (bmp.Length == 0)
+            {
+                sb.Append("(?!)");
+            }
+
+            sb.Append(')');
+        }
+
+        newPos = i + 1;
+        return true;
+    }
+
+    private static int ReadCodePoint(string s, int index, out int width)
+    {
+        if (char.IsHighSurrogate(s[index]) && index + 1 < s.Length && char.IsLowSurrogate(s[index + 1]))
+        {
+            width = 2;
+            return char.ConvertToUtf32(s[index], s[index + 1]);
+        }
+
+        width = 1;
+        return s[index];
+    }
+
+    private static void AppendUnitRange(StringBuilder sb, int first, int last)
+    {
+        sb.Append("\\u").Append(first.ToString("X4", System.Globalization.CultureInfo.InvariantCulture))
+          .Append("-\\u").Append(last.ToString("X4", System.Globalization.CultureInfo.InvariantCulture));
     }
 }

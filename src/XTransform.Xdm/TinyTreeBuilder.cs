@@ -366,10 +366,18 @@ internal sealed class TinyTreeBuilder : IResultReceiver
                     builder.EndElement();
                     break;
 
-                case XmlNodeType.Text:
-                case XmlNodeType.CDATA:
                 case XmlNodeType.Whitespace:
                 case XmlNodeType.SignificantWhitespace:
+                    // Whitespace in the prolog or epilog is not part of the data model (XDM §6.1).
+                    if (reader.Depth > 0)
+                    {
+                        builder.Text(reader.Value);
+                    }
+
+                    break;
+
+                case XmlNodeType.Text:
+                case XmlNodeType.CDATA:
                     builder.Text(reader.Value);
                     break;
 

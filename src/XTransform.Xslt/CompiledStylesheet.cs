@@ -5,8 +5,8 @@ using XTransform.Xslt.Instructions;
 namespace XTransform.Xslt;
 
 /// <summary>
-/// The output of <see cref="XsltCompiler"/>. The type will be wrapped by the public
-/// <c>XsltExecutable</c> in P3-15; it stays <c>internal</c> until then.
+/// The output of <see cref="StylesheetCompiler"/>, wrapped by the public
+/// <c>XsltExecutable</c>; the type itself stays <c>internal</c>.
 /// </summary>
 internal sealed class CompiledStylesheet
 {
@@ -18,7 +18,8 @@ internal sealed class CompiledStylesheet
         IReadOnlyDictionary<TemplateDecl, CompiledTemplate> compiledTemplates,
         IReadOnlyDictionary<QName, KeyDecl> keys,
         XsltFunctionLibrary functions,
-        IReadOnlyList<Diagnostic> warnings)
+        IReadOnlyList<Diagnostic> warnings,
+        IReadOnlyDictionary<QName, XsltOutputSettings>? outputs = null)
     {
         Assembly = assembly;
         Declarations = declarations;
@@ -27,7 +28,20 @@ internal sealed class CompiledStylesheet
         Keys = keys;
         Functions = functions;
         Warnings = warnings;
+        Outputs = outputs ?? new Dictionary<QName, XsltOutputSettings>
+        {
+            [OutputDeclarationCollector.Principal] = XsltOutputSettings.Default,
+        };
     }
+
+    /// <summary>
+    /// Merged <c>xsl:output</c> definitions keyed by name; the unnamed (principal) definition
+    /// is keyed by an empty <see cref="QName"/> and is always present.
+    /// </summary>
+    public IReadOnlyDictionary<QName, XsltOutputSettings> Outputs { get; }
+
+    /// <summary>The principal (unnamed) output definition.</summary>
+    public XsltOutputSettings PrincipalOutput => Outputs[OutputDeclarationCollector.Principal];
 
     /// <summary>The linked stylesheet assembly this was compiled from.</summary>
     public StylesheetAssembly Assembly { get; }

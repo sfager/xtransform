@@ -17,7 +17,7 @@ namespace XTransform.Xslt;
 internal static class GlobalBindingValidator
 {
     /// <summary>Runs the global-binding compile pass and appends diagnostics to <paramref name="bag"/>.</summary>
-    public static void Validate(DeclarationTable declarations, DiagnosticBag bag)
+    public static void Validate(DeclarationTable declarations, FunctionLibrary functions, DiagnosticBag bag)
     {
         // External variables map: every global's QName is in scope inside every other global
         // initialiser. We don't yet track the SequenceType precisely — item()* is a safe
@@ -46,7 +46,7 @@ internal static class GlobalBindingValidator
                     decl.SelectExpression!,
                     decl.Location,
                     resolver,
-                    BuiltInFunctionLibrary.Instance,
+                    functions,
                     externalVars);
             }
             catch (XTransformException ex)

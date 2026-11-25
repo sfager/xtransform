@@ -18,21 +18,29 @@ internal sealed class DynamicContext
 
     /// <summary>Initializes a <see cref="DynamicContext"/> with explicit component values.</summary>
     private DynamicContext(RunState run, IXdmIterator? focus, XdmItem? contextItem,
-                           int position, XdmSequence[] frame)
+                           int position, XdmSequence[] frame, XdmItem? currentItem)
     {
         Run = run;
         _focusIterator = focus;
         ContextItem = contextItem;
         _contextPosition = position;
         LocalFrame = frame;
+        CurrentItem = currentItem;
     }
+
+    /// <summary>
+    /// The XSLT current item (XSLT 2.0 §5.4.4): the item being processed by the innermost template
+    /// rule or xsl:for-each, which <c>fn:current()</c> returns. Unlike <see cref="ContextItem"/> it is
+    /// not changed by predicates or path steps. Null when undefined.
+    /// </summary>
+    public XdmItem? CurrentItem { get; }
 
     /// <summary>Creates a fresh root context with no focus and an empty local frame.</summary>
     /// <param name="run">The run-wide state to attach.</param>
     /// <returns>A new root context.</returns>
     public static DynamicContext Root(RunState run)
     {
-        return new DynamicContext(run, focus: null, contextItem: null, position: 0,
+        return new DynamicContext(run, focus: null, contextItem: null, position: 0, currentItem: null,
             frame: s_emptyFrame);
     }
 
@@ -89,7 +97,7 @@ internal sealed class DynamicContext
     /// <returns>A new child context sharing the current <see cref="RunState"/> and <see cref="LocalFrame"/>.</returns>
     public DynamicContext WithFocus(IXdmIterator focus)
     {
-        return new DynamicContext(Run, focus, contextItem: null, position: 0, frame: LocalFrame);
+        return new DynamicContext(Run, focus, contextItem: null, position: 0, frame: LocalFrame, currentItem: CurrentItem);
     }
 
     /// <summary>
@@ -104,7 +112,24 @@ internal sealed class DynamicContext
     public DynamicContext WithContextItem(XdmItem item, int position, int size)
     {
         DynamicContext ctx = new DynamicContext(Run, focus: null, contextItem: item,
-                                                 position: position, frame: LocalFrame);
+                                                 position: position, frame: LocalFrame, currentItem: CurrentItem);
+        ctx._contextSizeCached = size;
+        return ctx;
+    }
+
+    /// <summary>
+    /// Like <see cref="WithContextItem"/>, but also makes <paramref name="item"/> the XSLT current
+    /// item. Used where XSLT changes the current item: template rules, xsl:for-each, key <c>use</c>
+    /// expressions and pattern matching (XSLT 2.0 §5.4.4).
+    /// </summary>
+    /// <param name="item">The new context and current item.</param>
+    /// <param name="position">The 1-based position of the item within its sequence.</param>
+    /// <param name="size">The total number of items in the sequence.</param>
+    /// <returns>A new child context sharing the current <see cref="RunState"/> and <see cref="LocalFrame"/>.</returns>
+    public DynamicContext WithCurrentItem(XdmItem item, int position, int size)
+    {
+        DynamicContext ctx = new DynamicContext(Run, focus: null, contextItem: item,
+                                                 position: position, frame: LocalFrame, currentItem: item);
         ctx._contextSizeCached = size;
         return ctx;
     }
@@ -144,7 +169,7 @@ internal sealed class DynamicContext
             frame[i] = XdmSequence.Empty;
         }
 
-        return new DynamicContext(Run, _focusIterator, ContextItem, _contextPosition, frame);
+        return new DynamicContext(Run, _focusIterator, ContextItem, _contextPosition, frame, CurrentItem);
     }
 
     /// <summary>Throws <see cref="OperationCanceledException"/> if the run's token is cancelled.</summary>

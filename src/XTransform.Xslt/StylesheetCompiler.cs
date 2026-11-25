@@ -10,13 +10,15 @@ using XTransform.Xslt.Instructions;
 namespace XTransform.Xslt;
 
 /// <summary>The XSLT 2.0 compiler.</summary>
-internal static class XsltCompiler
+internal static class StylesheetCompiler
 {
     /// <summary>
     /// Runs every compiler pass over <paramref name="assembly"/>. Static errors are collected
     /// into a <see cref="DiagnosticBag"/> and raised as a single <see cref="XsltStaticException"/>.
     /// </summary>
-    public static CompiledStylesheet Compile(StylesheetAssembly assembly)
+    public static CompiledStylesheet Compile(
+        StylesheetAssembly assembly,
+        System.Action<XsltFunctionLibrary>? configureFunctions = null)
     {
 #pragma warning disable CA1510 // ArgumentNullException.ThrowIfNull not available on netstandard2.0
         if (assembly is null)
@@ -46,18 +48,22 @@ internal static class XsltCompiler
 
         DeclarationTable declarations = DeclarationCollector.Collect(assembly, bag);
         NameBindingValidator.Validate(declarations, bag);
-        GlobalBindingValidator.Validate(declarations, bag);
-        IReadOnlyDictionary<QName, ModeTable> modes = ModeCompiler.Compile(declarations, bag);
 
         // Build the function library: register user function signatures first so inter-function
-        // references resolve; bodies are populated in pass 2 via the slot.
+        // references resolve; bodies are populated in pass 2 via the slot. Global variable
+        // initialisers see the same library (XSLT 2.0 §5.4: doc(), key(), user functions).
         XsltFunctionLibrary functions = new XsltFunctionLibrary();
+        configureFunctions?.Invoke(functions);
         Dictionary<FunctionKey, UserFunctionSlot> userSlots = new Dictionary<FunctionKey, UserFunctionSlot>();
         foreach (KeyValuePair<FunctionKey, FunctionDecl> kv in declarations.Functions)
         {
             UserFunctionSlot slot = functions.RegisterUser(kv.Value.Name, kv.Value.Arity);
             userSlots[kv.Key] = slot;
         }
+
+        GlobalBindingValidator.Validate(declarations, functions, bag);
+        IReadOnlyDictionary<QName, ModeTable> modes = ModeCompiler.Compile(declarations, bag);
+        IReadOnlyDictionary<QName, XsltOutputSettings> outputs = OutputDeclarationCollector.Collect(assembly, bag);
 
         // Pass 2: compile every template and function body.
         Dictionary<TemplateDecl, CompiledTemplate> compiledTemplates =
@@ -115,6 +121,7 @@ internal static class XsltCompiler
             compiledTemplates,
             declarations.Keys,
             functions,
-            warnings);
+            warnings,
+            outputs);
     }
 }

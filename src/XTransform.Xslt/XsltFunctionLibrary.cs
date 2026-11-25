@@ -48,6 +48,27 @@ internal sealed class XsltFunctionLibrary : FunctionLibrary
         return BuiltInFunctionLibrary.Instance.TryResolve(name, arity, out signature);
     }
 
+    /// <summary>
+    /// Registers a .NET extension function. Its arity is the number of
+    /// <paramref name="parameterTypes"/>; arguments reach <paramref name="invoke"/> already
+    /// converted to those types (F&amp;O §3.1.5).
+    /// </summary>
+    public void RegisterExtension(
+        QName name,
+        IReadOnlyList<SequenceType> parameterTypes,
+        SequenceType returnType,
+        System.Func<IReadOnlyList<XdmSequence>, XdmSequence> invoke)
+    {
+        int arity = parameterTypes.Count;
+        FunctionSignature signature = new FunctionSignature(
+            name,
+            arity,
+            returnType,
+            System.Collections.Immutable.ImmutableArray.CreateRange(parameterTypes),
+            (context, args) => invoke(args).GetIterator());
+        _xslt[MakeKey(name.NamespaceUri, name.LocalName, arity)] = signature;
+    }
+
     /// <summary>Registers a user-defined function signature with a late-bound invoker.</summary>
     public UserFunctionSlot RegisterUser(QName name, int arity)
     {
@@ -74,6 +95,11 @@ internal sealed class XsltFunctionLibrary : FunctionLibrary
             SeqNodeZeroOrOne(),
             new[] { SeqStringOne() },
             DocInvoker);
+
+        Register("current", 0,
+            new SequenceType(ItemType.AnyItem, Occurrence.ExactlyOne),
+            System.Array.Empty<SequenceType>(),
+            CurrentInvoker);
 
         Register("doc-available", 1,
             SeqBoolOne(),
@@ -148,6 +174,22 @@ internal sealed class XsltFunctionLibrary : FunctionLibrary
         }
 
         return new XTransform.Xdm.Iterators.SingleItemIterator(loaded);
+    }
+
+    // XSLT 2.0 §16.1: fn:current() returns the current item — the item being processed by the
+    // innermost template rule or xsl:for-each. Predicates and path steps do not change it.
+    private static IXdmIterator CurrentInvoker(DynamicContext context, XdmSequence[] args)
+    {
+        XdmItem? current = context.CurrentItem;
+        if (current is null)
+        {
+            throw new XsltDynamicException(
+                XsltErrors.XTDE1360,
+                "fn:current() was called but there is no current item",
+                SourceSpan.None);
+        }
+
+        return new XTransform.Xdm.Iterators.SingleItemIterator(current);
     }
 
     private static IXdmIterator DocAvailableInvoker(DynamicContext context, XdmSequence[] args)

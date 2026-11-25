@@ -174,7 +174,7 @@ internal sealed class XsltVariablesTests
         InMemoryResolver resolver = new InMemoryResolver();
         resolver.Add("s.xsl", xsl);
         StylesheetAssembly asm = StylesheetLinker.Link(new Uri("file:///suite/s.xsl"), resolver);
-        return XsltCompiler.Compile(asm);
+        return StylesheetCompiler.Compile(asm);
     }
 
     private static void Transform(string xsl, string input, IReadOnlyDictionary<QName, XdmSequence>? parameters = null)

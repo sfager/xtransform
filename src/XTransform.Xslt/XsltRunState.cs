@@ -202,6 +202,8 @@ internal sealed class XsltRunState
     private readonly Dictionary<KeyIndexKey, KeyIndex> _keyIndexes =
         new Dictionary<KeyIndexKey, KeyIndex>();
 
+    private readonly HashSet<KeyIndexKey> _keysInProgress = new HashSet<KeyIndexKey>();
+
     /// <summary>
     /// Returns the per-document key index for <paramref name="keyName"/>, building it on first
     /// access. The index is scoped to the document that owns <paramref name="tree"/>.
@@ -214,9 +216,25 @@ internal sealed class XsltRunState
             return existing;
         }
 
-        KeyIndex index = BuildKeyIndex(tree, decl, context);
-        _keyIndexes[key] = index;
-        return index;
+        // XSLT 2.0 §16.3.3: a key whose definition depends on itself is a circularity (XTDE0640).
+        if (!_keysInProgress.Add(key))
+        {
+            throw new XsltDynamicException(
+                XsltErrors.XTDE0640,
+                $"Circular reference: the definition of key '{keyName.ClarkName}' depends on itself",
+                decl.Location);
+        }
+
+        try
+        {
+            KeyIndex index = BuildKeyIndex(tree, decl, context);
+            _keyIndexes[key] = index;
+            return index;
+        }
+        finally
+        {
+            _keysInProgress.Remove(key);
+        }
     }
 
     private static KeyIndex BuildKeyIndex(TinyTree tree, KeyDecl decl, DynamicContext context)
@@ -230,7 +248,7 @@ internal sealed class XsltRunState
 
         PatternAst pattern = XPathParser.ParsePattern(decl.MatchPattern, decl.Location, resolver);
         CompiledExpression useExpr = XPathCompiler.ParseAndCompile(
-            decl.UseExpression, decl.Location, resolver, BuiltInFunctionLibrary.Instance);
+            decl.UseExpression, decl.Location, resolver, ((XsltRunState)context.Run.Tag!).Stylesheet.Functions);
 
         // Walk every node in the tree; nodes matching the pattern contribute to the index.
         for (int i = 0; i < tree.NodeCount; i++)
@@ -241,7 +259,7 @@ internal sealed class XsltRunState
                 continue;
             }
 
-            DynamicContext itemCtx = context.WithContextItem(node, 1, 1).WithFrame(useExpr.SlotCount);
+            DynamicContext itemCtx = context.WithCurrentItem(node, 1, 1).WithFrame(useExpr.SlotCount);
             IXdmIterator iter = useExpr.Root.Iterate(itemCtx);
             XdmItem? value;
             while ((value = iter.Next()) is not null)

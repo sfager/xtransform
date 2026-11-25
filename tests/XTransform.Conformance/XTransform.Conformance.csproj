@@ -14,10 +14,15 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\XTransform.Xdm\XTransform.Xdm.csproj" />
     <ProjectReference Include="..\..\src\XTransform.XPath\XTransform.XPath.csproj" />
+    <ProjectReference Include="..\..\src\XTransform.Xslt\XTransform.Xslt.csproj" />
+    <ProjectReference Include="..\..\src\XTransform\XTransform.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <None Update="known-failures\g1.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="known-failures\xslt-g3.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="known-failures\g2.txt">

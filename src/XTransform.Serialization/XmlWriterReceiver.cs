@@ -1,6 +1,6 @@
-// Minimal IResultReceiver that writes events through a System.Xml.XmlWriter. Stand-in for
-// the full XmlEmitter that lands in P3-13; sufficient for byte-identical golden tests of the
-// P3-07 control-flow and output instructions.
+// IResultReceiver that writes events through a caller-supplied System.Xml.XmlWriter. Used by the
+// public Transform(XmlReader, XmlWriter) overload, where the writer (not xsl:output) decides
+// declaration, indentation and conformance level.
 
 using System;
 using System.Xml;

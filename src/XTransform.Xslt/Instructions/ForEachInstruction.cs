@@ -48,7 +48,7 @@ internal sealed class ForEachInstruction : XsltInstruction
             // Loop back-edge — give the cancellation token a chance to stop runaway stylesheets.
             context.CheckCancellation();
 
-            DynamicContext child = context.WithContextItem(items[i], position: i + 1, size: size);
+            DynamicContext child = context.WithCurrentItem(items[i], position: i + 1, size: size);
             int marker = run.VariableScopeMarker;
             try
             {
