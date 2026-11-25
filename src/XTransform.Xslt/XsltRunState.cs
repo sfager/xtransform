@@ -246,7 +246,10 @@ internal sealed class XsltRunState
             defaultElementNamespace: string.Empty,
             defaultFunctionNamespace: BuiltInFunctionLibrary.FnNamespace);
 
-        PatternAst pattern = XPathParser.ParsePattern(decl.MatchPattern, decl.Location, resolver);
+        // The pattern was parsed and its predicates compiled when the stylesheet was compiled.
+        PatternAst pattern =
+            ((XsltRunState)context.Run.Tag!).Stylesheet.PatternPredicates.GetKeyPattern(decl)
+            ?? XPathParser.ParsePattern(decl.MatchPattern, decl.Location, resolver);
         CompiledExpression useExpr = XPathCompiler.ParseAndCompile(
             decl.UseExpression, decl.Location, resolver, ((XsltRunState)context.Run.Tag!).Stylesheet.Functions);
 

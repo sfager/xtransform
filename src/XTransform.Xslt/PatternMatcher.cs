@@ -6,9 +6,13 @@
 // context focused on the candidate node.
 
 using System;
+using System.Collections.Generic;
 using XTransform.Xdm;
 using XTransform.XPath;
 using XTransform.XPath.Ast;
+using XTransform.XPath.Operators;
+using XTransform.Xdm.Iterators;
+using XTransform.Xslt.Instructions;
 
 namespace XTransform.Xslt;
 
@@ -159,22 +163,98 @@ internal static class PatternMatcher
             return false;
         }
 
-        // Evaluate each predicate against a focus on this node.
-        if (!step.Predicates.IsEmpty)
+        return step.Predicates.IsEmpty || MatchPredicates(step, node, context);
+    }
+
+    // XSLT 2.0 §5.5.3: a node matches a step with predicates when it is selected by the equivalent
+    // expression, so each predicate is evaluated with the focus of that step — the position and size
+    // are those of the candidate among the siblings (children, or attributes of the same element) that
+    // satisfy the node test and the earlier predicates. current() is the node being matched.
+    private static bool MatchPredicates(StepPatternAst step, XdmNode node, DynamicContext context)
+    {
+        XsltRunState? run = context.Run.Tag as XsltRunState;
+        BoundExpression[]? predicates = run?.Stylesheet.PatternPredicates.Get(step);
+        if (run is null || predicates is null)
         {
-            DynamicContext predCtx = context.WithCurrentItem(node, position: 1, size: 1);
-            foreach (XPathAst predAst in step.Predicates)
+            throw new InvalidOperationException(
+                "The predicates of this pattern were not compiled; patterns must be matched within a compiled stylesheet");
+        }
+
+        // Fast path: no predicate can depend on the position or yield a number, so each can be
+        // decided on the node alone without looking at its siblings.
+        bool simple = true;
+        foreach (BoundExpression predicate in predicates)
+        {
+            if (!IsSimplePredicate(predicate.Root))
             {
-                // We expect the compiler-visible predicate form to be an expression. For
-                // P3-07 we only support compiled predicates attached to patterns when the
-                // caller pre-compiles them; absent that, assume true.
-                _ = predAst;
-                _ = predCtx;
+                simple = false;
+                break;
+            }
+        }
+
+        if (simple)
+        {
+            foreach (BoundExpression predicate in predicates)
+            {
+                DynamicContext ctx = predicate.Prepare(context, run).WithCurrentItem(node, 1, 1);
+                if (!predicate.Root.EffectiveBooleanValue(ctx))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        List<XdmItem> candidates = new List<XdmItem>();
+        XdmNode? parent = node.Parent;
+        if (parent is null)
+        {
+            candidates.Add(node);
+        }
+        else
+        {
+            foreach (XdmNode sibling in parent.Axis(step.Axis == Axis.Attribute ? Axis.Attribute : Axis.Child))
+            {
+                if (MatchNodeTest(step.Test, sibling))
+                {
+                    candidates.Add(sibling);
+                }
+            }
+        }
+
+        IXdmIterator selected = new ArrayIterator(candidates.ToArray());
+        foreach (BoundExpression predicate in predicates)
+        {
+            DynamicContext ctx = predicate.Prepare(context, run).WithCurrentItem(node, 1, 1);
+            selected = PredicateApplicator.Apply(selected, predicate.Root, ctx);
+        }
+
+        XdmItem? item;
+        while ((item = selected.Next()) is not null)
+        {
+            if (item is XdmNode n && n.Equals(node))
+            {
                 return true;
             }
         }
 
-        return true;
+        return false;
+    }
+
+    // True when the predicate cannot read position() / last() and cannot produce a number
+    // (a numeric value is a position test): its truth depends on the candidate node alone.
+    private static bool IsSimplePredicate(ExpressionNode predicate)
+    {
+        if ((predicate.Dependencies & (ExpressionDependencies.Position | ExpressionDependencies.Last)) != ExpressionDependencies.None)
+        {
+            return false;
+        }
+
+        ItemType type = predicate.StaticType.ItemType;
+        return type.IsSubtypeOf(ItemType.AnyNode) ||
+               type.IsSubtypeOf(ItemType.Atomic(XdmTypeCode.Boolean)) ||
+               type.IsSubtypeOf(ItemType.Atomic(XdmTypeCode.String));
     }
 
     private static bool MatchNodeTest(NodeTestAst test, XdmNode node)

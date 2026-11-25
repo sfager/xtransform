@@ -47,8 +47,9 @@ internal sealed class UserFunctionBody
                 run.PushVariable(ParamNames[i], i < args.Length ? args[i] : XdmSequence.Empty);
             }
 
+            // XSLT 2.0 §10.3: the focus is undefined within a function body.
             ItemCollectorReceiver collector = new ItemCollectorReceiver();
-            Body.Execute(context, collector, run);
+            Body.Execute(context.WithoutFocus(), collector, run);
             return collector.ToSequence().GetIterator();
         }
         finally

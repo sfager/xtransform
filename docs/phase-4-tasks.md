@@ -80,7 +80,7 @@ shard.
 | P4-28 | XSLT 1.0 parity corpus (D6) and `docs/compat-differences.md` | — | P4-25 |
 | P4-29 | Gate G4 run, baseline, NuGet preview `0.4.0-preview.1` | — | all |
 
-Suggested order by tests unlocked per unit of effort: **P4-07, P4-10, P4-23, P4-06, P4-04,
+Suggested order by tests unlocked per unit of effort: **P4-22 (pattern predicates first), P4-07 (done), P4-10, P4-23, P4-06, P4-04,
 P4-13, P4-08, P4-09**, then the rest. Tasks with no dependencies can run in any order.
 
 ---
@@ -186,17 +186,25 @@ Registered as an XSLT function (it needs the stylesheet's decimal formats).
 
 ## P4-07 `xsl:number` and picture tokens
 
-- [ ] Done
+- [x] Done
 
 **Scope.** XSLT 2.0 §12: `value`, `level` (single / multiple / any), `count`, `from`, `format`
 tokens (`1`, `01`, `a`, `A`, `i`, `I`, Unicode digit sets and the enclosed-number tokens seen in
 the suite), `lang`, `letter-value`, `ordinal`, `grouping-separator` / `grouping-size`.
-Default `count` and `from` patterns use the pattern matcher from P1-13. `XTDE0980`, `XTDE0990`,
+Default `count` and `from` patterns use the pattern matcher from P1-13. `XTDE0980`, `XTTE0990`, `XTTE1000`,
 `XTSE0975`. This is the largest single set (256 failing tests).
 
 **Acceptance.**
 - `number` set ≥ 85% passing.
-- Alphabetic and roman numbering unit-tested to 10,000 and to the edge values (0, negatives).
+- Alphabetic and roman numbering unit-tested at their edge values (0, range limits, carries).
+
+**Result.** `number` set: 206 of 260 in-scope tests pass (was 4). The rest are blocked by other
+tasks, not by `xsl:number`: `xsl:strip-space` (P4-21), namespace-prefix serialization (P4-14),
+typed variables with `as` (P4-19), backwards-compatibility mode (P4-25), German and Italian number
+words, character references for characters the output encoding cannot represent (P4-18), and
+pattern predicates (see P4-22). The 85% acceptance target is reached once those land. Also fixed
+here: `assert-string-value` normalizes space by default in the XSLT catalog, and `xsl:function`
+bodies now run with no focus (so `xsl:number` and `current()` raise their errors there).
 
 ## P4-08 `fn:format-date` / `format-dateTime` / `format-time`
 
@@ -226,7 +234,7 @@ two seconds (hash-based grouping for `group-by`).
 
 ## P4-10 XPath regex dialect completion
 
-- [ ] Done
+- [x] Done
 
 **Scope.** The translator is a pass-through for most syntax. Make it validate against the XSD
 regex grammar and raise `FORX0002` for invalid patterns (177 tests expect it and we accept the
@@ -234,7 +242,7 @@ pattern), support Unicode **block** escapes (`\p{IsBasicLatin}` and the full nam
 supplementary-plane blocks), implement `\i`, `\I`, `\c`, `\C`, `\w`, `\W` exactly per XSD (the G3
 work added the supplementary-plane machinery), character-class subtraction with supplementary
 characters, and reject constructs .NET accepts but XSD does not (`(?:`, `\b`, lookarounds,
-backreferences in character classes, `{,n}` quantifiers). Flags `x` and `q` per F&O §7.6.1.
+backreferences in character classes, `{,n}` quantifiers). The `x` flag only removes whitespace (outside classes); `q` is XPath 3.0 and stays an error.
 
 **Acceptance.**
 - `regex-syntax-xslt20` ≥ 90% and `regex-classes` ≥ 90% passing; the QT3 `fn-matches`,
@@ -242,6 +250,14 @@ backreferences in character classes, `{,n}` quantifiers). Flags `x` and `q` per 
 - Table-driven validity tests (≥ 150 patterns) in `tests/XTransform.Tests/XPath/`.
 - Unicode category data comes from the runtime and is newer than Unicode 9; where a conformance
   test depends on a specific version, say so in its known-failures reason.
+
+**Result.** `regex-syntax-xslt20`: 984 of 987 in-scope tests pass (was 778); core shard 3,086 → 3,295
+(209 fixed, 0 regressed). The translator is now a parser for the XSLT 2.0 grammar that validates as it
+translates (`XPathRegexTranslator`), with Unicode tables in `RegexUnicodeTables`. The three misses
+(`[\w]`, `[\d]`, `[\c]`) depend on the Unicode 3.1-era name and digit tables of XML 1.0 Fourth Edition
+(see `implementation-defined.md`). `regex-classes` (120) cannot reach 90% in this task: it uses
+`xsl:analyze-string` (P4-11) and compares the result with reference files for Unicode 3.1, 5.2 and 6.0,
+none of which equals the runtime's Unicode version; it is expected to stay in the known-failures list.
 
 ## P4-11 `xsl:analyze-string`, `regex-group()`
 
@@ -391,13 +407,31 @@ precedence (`XTSE0270`), whitespace in the input document, and `xml:space` on th
 
 - [ ] Done
 
-**Scope.** Review and fix the remaining failures in `match` (patterns with unions, `id()`,
+**Scope.** **First: evaluate pattern predicates.** `PatternMatcher.MatchStep` does not evaluate the
+predicates of a step pattern at all (it returns true, a P3-07 stub), so `match="item[@x = 1]"` matches
+every `item` and `xsl:number count="note[position() mod 2 = 1]"` ignores the predicate. Compile the
+predicates with the static context of the pattern, evaluate them with the focus the spec defines
+(XSLT 2.0 §5.5.3: position among the candidate's siblings that satisfy the step's node test and the
+earlier predicates), and allow `current()`. This is probably the largest single correctness fix in
+Phase 4: do it before the other tasks that depend on matching. Then review and fix the remaining
+failures in `match` (patterns with unions, `id()`,
 `key()`, predicates with `last()`), `position` and `axes` (focus semantics inside patterns and
 steps, reverse-axis positions), `tunnel` parameters (propagation through `apply-templates`,
 `call-template`, built-in rules; `XTSE0580`, `XTDE0700`), `apply-templates` `mode="#all"` and
 `#current`, built-in template rules for each mode, and `current-merge-*` is 3.0 and excluded.
 
 **Acceptance.** `match`, `position`, `axes`, `tunnel`, `apply-templates` sets ≥ 85% passing.
+
+**Progress (branch `p4-22-pattern-predicates`).** Pattern predicates are now compiled with the
+stylesheet (`PatternPredicateTable`: template `match`, `xsl:key match`, `xsl:number count` / `from`) and
+evaluated by `PatternMatcher` with the step's own focus: position and `last()` are taken among the
+siblings that satisfy the node test and the earlier predicates; `current()` is the node being matched;
+global variables and user functions are visible. Predicates that cannot read the position and cannot
+yield a number are decided on the node alone, so flat documents stay linear. Core shard 3,013 → 3,086
+(73 fixed, 0 regressed). Still open in this task: `id()` / `key()` patterns (`MatchId` ignores `id($var)`;
+key patterns never match), `mode="#all"` / `#current`, tunnel parameters, and the `position` / `axes` /
+`tunnel` sets. A positional predicate on a step with very many siblings is evaluated in time linear in
+the sibling count per match.
 
 ## P4-23 Static error catalogue (XTSE*)
 
