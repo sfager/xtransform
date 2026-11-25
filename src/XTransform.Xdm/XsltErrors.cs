@@ -78,6 +78,8 @@ public static class XsltErrors
 
     /// <summary>It is a dynamic error if a global variable depends on itself. (XSLT 2.0 §9.3)</summary>
     public static readonly QName XTDE0640 = new QName("err", XPathErrors.Namespace, "XTDE0640");
+    /// <summary>XTDE1360: fn:current() was called when there is no current item.</summary>
+    public static readonly QName XTDE1360 = new QName("err", XPathErrors.Namespace, "XTDE1360");
 
     /// <summary>It is a dynamic error if xsl:call-template is invoked without a value for a required xsl:param. (XSLT 2.0 §9.5)</summary>
     public static readonly QName XTDE0700 = new QName("err", XPathErrors.Namespace, "XTDE0700");

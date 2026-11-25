@@ -48,7 +48,7 @@ internal static class BuiltInRules
                 int size = children.Count;
                 for (i = 0; i < size; i++)
                 {
-                    DynamicContext childCtx = context.WithContextItem(children[i], position: i + 1, size: size);
+                    DynamicContext childCtx = context.WithCurrentItem(children[i], position: i + 1, size: size);
                     ModeDispatcher.Dispatch(childCtx, receiver, run, mode, withParams, callSite);
                 }
 

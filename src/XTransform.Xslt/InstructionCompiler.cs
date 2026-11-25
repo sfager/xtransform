@@ -65,7 +65,9 @@ internal static class InstructionCompiler
             {
                 if (decl.Element.Children[i] is not StylesheetElement child)
                 {
-                    continue;
+                    // Literal text starts the body: the params (if any) are behind us.
+                    firstNonParam = i;
+                    break;
                 }
 
                 if (!(child.IsXsltElement && string.Equals(child.Name.LocalName, "param", StringComparison.Ordinal)))
@@ -129,7 +131,9 @@ internal static class InstructionCompiler
         {
             if (decl.Element.Children[i] is not StylesheetElement child)
             {
-                continue;
+                // Literal text starts the body: the params (if any) are behind us.
+                firstNonParam = i;
+                break;
             }
 
             if (!(child.IsXsltElement && string.Equals(child.Name.LocalName, "param", StringComparison.Ordinal)))
