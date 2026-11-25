@@ -145,7 +145,7 @@ public sealed class XsltTransformer
         }
 
         NamePool pool = new NamePool();
-        XdmNode? document = input is null ? null : XsltInput.Load(input, pool);
+        XdmNode? document = input is null ? null : XsltInput.Load(input, pool, _compiled.Declarations.Whitespace);
         IResultReceiver sink = createSink(pool);
         try
         {

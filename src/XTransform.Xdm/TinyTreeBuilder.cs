@@ -281,7 +281,14 @@ internal sealed class TinyTreeBuilder : IResultReceiver
     /// Loads a complete XML document from <paramref name="reader"/> and returns the resulting tree.
     /// The caller is responsible for configuring the reader (DtdProcessing.Prohibit recommended).
     /// </summary>
-    public static TinyTree Load(XmlReader reader, NamePool namePool)
+    /// <param name="reader">The XML source.</param>
+    /// <param name="namePool">The name pool the tree's names are allocated from.</param>
+    /// <param name="stripWhitespace">
+    /// When supplied, called with the namespace URI and local name of each element: returning true drops the
+    /// whitespace-only text nodes among its children (XSLT 2.0 §4.3 xsl:strip-space), unless
+    /// <c>xml:space="preserve"</c> is in effect for that element.
+    /// </param>
+    public static TinyTree Load(XmlReader reader, NamePool namePool, Func<string, string, bool>? stripWhitespace = null)
     {
 #pragma warning disable CA1510 // ArgumentNullException.ThrowIfNull not available on netstandard2.0
         if (reader is null)
@@ -308,6 +315,9 @@ internal sealed class TinyTreeBuilder : IResultReceiver
         TinyTreeBuilder builder = new TinyTreeBuilder(namePool, baseUri);
         builder.StartDocument();
 
+        // Per open element: is xml:space="preserve" in effect, and are its whitespace-only children stripped.
+        Stack<SpaceFrame> frames = new Stack<SpaceFrame>();
+
         while (reader.Read())
         {
             switch (reader.NodeType)
@@ -318,6 +328,7 @@ internal sealed class TinyTreeBuilder : IResultReceiver
                     builder.StartElement(nameCode, SourceSpan.None);
 
                     // Emit namespace declarations before attributes.
+                    bool? spacePreserve = null;
                     if (reader.MoveToFirstAttribute())
                     {
                         // First pass: namespaces.
@@ -347,6 +358,14 @@ internal sealed class TinyTreeBuilder : IResultReceiver
                             {
                                 int attrNameCode = namePool.Allocate(reader.NamespaceURI ?? string.Empty, reader.LocalName);
                                 builder.Attribute(attrNameCode, reader.Value, SourceSpan.None);
+
+                                if (string.Equals(reader.Prefix, "xml", StringComparison.Ordinal) &&
+                                    string.Equals(reader.LocalName, "space", StringComparison.Ordinal))
+                                {
+                                    spacePreserve = string.Equals(reader.Value, "preserve", StringComparison.Ordinal)
+                                        ? true
+                                        : string.Equals(reader.Value, "default", StringComparison.Ordinal) ? false : (bool?)null;
+                                }
                             }
                         }
                         while (reader.MoveToNextAttribute());
@@ -358,18 +377,31 @@ internal sealed class TinyTreeBuilder : IResultReceiver
                     {
                         builder.EndElement();
                     }
+                    else
+                    {
+                        // xml:space is inherited; a value other than preserve / default leaves it unchanged.
+                        bool preserve = spacePreserve ?? (frames.Count > 0 && frames.Peek().Preserve);
+                        bool strip = stripWhitespace is not null && !preserve &&
+                                     stripWhitespace(reader.NamespaceURI ?? string.Empty, reader.LocalName);
+                        frames.Push(new SpaceFrame(preserve, strip));
+                    }
 
                     break;
                 }
 
                 case XmlNodeType.EndElement:
                     builder.EndElement();
+                    if (frames.Count > 0)
+                    {
+                        frames.Pop();
+                    }
+
                     break;
 
                 case XmlNodeType.Whitespace:
                 case XmlNodeType.SignificantWhitespace:
                     // Whitespace in the prolog or epilog is not part of the data model (XDM §6.1).
-                    if (reader.Depth > 0)
+                    if (reader.Depth > 0 && !(frames.Count > 0 && frames.Peek().Strip))
                     {
                         builder.Text(reader.Value);
                     }
@@ -378,7 +410,12 @@ internal sealed class TinyTreeBuilder : IResultReceiver
 
                 case XmlNodeType.Text:
                 case XmlNodeType.CDATA:
-                    builder.Text(reader.Value);
+                    // XSLT 2.0 §4.3: a text node consisting solely of whitespace is stripped however it was written.
+                    if (!(frames.Count > 0 && frames.Peek().Strip && IsXmlWhitespace(reader.Value)))
+                    {
+                        builder.Text(reader.Value);
+                    }
+
                     break;
 
                 case XmlNodeType.Comment:
@@ -408,6 +445,34 @@ internal sealed class TinyTreeBuilder : IResultReceiver
     }
 
     // ── Private helpers ───────────────────────────────────────────────────────
+
+    private readonly struct SpaceFrame
+    {
+        public SpaceFrame(bool preserve, bool strip)
+        {
+            Preserve = preserve;
+            Strip = strip;
+        }
+
+        public bool Preserve { get; }
+
+        public bool Strip { get; }
+    }
+
+    // True when every character is XML whitespace (#x20, #x9, #xA, #xD); the empty string counts.
+    private static bool IsXmlWhitespace(string text)
+    {
+        for (int i = 0; i < text.Length; i++)
+        {
+            char c = text[i];
+            if (c != ' ' && c != '\t' && c != '\n' && c != '\r')
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
 
     /// <summary>
     /// Adds a new node entry to all parallel lists and wires up parent/sibling links.

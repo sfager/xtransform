@@ -188,7 +188,9 @@ internal sealed class XsltRunState
                 XmlResolver = null,
             }))
             {
-                TinyTree tree = TinyTreeBuilder.Load(reader, NamePool);
+                // Documents loaded by doc() / document() are source documents: xsl:strip-space applies (§4.3).
+                WhitespaceTable whitespace = Stylesheet.Declarations.Whitespace;
+                TinyTree tree = TinyTreeBuilder.Load(reader, NamePool, whitespace.HasStripRules ? whitespace.ShouldStrip : null);
                 XdmNode doc = new XdmNode(NodeHandle.ForNode(tree, 0));
                 DocumentCache[uriString] = doc;
                 return doc;
@@ -211,7 +213,7 @@ internal sealed class XsltRunState
     /// Returns the per-document key index for <paramref name="keyName"/>, building it on first
     /// access. The index is scoped to the document that owns <paramref name="tree"/>.
     /// </summary>
-    public KeyIndex GetOrBuildKeyIndex(TinyTree tree, QName keyName, KeyDecl decl, DynamicContext context)
+    public KeyIndex GetOrBuildKeyIndex(TinyTree tree, QName keyName, IReadOnlyList<KeyDecl> decls, DynamicContext context)
     {
         KeyIndexKey key = new KeyIndexKey(tree.TreeId, keyName);
         if (_keyIndexes.TryGetValue(key, out KeyIndex? existing))
@@ -225,12 +227,17 @@ internal sealed class XsltRunState
             throw new XsltDynamicException(
                 XsltErrors.XTDE0640,
                 $"Circular reference: the definition of key '{keyName.ClarkName}' depends on itself",
-                decl.Location);
+                decls[0].Location);
         }
 
         try
         {
-            KeyIndex index = BuildKeyIndex(tree, decl, context);
+            KeyIndex index = new KeyIndex();
+            foreach (KeyDecl decl in decls)
+            {
+                AddToKeyIndex(index, tree, decl, context);
+            }
+
             _keyIndexes[key] = index;
             return index;
         }
@@ -240,10 +247,9 @@ internal sealed class XsltRunState
         }
     }
 
-    private static KeyIndex BuildKeyIndex(TinyTree tree, KeyDecl decl, DynamicContext context)
+    // Adds the nodes selected by one xsl:key declaration; several declarations of a name combine (§16.3).
+    private static void AddToKeyIndex(KeyIndex index, TinyTree tree, KeyDecl decl, DynamicContext context)
     {
-        KeyIndex index = new KeyIndex();
-
         NamespaceBindingsResolver resolver = new NamespaceBindingsResolver(
             decl.Element.InScopeNamespaces,
             defaultElementNamespace: string.Empty,
@@ -273,8 +279,6 @@ internal sealed class XsltRunState
                 index.Add(value.GetStringValue(), node);
             }
         }
-
-        return index;
     }
 
     // ── Variable lookup ────────────────────────────────────────────────────

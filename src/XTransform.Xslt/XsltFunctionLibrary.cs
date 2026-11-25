@@ -86,6 +86,11 @@ internal sealed class XsltFunctionLibrary : FunctionLibrary
             new[] { SeqStringOne(), SeqItemStar() },
             KeyInvoker);
 
+        Register("key", 3,
+            SeqNodeStar(),
+            new[] { SeqStringOne(), SeqItemStar(), new SequenceType(ItemType.AnyNode, Occurrence.ExactlyOne) },
+            Key3Invoker);
+
         Register("document", 1,
             SeqNodeStar(),
             new[] { SeqItemStar() },
@@ -112,43 +117,87 @@ internal sealed class XsltFunctionLibrary : FunctionLibrary
             DocAvailableInvoker);
     }
 
-    private static IXdmIterator KeyInvoker(DynamicContext context, XdmSequence[] args)
+    private static IXdmIterator KeyInvoker(DynamicContext context, XdmSequence[] args) =>
+        KeyLookup(context, args, top: null);
+
+    // fn:key($name, $value, $top): like key() but searches the tree rooted at $top (XSLT 2.0 §16.4).
+    private static IXdmIterator Key3Invoker(DynamicContext context, XdmSequence[] args)
+    {
+        if (args[2].FirstOrNull() is not XdmNode top)
+        {
+            throw new XsltDynamicException(
+                XsltErrors.XTDE1270,
+                "The third argument of key() must be a single node",
+                SourceSpan.None);
+        }
+
+        return KeyLookup(context, args, top);
+    }
+
+    private static IXdmIterator KeyLookup(DynamicContext context, XdmSequence[] args, XdmNode? top)
     {
         XsltRunState run = GetRun(context);
         string keyName = args[0].FirstOrNull()?.GetStringValue() ?? string.Empty;
         XdmSequence keyValues = args[1];
 
-        // Resolve the key name against the stylesheet's static scope — for P3-11 we take it
-        // as an unprefixed local name; proper QName resolution lands when xsl:key supports
-        // prefixes-in-name.
-        QName keyQName = new QName(string.Empty, string.Empty, keyName);
-
-        if (!run.Stylesheet.Keys.TryGetValue(keyQName, out KeyDecl? keyDecl))
+        if (!TryFindKey(run, keyName, out QName keyQName, out IReadOnlyList<KeyDecl>? keyDecls))
         {
             return XTransform.Xdm.Iterators.EmptyIterator.Instance;
         }
 
-        // Current document comes from the context item; fall back to the primary input.
-        XdmNode? node = context.ContextItem as XdmNode;
+        // The tree searched is the one containing the context item, or the one rooted at the third argument.
+        XdmNode? node = top ?? context.ContextItem as XdmNode;
         TinyTree? tree = node?.Handle.Tree;
         if (tree is null)
         {
             return XTransform.Xdm.Iterators.EmptyIterator.Instance;
         }
 
-        KeyIndex index = run.GetOrBuildKeyIndex(tree, keyQName, keyDecl, context);
+        KeyIndex index = run.GetOrBuildKeyIndex(tree, keyQName, keyDecls!, context);
 
-        List<XdmItem> hits = new List<XdmItem>();
+        List<XdmNode> hits = new List<XdmNode>();
+        HashSet<XdmNode> seen = new HashSet<XdmNode>();
         foreach (XdmItem value in keyValues)
         {
             string v = value.GetStringValue();
             if (index.TryGetValue(v, out IReadOnlyList<XdmNode>? nodes) && nodes is not null)
             {
-                foreach (XdmNode n in nodes) { hits.Add(n); }
+                foreach (XdmNode n in nodes)
+                {
+                    if (seen.Add(n))
+                    {
+                        hits.Add(n);
+                    }
+                }
             }
         }
 
-        return XdmSequence.From(hits).GetIterator();
+        // The result is in document order without duplicates (§16.4).
+        hits.Sort((a, b) => a.CompareDocumentOrder(b));
+        return XdmSequence.From(hits.ConvertAll(n => (XdmItem)n)).GetIterator();
+    }
+
+    // The key name is a QName resolved with the namespaces in scope of the call; the function has no static
+    // context here, so a prefixed name is matched on prefix and local name against the declarations.
+    private static bool TryFindKey(XsltRunState run, string keyName, out QName key, out IReadOnlyList<KeyDecl>? decls)
+    {
+        int colon = keyName.IndexOf(':');
+        string prefix = colon < 0 ? string.Empty : keyName.Substring(0, colon);
+        string local = colon < 0 ? keyName : keyName.Substring(colon + 1);
+        foreach (KeyValuePair<QName, IReadOnlyList<KeyDecl>> entry in run.Stylesheet.Keys)
+        {
+            if (string.Equals(entry.Key.LocalName, local, System.StringComparison.Ordinal) &&
+                string.Equals(entry.Key.Prefix, prefix, System.StringComparison.Ordinal))
+            {
+                key = entry.Key;
+                decls = entry.Value;
+                return true;
+            }
+        }
+
+        key = default;
+        decls = null;
+        return false;
     }
 
     private static IXdmIterator DocumentInvoker(DynamicContext context, XdmSequence[] args)

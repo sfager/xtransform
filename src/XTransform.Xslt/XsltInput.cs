@@ -16,7 +16,7 @@ internal static class XsltInput
     };
 
     /// <summary>Builds a document node from <paramref name="reader"/> using <paramref name="pool"/>.</summary>
-    public static XdmNode Load(XmlReader reader, NamePool pool)
+    public static XdmNode Load(XmlReader reader, NamePool pool, WhitespaceTable? whitespace = null)
     {
 #pragma warning disable CA1510 // ArgumentNullException.ThrowIfNull not available on netstandard2.0
         if (reader is null)
@@ -25,14 +25,16 @@ internal static class XsltInput
         }
 #pragma warning restore CA1510
 
-        TinyTree tree = TinyTreeBuilder.Load(reader, pool);
+        // xsl:strip-space applies to source documents, not to temporary trees (XSLT 2.0 §4.3).
+        Func<string, string, bool>? strip = whitespace is not null && whitespace.HasStripRules ? whitespace.ShouldStrip : null;
+        TinyTree tree = TinyTreeBuilder.Load(reader, pool, strip);
         return new XdmNode(NodeHandle.ForNode(tree, 0));
     }
 
     /// <summary>Parses <paramref name="stream"/> (left open) into a document node.</summary>
-    public static XdmNode Load(Stream stream, NamePool pool)
+    public static XdmNode Load(Stream stream, NamePool pool, WhitespaceTable? whitespace = null)
     {
         using XmlReader reader = XmlReader.Create(stream, CreateReaderSettings());
-        return Load(reader, pool);
+        return Load(reader, pool, whitespace);
     }
 }

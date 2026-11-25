@@ -432,6 +432,20 @@ precedence (`XTSE0270`), whitespace in the input document, and `xml:space` on th
 
 **Acceptance.** `key`, `id`, `strip-space` sets ≥ 85% passing.
 
+**Progress (branch `p4-21-strip-space`).** Done: `xsl:strip-space` / `xsl:preserve-space` with the
+whole name-test grammar (`*`, `p:*`, `*:l`, QName, `Q{uri}l`, `Q{uri}*`), import precedence, priority
+(`*` −0.5, `p:*` / `*:l` −0.25, QName 0) and `xml:space` inheritance; applied to the input document and
+to documents loaded by `doc()` / `document()`, not to temporary trees; whitespace-only text is stripped
+however it was written (CDATA, character references). `XTSE0280` for an undeclared prefix; a
+strip / preserve tie is the recoverable `XTRE0270`, resolved by taking the last declaration and
+reported as a compile warning. Keys: several `xsl:key` declarations with the same name are combined
+(only the first was used), `key()` takes its third argument, `key()` results are in document order
+without duplicates, and a prefixed key name is found. Core shard 3,613 → 3,655 (42 fixed, 0
+regressed); `strip-space` 26 of 30. Still open here: `xsl:key` with the value given as content instead
+of `use`, key names resolved with the namespaces of the `key()` call (prefix and local name are matched
+today), collations on keys, and `id()` / `idref()` / `element-with-id()`, which also need DTD
+ID attributes from the reader (P4-20). `generate-id()` (P4-13) blocks about ten `key` tests.
+
 ## P4-22 Template rules and dispatch details
 
 - [ ] Done

@@ -28,7 +28,8 @@ internal static class DeclarationCollector
         Dictionary<FunctionKey, FunctionDecl> functions = new Dictionary<FunctionKey, FunctionDecl>();
         List<TemplateDecl> templates = new List<TemplateDecl>();
         HashSet<QName> declaredModes = new HashSet<QName>();
-        Dictionary<QName, KeyDecl> keys = new Dictionary<QName, KeyDecl>();
+        Dictionary<QName, List<KeyDecl>> keys = new Dictionary<QName, List<KeyDecl>>();
+        List<WhitespaceRule> whitespaceRules = new List<WhitespaceRule>();
 
         // Modules are iterated in load order (post-order). Entries with the same precedence
         // can conflict; higher precedence overrides lower. We process in ascending order and
@@ -68,6 +69,11 @@ internal static class DeclarationCollector
                         CollectFunction(child, entry.ImportPrecedence, functions, bag);
                         break;
 
+                    case "strip-space":
+                    case "preserve-space":
+                        CollectWhitespace(child, string.Equals(child.Name.LocalName, "strip-space", StringComparison.Ordinal), entry.ImportPrecedence, whitespaceRules, bag);
+                        break;
+
                     case "key":
                         CollectKey(child, entry.ImportPrecedence, keys, bag);
                         break;
@@ -81,13 +87,147 @@ internal static class DeclarationCollector
             }
         }
 
-        return new DeclarationTable(globals, templates, namedTemplates, functions, declaredModes, keys);
+        WarnAboutConflictingWhitespaceRules(whitespaceRules, bag);
+        Dictionary<QName, IReadOnlyList<KeyDecl>> keyGroups = new Dictionary<QName, IReadOnlyList<KeyDecl>>();
+        foreach (KeyValuePair<QName, List<KeyDecl>> group in keys)
+        {
+            keyGroups[group.Key] = group.Value;
+        }
+
+        return new DeclarationTable(globals, templates, namedTemplates, functions, declaredModes, keyGroups, new WhitespaceTable(whitespaceRules));
+    }
+
+    // ── xsl:strip-space / xsl:preserve-space (XSLT 2.0 §4.3) ───────────────────
+
+    private static readonly char[] s_whitespaceSeparators = { ' ', '\t', '\n', '\r' };
+
+    private static void CollectWhitespace(
+        StylesheetElement element,
+        bool strip,
+        int precedence,
+        List<WhitespaceRule> rules,
+        DiagnosticBag bag)
+    {
+        string? elements = GetAttribute(element, "elements");
+        if (elements is null)
+        {
+            bag.Error(XsltErrors.XTSE0010, $"xsl:{element.Name.LocalName} requires an elements attribute", element.Location);
+            return;
+        }
+
+        foreach (string token in elements.Split(s_whitespaceSeparators, StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (!TryParseNameTest(token, element, out string? namespaceUri, out string? localName, out QName errorCode, out string? why))
+            {
+                bag.Error(errorCode, why!, element.Location);
+                continue;
+            }
+
+            rules.Add(new WhitespaceRule(strip, namespaceUri, localName, precedence, rules.Count, element.Location));
+        }
+    }
+
+    // NameTest ::= '*' | NCName ':' '*' | '*' ':' NCName | QName | 'Q{' uri '}' ( NCName | '*' ); an
+    // unprefixed name is in no namespace (the default namespace does not apply).
+    private static bool TryParseNameTest(
+        string token,
+        StylesheetElement element,
+        out string? namespaceUri,
+        out string? localName,
+        out QName errorCode,
+        out string? why)
+    {
+        namespaceUri = null;
+        localName = null;
+        errorCode = XsltErrors.XTSE0010;
+        why = null;
+
+        if (token == "*")
+        {
+            return true;
+        }
+
+        if (token.StartsWith("Q{", StringComparison.Ordinal))
+        {
+            int close = token.IndexOf('}');
+            if (close < 0 || close == token.Length - 1)
+            {
+                why = $"Invalid name test '{token}' in xsl:strip-space / xsl:preserve-space";
+                return false;
+            }
+
+            namespaceUri = token.Substring(2, close - 2);
+            string rest = token.Substring(close + 1);
+            localName = rest == "*" ? null : rest;
+            return true;
+        }
+
+        int colon = token.IndexOf(':');
+        if (colon < 0)
+        {
+            namespaceUri = string.Empty;
+            localName = token;
+            return true;
+        }
+
+        string prefix = token.Substring(0, colon);
+        string local = token.Substring(colon + 1);
+        if (local.Length == 0 || prefix.Length == 0)
+        {
+            why = $"Invalid name test '{token}' in xsl:strip-space / xsl:preserve-space";
+            return false;
+        }
+
+        if (prefix != "*")
+        {
+            string? uri = element.InScopeNamespaces.Resolve(prefix);
+            if (uri is null)
+            {
+                errorCode = XsltErrors.XTSE0280;
+                why = $"The prefix '{prefix}' in the name test '{token}' is not declared";
+                return false;
+            }
+
+            namespaceUri = uri;
+        }
+
+        localName = local == "*" ? null : local;
+        if (namespaceUri is null && localName is null)
+        {
+            why = $"Invalid name test '{token}'";
+            return false;
+        }
+
+        return true;
+    }
+
+    // XTRE0270 is recoverable: an element matching a strip and a preserve declaration with the same name test and
+    // import precedence takes the one that comes last; say so rather than do it silently.
+    private static void WarnAboutConflictingWhitespaceRules(List<WhitespaceRule> rules, DiagnosticBag bag)
+    {
+        for (int i = 0; i < rules.Count; i++)
+        {
+            for (int j = i + 1; j < rules.Count; j++)
+            {
+                WhitespaceRule a = rules[i];
+                WhitespaceRule b = rules[j];
+                if (a.Strip != b.Strip && a.Precedence == b.Precedence &&
+                    string.Equals(a.NamespaceUri, b.NamespaceUri, StringComparison.Ordinal) &&
+                    string.Equals(a.LocalName, b.LocalName, StringComparison.Ordinal))
+                {
+                    bag.Warning(
+                        XsltErrors.XTRE0270,
+                        "Conflicting xsl:strip-space and xsl:preserve-space declarations for the same name; the one that appears last is used",
+                        b.Location);
+                }
+            }
+        }
     }
 
     private static void CollectKey(
         StylesheetElement element,
         int precedence,
-        Dictionary<QName, KeyDecl> keys,
+        Dictionary<QName, List<KeyDecl>> keys,
         DiagnosticBag bag)
     {
         string? nameAttr = GetAttribute(element, "name");
@@ -111,13 +251,15 @@ internal static class DeclarationCollector
             return;
         }
 
-        // Multiple xsl:key with the same name are allowed; P3-11 keeps the first seen and
-        // relies on union semantics at lookup (XSLT 2.0 §16.2.3). A proper merged-index
-        // implementation is deferred.
-        if (!keys.ContainsKey(name))
+        // Several xsl:key declarations with the same name are all in effect: the key's index is the
+        // union of what each declaration selects (XSLT 2.0 §16.3).
+        if (!keys.TryGetValue(name, out List<KeyDecl>? group))
         {
-            keys[name] = new KeyDecl(element, precedence, name, match, use);
+            group = new List<KeyDecl>();
+            keys[name] = group;
         }
+
+        group.Add(new KeyDecl(element, precedence, name, match, use));
     }
 
     // ── xsl:variable / xsl:param ────────────────────────────────────────────
