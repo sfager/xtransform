@@ -10,6 +10,15 @@ public static class XsltErrors
     /// <summary>It is a static error if the stylesheet contains a construct that is not permitted at that point. (XSLT 2.0 §2.5)</summary>
     public static readonly QName XTSE0010 = new QName("err", XPathErrors.Namespace, "XTSE0010");
 
+    /// <summary>It is a static error if an attribute value does not match the type the XSLT specification requires for it (for example a yes/no attribute). (XSLT 2.0 §3.5)</summary>
+    public static readonly QName XTSE0020 = new QName("err", XPathErrors.Namespace, "XTSE0020");
+
+    /// <summary>It is a static error if two xsl:output declarations with the same name and import precedence specify different values for the same attribute. (XSLT 2.0 §20)</summary>
+    public static readonly QName XTSE1560 = new QName("err", XPathErrors.Namespace, "XTSE1560");
+
+    /// <summary>Serialization error: the requested output encoding is not supported. (Serialization 1.0 §3)</summary>
+    public static readonly QName SESU0007 = new QName("err", XPathErrors.Namespace, "SESU0007");
+
     /// <summary>It is a static error if the value of the version attribute on xsl:stylesheet is not a valid xs:decimal. (XSLT 2.0 §3.6)</summary>
     public static readonly QName XTSE0110 = new QName("err", XPathErrors.Namespace, "XTSE0110");
 

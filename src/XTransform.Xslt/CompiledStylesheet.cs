@@ -18,7 +18,8 @@ internal sealed class CompiledStylesheet
         IReadOnlyDictionary<TemplateDecl, CompiledTemplate> compiledTemplates,
         IReadOnlyDictionary<QName, KeyDecl> keys,
         XsltFunctionLibrary functions,
-        IReadOnlyList<Diagnostic> warnings)
+        IReadOnlyList<Diagnostic> warnings,
+        IReadOnlyDictionary<QName, XsltOutputSettings>? outputs = null)
     {
         Assembly = assembly;
         Declarations = declarations;
@@ -27,7 +28,20 @@ internal sealed class CompiledStylesheet
         Keys = keys;
         Functions = functions;
         Warnings = warnings;
+        Outputs = outputs ?? new Dictionary<QName, XsltOutputSettings>
+        {
+            [OutputDeclarationCollector.Principal] = XsltOutputSettings.Default,
+        };
     }
+
+    /// <summary>
+    /// Merged <c>xsl:output</c> definitions keyed by name; the unnamed (principal) definition
+    /// is keyed by an empty <see cref="QName"/> and is always present.
+    /// </summary>
+    public IReadOnlyDictionary<QName, XsltOutputSettings> Outputs { get; }
+
+    /// <summary>The principal (unnamed) output definition.</summary>
+    public XsltOutputSettings PrincipalOutput => Outputs[OutputDeclarationCollector.Principal];
 
     /// <summary>The linked stylesheet assembly this was compiled from.</summary>
     public StylesheetAssembly Assembly { get; }

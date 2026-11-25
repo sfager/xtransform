@@ -48,6 +48,7 @@ internal static class XsltCompiler
         NameBindingValidator.Validate(declarations, bag);
         GlobalBindingValidator.Validate(declarations, bag);
         IReadOnlyDictionary<QName, ModeTable> modes = ModeCompiler.Compile(declarations, bag);
+        IReadOnlyDictionary<QName, XsltOutputSettings> outputs = OutputDeclarationCollector.Collect(assembly, bag);
 
         // Build the function library: register user function signatures first so inter-function
         // references resolve; bodies are populated in pass 2 via the slot.
@@ -115,6 +116,7 @@ internal static class XsltCompiler
             compiledTemplates,
             declarations.Keys,
             functions,
-            warnings);
+            warnings,
+            outputs);
     }
 }

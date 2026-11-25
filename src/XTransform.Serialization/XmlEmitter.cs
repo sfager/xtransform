@@ -336,21 +336,8 @@ internal sealed class XmlEmitter : IResultReceiver, IDisposable
         _text.Flush();
     }
 
-    private static Encoding ResolveEncoding(XmlEmitterOptions options)
-    {
-        Encoding encoding = options.Encoding;
-        bool wide = encoding.CodePage is 1200 or 1201 or 12000 or 12001;
-        bool bom = options.ByteOrderMark ?? wide;
-        return encoding.CodePage switch
-        {
-            65001 => new UTF8Encoding(bom),
-            1200 => new UnicodeEncoding(false, bom),
-            1201 => new UnicodeEncoding(true, bom),
-            12000 => new UTF32Encoding(false, bom),
-            12001 => new UTF32Encoding(true, bom),
-            _ => encoding,
-        };
-    }
+    private static Encoding ResolveEncoding(XmlEmitterOptions options) =>
+        EncodingResolver.Resolve(options.Encoding, options.ByteOrderMark);
 
     // ── Core writers (what actually touches the XmlWriter) ─────────────────
 
