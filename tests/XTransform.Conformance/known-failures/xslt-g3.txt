@@ -88,10 +88,7 @@ apply-templates/conflict-resolution-0110b  # [Compare] expected error XTRE0540 b
 apply-templates/conflict-resolution-0112  # [Compare] XML differs. Expected: <text>Match-of //* (correct)</text> Actual: <?xml version="1.0" encoding="UTF...
 apply-templates/conflict-resolution-0201  # [Compare] XML differs. Expected: <out>Match-on-node-name,Match-w/qualified-attribute-value</out> Actual: <?xml...
 apply-templates/conflict-resolution-0401b  # [Compare] expected error XTRE0540 but the transformation succeeded
-apply-templates/conflict-resolution-0501  # [Compare] XML differs. Expected: <doc>
-apply-templates/conflict-resolution-0502  # [Compare] XML differs. Expected: <doc>
 apply-templates/conflict-resolution-0503  # [Compare] XML differs. Expected: <doc>
-apply-templates/conflict-resolution-0601  # [Compare] XML differs. Expected: <doc><a><a special="yes"/></a><a><b/></a></doc> Actual: <?xml version="1.0" e...
 apply-templates/conflict-resolution-0701  # [Compare] XML differs. Expected: <out>Match-of-qualified-name</out> Actual: <?xml version="1.0" encoding="UTF-...
 apply-templates/conflict-resolution-0702  # [Compare] XML differs. Expected: <out xmlns:u="http://some.uri/">Match-of-qualified-name</out> Actual: <?xml v...
 apply-templates/conflict-resolution-0703  # [Compare] XML differs. Expected: <out>foo"true"</out> Actual: <?xml version="1.0" encoding="UTF-8"?>
@@ -106,7 +103,6 @@ apply-templates/conflict-resolution-1204  # [Compare] XML differs. Expected: <ou
 apply-templates/conflict-resolution-1205  # [Compare] XML differs. Expected: <out>(5)(4)(3)(2)<e p="17"/></out> Actual: <?xml version="1.0" encoding="UTF-...
 apply-templates/conflict-resolution-1301  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="ISO-8859-1"?><fo:root xmlns:fo="http://www.w3.o...
 apply-templates/conflict-resolution-1401  # [Compare] XML differs. Expected: <h2 xmlns="http://www.w3.org/1999/xhtml">ChapterTitle</h2> Actual: <?xml vers...
-apply-templates/conflict-resolution-1501  # [Compare] assert was false: count(//@parent-recursive) = 1
 apply-templates/conflict-resolution-1601  # [Compare] XML differs. Expected: <out>big</out> Actual: <?xml version="1.0" encoding="UTF-8"?><out>medium</out...
 as/as-0105  # [Compare] assert was false: /out = "true"
 as/as-0106a  # [Compare] expected error FODT0001 but the transformation succeeded
@@ -632,7 +628,6 @@ core-function/core-function-077  # [Compare] XML differs. Expected: <out>2</out>
 core-function/core-function-081  # [Compare] XML differs. Expected: <out>-0</out> Actual: <?xml version="1.0" encoding="UTF-8"?><out>0</out>
 core-function/core-function-082  # [Compare] XML differs. Expected: <out>-0</out> Actual: <?xml version="1.0" encoding="UTF-8"?><out>0</out>
 core-function/core-function-084  # [Compile] expected a result but got XPST0017: Unknown function 'system-property' with arity 1
-current/current-001  # [Compare] XML differs. Expected: <test><foo/><foo/><!--match--></test> Actual: <?xml version="1.0" encoding="U...
 data-manipulation/data-manipulation-009  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
 data-manipulation/data-manipulation-010  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
 data-manipulation/data-manipulation-011  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
@@ -856,7 +851,6 @@ error/error-0280d  # [Compile] expected error XTSE0280, got XTSE0010: Invalid te
 error/error-0280e  # [Compile] expected error XTSE0280, got XTSE0010: Invalid template name 'bad:y': undeclared prefix 'bad'; XTSE0...
 error/error-0280f  # [Compile] expected error XTSE0280, got XTSE0010: Invalid template name 'my:main': undeclared prefix 'my'
 error/error-0290a  # [Compare] any-of: expected error XTDE0290 but the transformation succeeded | expected error XTDE1460 but the t...
-error/error-0340a  # [Compare] expected error XTSE0340 but the transformation succeeded
 error/error-0340c  # [Compare] expected error XTSE0340 but the transformation succeeded
 error/error-0350a  # [Compile] expected error XTSE0350, got XTSE0370: Unmatched '{' in attribute value template
 error/error-0350b  # [Compile] expected error XTSE0350, got XTSE0370: Unmatched '{' in attribute value template
@@ -897,7 +891,6 @@ error/error-0620a  # [Compare] expected error XTSE0620 but the transformation su
 error/error-0620b  # [Compare] expected error XTSE0620 but the transformation succeeded
 error/error-0640a  # [Compare] expected error XTDE0640 but the transformation succeeded
 error/error-0640d  # [Compare] expected error XTDE0640 but the transformation succeeded
-error/error-0640e-1  # [Compare] any-of: XML differs. Expected: <out total="0"/> Actual: <?xml version="1.0" encoding="UTF-8"?><out t...
 error/error-0640f  # [Run] expected error XTDE0640, got XPST0008: Undeclared variable '$p'
 error/error-0650a  # [Compile] expected error XTSE0650, got XTSE0680: xsl:call-template references unknown template 'not-present'
 error/error-0650b  # [Compile] expected error XTSE0650, got XTSE0680: xsl:call-template references unknown template 'y'
@@ -957,8 +950,8 @@ error/error-1020a  # [Compare] expected error XTTE1020 but the transformation su
 error/error-1030a  # [Compare] expected error XTDE1030 but the transformation succeeded
 error/error-1035a  # [Compare] expected error XTDE1035 but the transformation succeeded
 error/error-1040a  # [Compare] expected error XTSE1040 but the transformation succeeded
-error/error-1060a  # [Compare] expected error XTSE1060 but the transformation succeeded
-error/error-1070a  # [Compare] expected error XTSE1070 but the transformation succeeded
+error/error-1060a  # [Compile] expected error XTSE1060, got XPST0017: Unknown function 'current-group' with arity 0
+error/error-1070a  # [Compile] expected error XTSE1070, got XPST0017: Unknown function 'current-grouping-key' with arity 0
 error/error-1080a  # [Compare] expected error XTSE1080 but the transformation succeeded
 error/error-1080b  # [Compare] expected error XTSE1080 but the transformation succeeded
 error/error-1080c  # [Compare] expected error XTSE1080 but the transformation succeeded
@@ -1334,8 +1327,6 @@ id/id-043  # [Compare] expected a result but got internal XmlException: Root ele
 import-schema/import-schema-191  # [Compare] expected error XTSE1650 but the transformation succeeded
 import/import-0001  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
 import/import-0101  # [Compare] XML differs. Expected: <out><a>From Imported stylesheet: Text of one-tag</a><b>From Included stylesh...
-import/import-0301  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>!From m!!From n!!From o!!From p!
-import/import-0302  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>!From ss2!!From ss3!!From ss4!!Fro...
 import/import-0401  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
 import/import-0501  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
 import/import-0502a  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
@@ -1350,7 +1341,7 @@ import/import-0902a  # [Compare] XML differs. Expected: <?xml version="1.0" enco
 import/import-0902b  # [Compare] expected error XTRE0540 but the transformation succeeded
 import/import-1001  # [Compare] XML differs. Expected: <out>
 import/import-1101  # [Compare] XML differs. Expected: <out>
-import/import-1201  # [Compare] XML differs. Expected: <out>@val=yes ,9 ,44 ,51 ,77 ,114 ,The node containing 117 is qqe ,118 ,154 ,...
+import/import-1201  # [Run] expected a result but got FORG0001: Invalid lexical value '
 import/import-1401  # [Compare] XML differs. Expected: <result>
 import/import-1501  # [Compare] XML differs. Expected: <out>
 import/import-1601  # [Compare] XML differs. Expected: <out>Match on / in top xsl
@@ -1389,9 +1380,7 @@ key/key-005  # [Compile] expected a result but got XPST0017: Unknown function 'g
 key/key-006  # [Compile] expected a result but got XPST0017: Unknown function 'generate-id' with arity 0; XPST0017: Unknown f...
 key/key-010  # [Compare] XML differs. Expected: <root xmlns:baz="http://xsl.lotus.com/ns1">Intro Section. SS Section. Exp Sec...
 key/key-013  # [Compare] XML differs. Expected: <root>Intro Section. SS Section. Exp Section.</root> Actual: <?xml version="1...
-key/key-018  # [Compare] XML differs. Expected: <root>Intro Section.SS Section.Exp Section.
 key/key-019  # [Run] expected a result but got XPTY0004: Function argument cardinality violation: 0 items for occurrence Exac...
-key/key-020  # [Compare] XML differs. Expected: <root>
 key/key-021  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><root>
 key/key-025  # [Compile] expected a result but got XPST0017: Unknown function 'generate-id' with arity 1; XPST0017: Unknown f...
 key/key-026  # [Compile] expected a result but got XPST0017: Unknown function 'generate-id' with arity 1; XPST0017: Unknown f...
@@ -1416,13 +1405,10 @@ key/key-046  # [Compare] assert was false: deep-equal(/out/group[@k="25"]/title/
 key/key-047  # [Run] expected a result but got XTTE1000: The select attribute of xsl:number must yield a single node
 key/key-049  # [Compare] assert was false: /out/P/t1 = "Intro Section."
 key/key-050  # [Compare] XML differs. Expected: <out><item>2<s>22</s></item><item>3<s>23</s><s>22</s></item><item>5<s>21</s><...
-key/key-051  # [Compare] XML differs. Expected: <out><item>2<s>22</s></item>;
-key/key-052  # [Compare] XML differs. Expected: <out/> Actual: <?xml version="1.0" encoding="UTF-8"?><out><item>2<s>22</s></i...
 key/key-053  # [Compare] XML differs. Expected: <out><item>3<s>23</s><s>22</s></item><item>5<s>21</s><s>22</s><s>23</s><s>22<...
 key/key-055  # [Compile] expected a result but got XPST0017: Unknown function 'generate-id' with arity 1
 key/key-058  # [Compare] XML differs. Expected: <out>Namespace "http://aURI/" used in 1, 4
 key/key-059  # [Compare] assert was false: /out = "1 4"
-key/key-060  # [Compare] assert was false: /out = "1 4"
 key/key-062  # [Run] expected a result but got XPST0008: Undeclared variable '$p'
 key/key-064  # [Compare] assert was false: /out/@total-one = "50"
 key/key-065  # [Compare] XML differs. Expected: <d>[a][b][*c*][d]</d> Actual: <?xml version="1.0" encoding="UTF-8"?><d>[a][b]...
@@ -1443,7 +1429,6 @@ key/key-081  # [Compare] XML differs. Expected: <out><one><b>John</b><b>Mary</b>
 key/key-082  # [Compile] expected a result but got XTSE0010: xsl:key requires both match and use attributes
 key/key-083  # [Compile] expected a result but got XTSE0340: Expected string literal or variable reference as second argument...
 key/key-084  # [Compare] XML differs. Expected: <o><elem type="a"><active>true</active><dataset><field1>x</field1><field2>x</...
-key/key-085a  # [Compare] assert was false: /out = "Cambridge Manchester Pittsfield Rochester Springfield"
 key/key-088  # [Compare] assert was false: /out/fields="PittsfieldVT SpringfieldVT"
 key/key-089  # [Compare] assert was false: count(/doc/p) = 2
 lre/lre-020  # [Compare] expected error XTSE0805 but the transformation succeeded
@@ -1453,38 +1438,12 @@ lre/lre-027  # [Compare] assert was false: /out/namespace::four="http://four.com
 lre/lre-028  # [Compare] assert was false: /out/namespace::one="http://eins.com"
 match/match-001  # [Compare] XML differs. Expected: <out>
 match/match-002  # [Compare] XML differs. Expected: <out>
-match/match-003  # [Compare] assert was false: /out = "num6 num2 num4 num3 num1 num5 "
-match/match-004  # [Compare] assert was false: /out = "num4"
-match/match-005  # [Compare] assert was false: /out = "b b "
-match/match-006  # [Compare] assert was false: /out = "b b h "
-match/match-007  # [Compare] assert was false: /out = "a c h "
-match/match-008  # [Compare] assert was false: /out = "a c h "
-match/match-010  # [Compare] assert was false: /out = "11 121 "
-match/match-011  # [Compare] assert was false: /out = "12 132 "
-match/match-012  # [Compare] assert was false: /out = "foo foo "
-match/match-017  # [Compare] XML differs. Expected: <out>
-match/match-019  # [Compare] XML differs. Expected: <out>
-match/match-020  # [Compare] assert was false: /out = "12 132 "
-match/match-021  # [Compare] assert was false: /out = "112 13 "
-match/match-022  # [Compare] assert was false: /out = "g i k "
-match/match-023  # [Compare] assert was false: /out = "i "
-match/match-024  # [Compare] assert was false: /out = "i "
-match/match-025  # [Compare] assert was false: /out = "k "
-match/match-026  # [Compare] assert was false: /out = "k "
-match/match-027  # [Compare] assert was false: /out = "k "
-match/match-028  # [Compare] assert was false: /out = "c "
 match/match-036  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
-match/match-040  # [Compare] any-of: expected error XTSE0340 but the transformation succeeded | expected error XPST0017 but the t...
 match/match-041  # [Compare] XML differs. Expected: <out><t>testvar: "the text to begin with"</t><t>testvar: "the text to begin w...
-match/match-042  # [Compare] assert was false: deep-equal(/SHAPE/COORDINATES/COORDINATES_ITEM/string(),
-match/match-043  # [Compare] assert was false: deep-equal(/SHAPE/COORDINATES/COORDINATES_ITEM/string(),
 match/match-048  # [Compare] assert was false: /out = "OK"
 match/match-078  # [Compare] XML differs. Expected: <doc><foo att1="c"><foo att1="b"><foo att1="a"><baz att1="wrong"/></foo></foo...
 match/match-089  # [Compare] XML differs. Expected: <out><doc>attribute</doc><second>att1</second></out> Actual: <?xml version="1...
-match/match-092  # [Compare] XML differs. Expected: <out><t>11</t><t>33</t><t>44</t></out> Actual: <?xml version="1.0" encoding="...
-match/match-094  # [Compare] XML differs. Expected: <out><t>11</t><t>44</t></out> Actual: <?xml version="1.0" encoding="UTF-8"?><...
 match/match-098  # [Compare] XML differs. Expected: <t>attribute</t> Actual: <?xml version="1.0" encoding="UTF-8"?>
-match/match-099  # [Compare] XML differs. Expected: <t>22</t> Actual: <?xml version="1.0" encoding="UTF-8"?><t>11</t><t>22</t><t>...
 match/match-101  # [Compare] XML differs. Expected: <out><t>elem_a_value</t><t>PI_data</t><t>another_PI_data</t><t>This is the 1s...
 match/match-102  # [Compare] XML differs. Expected: <out><t>elem:elem_a_value</t><t>elem:elem_b_value</t>text-in-docatt-value</ou...
 match/match-103  # [Compare] XML differs. Expected: <out>elem_a_valuetext-in-doc<t>att1-value</t><t>att2-value</t></out> Actual: ...
@@ -1502,14 +1461,6 @@ match/match-114  # [Compare] XML differs. Expected: <out><t>elem_aaa_value</t><t
 match/match-116  # [Compare] XML differs. Expected: <out><t>elem_aaa_value</t><t>elem_bbb_value</t></out> Actual: <?xml version="...
 match/match-117  # [Compare] any-of: XML differs. Expected: <out><t>attr_val1</t><t>attr_val2</t></out> Actual: <?xml version="1....
 match/match-118  # [Compare] any-of: XML differs. Expected: <t>attr_val1</t> Actual: <?xml version="1.0" encoding="UTF-8"?> | XML...
-match/match-119  # [Compare] XML differs. Expected: <t>text-elem1</t> Actual: <?xml version="1.0" encoding="UTF-8"?><t>text-elem1...
-match/match-120  # [Compare] XML differs. Expected: <t>text-elem2</t> Actual: <?xml version="1.0" encoding="UTF-8"?><t>text-elem1...
-match/match-121  # [Compare] XML differs. Expected: <t>text-elem4</t> Actual: <?xml version="1.0" encoding="UTF-8"?><t>text-elem1...
-match/match-122  # [Compare] XML differs. Expected: <t>text-elem1</t> Actual: <?xml version="1.0" encoding="UTF-8"?><t>text-elem1...
-match/match-123  # [Compare] XML differs. Expected: <t>text-elem2</t> Actual: <?xml version="1.0" encoding="UTF-8"?><t>text-elem1...
-match/match-125  # [Compare] XML differs. Expected: <t>text-elem2</t> Actual: <?xml version="1.0" encoding="UTF-8"?><t>text-elem1...
-match/match-126  # [Compare] XML differs. Expected: <t>text-elem2</t> Actual: <?xml version="1.0" encoding="UTF-8"?><t>text-elem1...
-match/match-242  # [Compare] assert was false: /out = "wwexxeyyeaafbbfccfddfeeffffggfhhfiifjjfkkfllfmmfnnfoofppfqqf"
 match/match-245  # [Compile] expected a result but got XTSE0680: xsl:apply-templates references mode 'm1' but no template rule de...
 match/match-246b  # [Compare] assert was false: /out = "ZYXWVUT"
 match/match-248  # [Compile] expected a result but got XTRE0540: Template rules with equal import precedence (0) and priority (0....
@@ -1589,8 +1540,6 @@ namespace-alias/namespace-alias-5801  # [Compare] XML differs. Expected: <xsl:te
 namespace/namespace-0101  # [Compare] expected error XTDE0860 but the transformation succeeded
 namespace/namespace-0201  # [Compare] assert was false: /out[namespace::anamespace="http://foo.com/"]
 namespace/namespace-0301  # [Compare] expected a result but got internal XmlException: 't1' is a duplicate attribute name.
-namespace/namespace-0401  # [Compare] XML differs. Expected: <foo xmlns:bogus="http://bogus"/> Actual: <?xml version="1.0" encoding="UTF-8...
-namespace/namespace-0402  # [Compare] XML differs. Expected: <foo xmlns:bogus="http://bogus"/> Actual: <?xml version="1.0" encoding="UTF-8...
 namespace/namespace-0501  # [Compare] assert was false: /out/r[@p='2.2'][@name='Children'][@lname='Children'][@uri='']
 namespace/namespace-0701  # [Compare] XML differs. Expected: <out
 namespace/namespace-0801  # [Compare] XML differs. Expected: <out xmlns="http://dummy/"><Variable><XXX xmlns=""/><YYY xmlns="http://yyy/"/...
@@ -1666,7 +1615,7 @@ namespace/namespace-5201  # [Compare] XML differs. Expected: <out>xml=xml</out> 
 namespace/namespace-5701  # [Compare] XML differs. Expected: <out>Namespaces for docs:|;
 namespace/namespace-5903  # [Compare] XML differs. Expected: <out elements="3" attributes="3" fiscus-attributes="3"/> Actual: <?xml versio...
 namespace/namespace-6201  # [Compare] assert was false: /out = "xy"
-next-match/next-match-001  # [Compare] XML differs. Expected: <a><b><c/></b></a> Actual: <?xml version="1.0" encoding="UTF-8"?><b><b /></b>
+next-match/next-match-001  # [Compare] XML differs. Expected: <a><b><c/></b></a> Actual: <?xml version="1.0" encoding="UTF-8"?><a />
 next-match/next-match-002  # [Compare] XML differs. Expected: <b><a><b><c/></b></a></b> Actual: <?xml version="1.0" encoding="UTF-8"?><b />
 next-match/next-match-003  # [Compare] XML differs. Expected: <c><b><a><a/></a></b></c> Actual: <?xml version="1.0" encoding="UTF-8"?><a />
 next-match/next-match-004  # [Compare] XML differs. Expected: <a><b/></a> Actual: <?xml version="1.0" encoding="UTF-8"?><a />
@@ -1712,11 +1661,10 @@ normalize-unicode/normalize-unicode-016  # [Compare] output does not match /<div
 normalize-unicode/normalize-unicode-017  # [Compare] output does not match /<en>The quick brown fox</en>/: <?xml version="1.0" encoding="ISO-8859-1"?>
 normalize-unicode/normalize-unicode-018  # [Compare] output does not match /<de norm="c" üss="üß">Straßenüberführung</de>/: <?xml version="1.0" encoding=...
 number/number-0101  # [Compare] XML differs. Expected: <out><a name="Andy">1</a><a name="Thomas">2</a><a name="Peter">3</a><a name="...
-number/number-0202  # [Compile] expected a result but got XPST0017: Unknown function 'generate-id' with arity 1
+number/number-0202  # [Compile] expected a result but got XPST0017: Unknown function 'generate-id' with arity 1; XPST0017: Unknown f...
 number/number-0401  # [Compare] XML differs. Expected: <out xmlns:fo="http://www.w3.org/XSL/Format/1.0"><fo:block>(1) aaa</fo:block>...
 number/number-0402  # [Compare] XML differs. Expected: <out xmlns:fo="http://www.w3.org/XSL/Format/1.0"><fo:block>(1) [1] aaa</fo:bl...
-number/number-0403  # [Compare] assert was false: /out/fo:block[2] = "(2) [2] {2} bbb"
-number/number-0701  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out xmlns:fo="http://www.w3.org/XSL/Fo...
+number/number-0403  # [Compile] expected a result but got XPST0008: Undeclared variable '$v3'
 number/number-0802  # [Compare] XML differs. Expected: <out>drei;
 number/number-0803  # [Compare] XML differs. Expected: <out>00/00/00/01/00/00/00</out> Actual: <?xml version="1.0" encoding="UTF-8"?...
 number/number-0804  # [Run] expected a result but got XPTY0004: A path step is being applied to an atomic value
@@ -1738,31 +1686,17 @@ number/number-0901  # [Compare] XML differs. Expected: <?xml version="1.0" encod
 number/number-0902  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="iso-8859-1"?><out>
 number/number-1004  # [Compile] expected error XTTE0990, got XTSE0805: Unknown XSLT element xsl:iterate; XTSE0805: Unknown XSLT elem...
 number/number-1005  # [Run] expected a result but got XTTE1000: The select attribute of xsl:number must yield a single node
-number/number-1301  # [Compare] XML differs. Expected: <list><number>1</number><number>2<nonumber/></number><number>3</number></list...
 number/number-1401  # [Compile] expected a result but got XPST0017: Unknown function 'key' with arity 3
-number/number-1601  # [Compare] XML differs. Expected: <out>(1)
 number/number-1701  # [Compare] XML differs. Expected: <doc nr=""><a nr=""><a nr="1"/></a><a nr="1"><b nr="1"/></a><a nr="1"><a nr="...
 number/number-1702  # [Compare] XML differs. Expected: <doc nr="1"><a nr="1"><a nr="1"/></a><a nr="2"><b nr="1"/></a><a nr="3"><a nr...
-number/number-1801  # [Compare] XML differs. Expected: <doc nr=""><a mark="true" nr="1"/><a nr="2"/><a nr="3"/><a nr="4"/><a mark="t...
 number/number-1901  # [Compare] XML differs. Expected: <out>1|2|3|</out> Actual: <?xml version="1.0" encoding="UTF-8"?><out>|||</out...
-number/number-1902  # [Compare] XML differs. Expected: <out>1|1|1|</out> Actual: <?xml version="1.0" encoding="UTF-8"?><out>1|2|3|</...
-number/number-1903  # [Compare] XML differs. Expected: <out>1|1|1|</out> Actual: <?xml version="1.0" encoding="UTF-8"?><out>1|2|3|</...
+number/number-1902  # [Compile] expected a result but got XPST0008: Undeclared variable '$n'
+number/number-1903  # [Compile] expected a result but got XPST0008: Undeclared variable '$n'
 number/number-2506  # [Compare] assert was false: /out/n[1] = ("Ein", "Eins")
-number/number-2804  # [Compare] XML differs. Expected: <out>1: aaa
-number/number-2810  # [Compare] XML differs. Expected: <out>1: aaa
-number/number-2901  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
-number/number-2902  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
 number/number-3002  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
 number/number-3003  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
 number/number-3101  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
-number/number-3301  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
-number/number-3401  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
-number/number-3402  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
-number/number-3403  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
-number/number-3404  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
 number/number-3405  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
-number/number-3501  # [Compare] XML differs. Expected: <out>A. First Chapter
-number/number-4001  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>: Test for source tree numbering
 number/number-4501  # [Compare] XML differs. Expected: <out>(no) a(1) b(no) c(2) d(no) e(no) f(3) g(no) h</out> Actual: <?xml versio...
 number/number-4701  # [Compare] assert was false: deep-equal(/out/z/from-star/number(), (1,1,2,3,4,5))
 output/output-0130  # [Compare] output does not match /http-equiv="Content-Type"/: <?xml version="1.0" encoding="UTF-8"?><html xmlns...
@@ -1799,7 +1733,6 @@ param/param-0403  # [Compare] XML differs. Expected: <out><var>Variable Value: P
 param/param-0601  # [Compare] XML differs. Expected: <out>abc</out> Actual: <?xml version="1.0" encoding="UTF-8"?><out />
 param/param-0602  # [Compare] XML differs. Expected: <out>abc</out> Actual: <?xml version="1.0" encoding="UTF-8"?><out />
 position/position-0102  # [Run] expected a result but got XPTY0004: Function argument cardinality violation: 0 items for occurrence Exac...
-position/position-0202  # [Compare] XML differs. Expected: <out>
 position/position-0701  # [Compare] XML differs. Expected: <out>16 22 34 43 51 65 11 22 33 44 55 66 </out> Actual: <?xml version="1.0" e...
 position/position-0702  # [Compare] XML differs. Expected: <out>1_6 2_2 3_4 4_3 5_1 6_5
 position/position-0801  # [Compare] XML differs. Expected: <out>a, b, c, d, e, f</out> Actual: <?xml version="1.0" encoding="UTF-8"?><ou...
@@ -1818,12 +1751,9 @@ position/position-3101  # [Compare] XML differs. Expected: <out><t1>k4</t1></out
 position/position-3102  # [Compare] XML differs. Expected: <out><t1>k4</t1><t2>k1 k2 k3 k4</t2></out> Actual: <?xml version="1.0" encodi...
 position/position-3103  # [Compare] XML differs. Expected: <out><t1>4</t1></out> Actual: <?xml version="1.0" encoding="UTF-8"?><out><t1>...
 position/position-3104  # [Compare] XML differs. Expected: <out><t1>6</t1><t2>c1</t2></out> Actual: <?xml version="1.0" encoding="UTF-8"...
-position/position-3302  # [Compare] XML differs. Expected: <out>
 position/position-3901  # [Compare] XML differs. Expected: <out>6 nodes on this axis:
 position/position-4001  # [Compare] XML differs. Expected: <out>6 nodes on this axis:
 position/position-4101  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
-position/position-4102  # [Compare] XML differs. Expected: <out><odd/><even/><odd/><even/><odd/><even/><odd/><even/><odd/></out> Actual:...
-position/position-4103  # [Compare] XML differs. Expected: <out><a-odd/><b-odd/><c-odd/><c-even/><a-even/><a-odd/><b-even/><c-odd/><b-od...
 position/position-4105  # [Compare] XML differs. Expected: <out><group><a mark="a1"/><b mark="b1"><bb/></b></group><group><c mark="c1"/>...
 position/position-4201  # [Compare] XML differs. Expected: <out>1, 1</out> Actual: <?xml version="1.0" encoding="UTF-8"?><out>0, 0</out>
 position/position-4501  # [Compile] expected a result but got XPST0017: Unknown function 'generate-id' with arity 1
@@ -1852,10 +1782,8 @@ predicate/predicate-002  # [Compare] XML differs. Expected: <out>1</out> Actual:
 predicate/predicate-003  # [Compare] XML differs. Expected: <out>1</out> Actual: <?xml version="1.0" encoding="UTF-8"?><out>1 2</out>
 predicate/predicate-004  # [Compare] XML differs. Expected: <out>1234</out> Actual: <?xml version="1.0" encoding="UTF-8"?><out />
 predicate/predicate-005  # [Compare] XML differs. Expected: <out>1234</out> Actual: <?xml version="1.0" encoding="UTF-8"?><out />
-predicate/predicate-031  # [Compare] XML differs. Expected: <out><predicate1>1 is 4,5,6,</predicate1><predicate2>2 is 10,11,12,</predicat...
 predicate/predicate-052  # [Compare] XML differs. Expected: <out><a>ok1</a><a>ok2</a></out> Actual: <?xml version="1.0" encoding="UTF-8"?...
 predicate/predicate-053  # [Compare] XML differs. Expected: <out><bar a="1" b="0" c="0" d="0" seq="8"/></out> Actual: <?xml version="1.0"...
-predicate/predicate-054  # [Compare] XML differs. Expected: <out><bar seq="8"/><bar seq="9"/><bar seq="a"/><bar seq="b"/><bar seq="c"/><b...
 predicate/predicate-055  # [Compare] assert was false: /out = "Correct"
 regex-classes/regex-classes-001  # [Compare] assert was false: /true
 regex-classes/regex-classes-002  # [Compare] assert was false: /true
@@ -1977,216 +1905,9 @@ regex-classes/regex-classes-117  # [Compare] assert was false: /true
 regex-classes/regex-classes-118  # [Compare] assert was false: /true
 regex-classes/regex-classes-119  # [Compare] assert was false: /true
 regex-classes/regex-classes-120  # [Compare] assert was false: /true
-regex-syntax-xslt20/regex-syntax-xslt20-0032  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0072  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0082  # [Run] expected a result but got FORX0002: Invalid regular expression pattern: Invalid pattern '^([\C\?a-c\?]+)...
-regex-syntax-xslt20/regex-syntax-xslt20-0288  # [Compare] assert was false: /true
-regex-syntax-xslt20/regex-syntax-xslt20-0370  # [Compare] assert was false: /true
-regex-syntax-xslt20/regex-syntax-xslt20-0379  # [Run] expected a result but got FORX0002: Invalid regular expression pattern: Invalid pattern '^(\p{IsOldItali...
-regex-syntax-xslt20/regex-syntax-xslt20-0380  # [Run] expected a result but got FORX0002: Invalid regular expression pattern: Invalid pattern '^(\p{IsGothic}?...
-regex-syntax-xslt20/regex-syntax-xslt20-0381  # [Run] expected a result but got FORX0002: Invalid regular expression pattern: Invalid pattern '^(\p{IsDeseret}...
-regex-syntax-xslt20/regex-syntax-xslt20-0382  # [Run] expected a result but got FORX0002: Invalid regular expression pattern: Invalid pattern '^(\p{IsByzantin...
-regex-syntax-xslt20/regex-syntax-xslt20-0383  # [Run] expected a result but got FORX0002: Invalid regular expression pattern: Invalid pattern '^(\p{IsMusicalS...
-regex-syntax-xslt20/regex-syntax-xslt20-0384  # [Run] expected a result but got FORX0002: Invalid regular expression pattern: Invalid pattern '^(\p{IsMathemat...
-regex-syntax-xslt20/regex-syntax-xslt20-0385  # [Run] expected a result but got FORX0002: Invalid regular expression pattern: Invalid pattern '^(\p{IsCJKUnifi...
-regex-syntax-xslt20/regex-syntax-xslt20-0386  # [Run] expected a result but got FORX0002: Invalid regular expression pattern: Invalid pattern '^(\p{IsCJKCompa...
-regex-syntax-xslt20/regex-syntax-xslt20-0387  # [Run] expected a result but got FORX0002: Invalid regular expression pattern: Invalid pattern '^(\p{IsTags}?)$...
-regex-syntax-xslt20/regex-syntax-xslt20-0471  # [Run] expected a result but got FORX0002: Invalid regular expression pattern: Invalid pattern '^(\p{IsOldItali...
-regex-syntax-xslt20/regex-syntax-xslt20-0472  # [Run] expected a result but got FORX0002: Invalid regular expression pattern: Invalid pattern '^(\p{IsGothic})...
-regex-syntax-xslt20/regex-syntax-xslt20-0473  # [Run] expected a result but got FORX0002: Invalid regular expression pattern: Invalid pattern '^(\p{IsDeseret}...
-regex-syntax-xslt20/regex-syntax-xslt20-0474  # [Run] expected a result but got FORX0002: Invalid regular expression pattern: Invalid pattern '^(\p{IsByzantin...
-regex-syntax-xslt20/regex-syntax-xslt20-0475  # [Run] expected a result but got FORX0002: Invalid regular expression pattern: Invalid pattern '^(\p{IsMusicalS...
-regex-syntax-xslt20/regex-syntax-xslt20-0476  # [Run] expected a result but got FORX0002: Invalid regular expression pattern: Invalid pattern '^(\p{IsMathemat...
-regex-syntax-xslt20/regex-syntax-xslt20-0477  # [Run] expected a result but got FORX0002: Invalid regular expression pattern: Invalid pattern '^(\p{IsCJKUnifi...
-regex-syntax-xslt20/regex-syntax-xslt20-0478  # [Run] expected a result but got FORX0002: Invalid regular expression pattern: Invalid pattern '^(\p{IsCJKCompa...
-regex-syntax-xslt20/regex-syntax-xslt20-0479  # [Run] expected a result but got FORX0002: Invalid regular expression pattern: Invalid pattern '^(\p{IsTags})$'...
-regex-syntax-xslt20/regex-syntax-xslt20-0480  # [Compare] assert was false: /true
-regex-syntax-xslt20/regex-syntax-xslt20-0494  # [Run] expected a result but got FORX0002: Invalid regular expression pattern: Invalid pattern '^([ \t\r\n\i]*)...
-regex-syntax-xslt20/regex-syntax-xslt20-0506  # [Compare] assert was false: /true
-regex-syntax-xslt20/regex-syntax-xslt20-0516  # [Run] expected a result but got FORX0002: Invalid regular expression pattern: Invalid pattern '^([\i\c]+:[\i\c...
-regex-syntax-xslt20/regex-syntax-xslt20-0521  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0529  # [Run] expected a result but got FORX0002: Invalid regular expression pattern: Invalid pattern '^([\i\c]*)$' at...
-regex-syntax-xslt20/regex-syntax-xslt20-0530  # [Compare] assert was false: /true
-regex-syntax-xslt20/regex-syntax-xslt20-0556  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0558  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0561  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0562  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0563  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0564  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0567  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0568  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0569  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0572  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0574  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0597  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0598  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0613  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0616  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0618  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0619  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0620  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0621  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0623  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0625  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0626  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0627  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0628  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0629  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0630  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0631  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0632  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0633  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0634  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0635  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0636  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0637  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0638  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0646  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0647  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0648  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0649  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0650  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0651  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0652  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0653  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0654  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0741  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0744  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0745  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0746  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0750  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0754  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0763  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0765  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0766  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0769  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0784  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0786  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0787  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0791  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0792  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0804  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0805  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0806  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0807  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0808  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0809  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0810  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0811  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0812  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0820  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0821  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0822  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0823  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0827  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0828  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0829  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0830  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0845  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0846  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0847  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0848  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0849  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0850  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0851  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0852  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0853  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0855  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0856  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0857  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0858  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0859  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0860  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0861  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0862  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0863  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0864  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0865  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0866  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0867  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0868  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0869  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0870  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0871  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0872  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0873  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0874  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0875  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0876  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0877  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0878  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0879  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0880  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0881  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0882  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0883  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0884  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0885  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0886  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0887  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0888  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0889  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0892  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0893  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0894  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0895  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0896  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0897  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0898  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0899  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0900  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0905  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0911  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0912  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0913  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0914  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0916  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0917  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0918  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0919  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0920  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0921  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0922  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0923  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0924  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0925  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0926  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0927  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0928  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0929  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0930  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0931  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0937  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0938  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0942  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0943  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0944  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0945  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0946  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0947  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0948  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0949  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0950  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0951  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0952  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0953  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0954  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0955  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0958  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0959  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0960  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0961  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0962  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0963  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0964  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0965  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0977  # [Compare] expected error FORX0002 but the transformation succeeded
-regex-syntax-xslt20/regex-syntax-xslt20-0983  # [Compare] assert was false: /true
 regex-syntax-xslt20/regex-syntax-xslt20-0984  # [Compare] assert was false: /true
 regex-syntax-xslt20/regex-syntax-xslt20-0985  # [Compare] assert was false: /true
-regex-syntax-xslt20/regex-syntax-xslt20-0986  # [Run] expected a result but got FORX0002: Invalid regular expression pattern: Invalid pattern '^([\i])$' at of...
-regex-syntax-xslt20/regex-syntax-xslt20-0987  # [Run] expected a result but got FORX0002: Invalid regular expression pattern: Invalid pattern '^([\c])$' at of...
-regex/regex-002  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>;
+regex-syntax-xslt20/regex-syntax-xslt20-0987  # [Compare] assert was false: /true
 regex/regex-004  # [Run] expected a result but got XPTY0004: Function argument cardinality violation: 0 items for occurrence Exac...
 regex/regex-005  # [Run] expected a result but got XPTY0004: Function argument cardinality violation: 0 items for occurrence Exac...
 regex/regex-014  # [Compare] XML differs. Expected: <out><a>Some unparsed|HTML|text</a></out> Actual: <?xml version="1.0" encodin...
@@ -2203,8 +1924,6 @@ regex/regex-027  # [Compare] XML differs. Expected: <out>;
 regex/regex-028  # [Compare] XML differs. Expected: <out>|Mary had a littl lamb|Its flc was black as soot|And vrywhr that Mary wn...
 regex/regex-031  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?>
 regex/regex-032  # [Compare] assert was false: /out/a = "true"
-regex/regex-055  # [Compare] XML differs. Expected: <out>true, true, true, true, true, true, true, true, true, false, false, fals...
-regex/regex-059  # [Compare] assert was false: /out/E5 = "*!! Tak, tak, tak! - da kommen sie."
 resolve-uri/resolve-uri-004  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
 resolve-uri/resolve-uri-006  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
 resolve-uri/resolve-uri-007  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
@@ -3523,7 +3242,7 @@ variable/variable-1301  # [Compare] XML differs. Expected: <foo>Test</foo> Actua
 variable/variable-1401  # [Compare] XML differs. Expected: <out>$all contains XYZ</out> Actual: <?xml version="1.0" encoding="UTF-8"?><o...
 variable/variable-1402  # [Compare] XML differs. Expected: <out>$all contains XYZ</out> Actual: <?xml version="1.0" encoding="UTF-8"?><o...
 variable/variable-1601  # [Compare] XML differs. Expected: <out><foo>defaultVal</foo></out> Actual: <?xml version="1.0" encoding="UTF-8"...
-variable/variable-2001  # [Compare] expected a result but got internal TimeoutException: transformation timed out
+variable/variable-2001  # [Run] expected a result but got XTDE0810: Template recursion depth exceeded 10000 frames (template 'template')
 variable/variable-2101  # [Compare] XML differs. Expected: <out><doc>
 variable/variable-2202  # [Compare] expected error XTSE0680 but the transformation succeeded
 variable/variable-2301  # [Compare] XML differs. Expected: <out>titi</out> Actual: <?xml version="1.0" encoding="UTF-8"?><out />
@@ -3636,7 +3355,6 @@ xpath-default-namespace/xpath-default-namespace-0801  # [Compare] expected error
 xpath-default-namespace/xpath-default-namespace-1102  # [Compile] expected a result but got XTSE0680: xsl:apply-templates references mode 'good' but no template rule ...
 xpath-default-namespace/xpath-default-namespace-1201  # [Compare] XML differs. Expected: <z>Today's flavor: mint</z> Actual: <?xml version="1.0" encoding="UTF-8"?><z>...
 xsl-document/xsl-document-0103  # [Compare] XML differs. Expected: <child/> Actual: <?xml version="1.0" encoding="UTF-8"?>
-xsl-document/xsl-document-0104  # [Compare] XML differs. Expected: <out><child/></out> Actual: <?xml version="1.0" encoding="UTF-8"?><out><child...
 xsl-document/xsl-document-0105  # [Compare] XML differs. Expected: <out> text inside document</out> Actual: <?xml version="1.0" encoding="UTF-8"...
 xsl-document/xsl-document-0202  # [Compare] XML differs. Expected: <out>1 2 3 4</out> Actual: <?xml version="1.0" encoding="UTF-8"?>
 xsl-document/xsl-document-0301  # [Compare] assert was false: /out/node()[1][self::*:e1][namespace-uri()='http://www.example.org/foo'][@t1='1'][...

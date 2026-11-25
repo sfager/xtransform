@@ -5,6 +5,8 @@
 using System;
 using System.Collections.Generic;
 using XTransform.Xdm;
+using XTransform.XPath;
+using XTransform.XPath.Ast;
 using XTransform.Xslt.Instructions;
 
 namespace XTransform.Xslt;
@@ -62,7 +64,9 @@ internal static class StylesheetCompiler
         }
 
         GlobalBindingValidator.Validate(declarations, functions, bag);
-        IReadOnlyDictionary<QName, ModeTable> modes = ModeCompiler.Compile(declarations, bag);
+        PatternPredicateTable patterns = new PatternPredicateTable(new List<QName>(declarations.GlobalVariables.Keys));
+        CompileKeyPatterns(declarations, functions, patterns, bag);
+        IReadOnlyDictionary<QName, ModeTable> modes = ModeCompiler.Compile(declarations, functions, patterns, bag);
         IReadOnlyDictionary<QName, XsltOutputSettings> outputs = OutputDeclarationCollector.Collect(assembly, bag);
 
         // Pass 2: compile every template and function body.
@@ -70,7 +74,7 @@ internal static class StylesheetCompiler
             new Dictionary<TemplateDecl, CompiledTemplate>();
         foreach (TemplateDecl decl in declarations.Templates)
         {
-            CompiledTemplate? compiled = InstructionCompiler.CompileTemplate(decl, declarations, functions, bag);
+            CompiledTemplate? compiled = InstructionCompiler.CompileTemplate(decl, declarations, functions, patterns, bag);
             if (compiled is not null)
             {
                 compiledTemplates[decl] = compiled;
@@ -84,7 +88,7 @@ internal static class StylesheetCompiler
                 continue;
             }
 
-            CompiledTemplate? compiled = InstructionCompiler.CompileTemplate(decl, declarations, functions, bag);
+            CompiledTemplate? compiled = InstructionCompiler.CompileTemplate(decl, declarations, functions, patterns, bag);
             if (compiled is not null)
             {
                 compiledTemplates[decl] = compiled;
@@ -94,7 +98,7 @@ internal static class StylesheetCompiler
         // Compile xsl:function bodies and bind their slots.
         foreach (KeyValuePair<FunctionKey, FunctionDecl> kv in declarations.Functions)
         {
-            UserFunctionBody? body = InstructionCompiler.CompileUserFunction(kv.Value, declarations, functions, bag);
+            UserFunctionBody? body = InstructionCompiler.CompileUserFunction(kv.Value, declarations, functions, patterns, bag);
             if (body is not null)
             {
                 userSlots[kv.Key].SetBody(body);
@@ -121,7 +125,34 @@ internal static class StylesheetCompiler
             compiledTemplates,
             declarations.Keys,
             functions,
+            patterns,
             warnings,
             outputs);
+    }
+
+    // Parses each xsl:key match pattern once and compiles its predicates (XSLT 2.0 §16.3).
+    private static void CompileKeyPatterns(
+        DeclarationTable declarations,
+        FunctionLibrary functions,
+        PatternPredicateTable patterns,
+        DiagnosticBag bag)
+    {
+        foreach (KeyDecl key in declarations.Keys.Values)
+        {
+            try
+            {
+                NamespaceBindingsResolver resolver = new NamespaceBindingsResolver(
+                    key.Element.InScopeNamespaces,
+                    defaultElementNamespace: string.Empty,
+                    defaultFunctionNamespace: BuiltInFunctionLibrary.FnNamespace);
+                PatternAst pattern = XPathParser.ParsePattern(key.MatchPattern, key.Location, resolver);
+                patterns.Register(pattern, resolver, functions, key.Location, bag);
+                patterns.SetKeyPattern(key, pattern);
+            }
+            catch (XTransformException ex)
+            {
+                bag.Error(ex.ErrorCode, ex.Message, key.Location);
+            }
+        }
     }
 }

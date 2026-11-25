@@ -234,7 +234,7 @@ two seconds (hash-based grouping for `group-by`).
 
 ## P4-10 XPath regex dialect completion
 
-- [ ] Done
+- [x] Done
 
 **Scope.** The translator is a pass-through for most syntax. Make it validate against the XSD
 regex grammar and raise `FORX0002` for invalid patterns (177 tests expect it and we accept the
@@ -242,7 +242,7 @@ pattern), support Unicode **block** escapes (`\p{IsBasicLatin}` and the full nam
 supplementary-plane blocks), implement `\i`, `\I`, `\c`, `\C`, `\w`, `\W` exactly per XSD (the G3
 work added the supplementary-plane machinery), character-class subtraction with supplementary
 characters, and reject constructs .NET accepts but XSD does not (`(?:`, `\b`, lookarounds,
-backreferences in character classes, `{,n}` quantifiers). Flags `x` and `q` per F&O §7.6.1.
+backreferences in character classes, `{,n}` quantifiers). The `x` flag only removes whitespace (outside classes); `q` is XPath 3.0 and stays an error.
 
 **Acceptance.**
 - `regex-syntax-xslt20` ≥ 90% and `regex-classes` ≥ 90% passing; the QT3 `fn-matches`,
@@ -250,6 +250,14 @@ backreferences in character classes, `{,n}` quantifiers). Flags `x` and `q` per 
 - Table-driven validity tests (≥ 150 patterns) in `tests/XTransform.Tests/XPath/`.
 - Unicode category data comes from the runtime and is newer than Unicode 9; where a conformance
   test depends on a specific version, say so in its known-failures reason.
+
+**Result.** `regex-syntax-xslt20`: 984 of 987 in-scope tests pass (was 778); core shard 3,086 → 3,295
+(209 fixed, 0 regressed). The translator is now a parser for the XSLT 2.0 grammar that validates as it
+translates (`XPathRegexTranslator`), with Unicode tables in `RegexUnicodeTables`. The three misses
+(`[\w]`, `[\d]`, `[\c]`) depend on the Unicode 3.1-era name and digit tables of XML 1.0 Fourth Edition
+(see `implementation-defined.md`). `regex-classes` (120) cannot reach 90% in this task: it uses
+`xsl:analyze-string` (P4-11) and compares the result with reference files for Unicode 3.1, 5.2 and 6.0,
+none of which equals the runtime's Unicode version; it is expected to stay in the known-failures list.
 
 ## P4-11 `xsl:analyze-string`, `regex-group()`
 
@@ -413,6 +421,17 @@ steps, reverse-axis positions), `tunnel` parameters (propagation through `apply-
 `#current`, built-in template rules for each mode, and `current-merge-*` is 3.0 and excluded.
 
 **Acceptance.** `match`, `position`, `axes`, `tunnel`, `apply-templates` sets ≥ 85% passing.
+
+**Progress (branch `p4-22-pattern-predicates`).** Pattern predicates are now compiled with the
+stylesheet (`PatternPredicateTable`: template `match`, `xsl:key match`, `xsl:number count` / `from`) and
+evaluated by `PatternMatcher` with the step's own focus: position and `last()` are taken among the
+siblings that satisfy the node test and the earlier predicates; `current()` is the node being matched;
+global variables and user functions are visible. Predicates that cannot read the position and cannot
+yield a number are decided on the node alone, so flat documents stay linear. Core shard 3,013 → 3,086
+(73 fixed, 0 regressed). Still open in this task: `id()` / `key()` patterns (`MatchId` ignores `id($var)`;
+key patterns never match), `mode="#all"` / `#current`, tunnel parameters, and the `position` / `axes` /
+`tunnel` sets. A positional predicate on a step with very many siblings is evaluated in time linear in
+the sibling count per match.
 
 ## P4-23 Static error catalogue (XTSE*)
 

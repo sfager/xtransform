@@ -21,6 +21,8 @@ internal static class ModeCompiler
     /// <summary>Entry point.</summary>
     public static IReadOnlyDictionary<QName, ModeTable> Compile(
         DeclarationTable declarations,
+        FunctionLibrary functions,
+        PatternPredicateTable patterns,
         DiagnosticBag bag)
     {
         Dictionary<QName, ModeTable> modes = new Dictionary<QName, ModeTable>();
@@ -42,13 +44,14 @@ internal static class ModeCompiler
             PatternAst parsed;
             try
             {
-                parsed = XPathParser.ParsePattern(
-                    decl.MatchPattern,
-                    decl.Location,
-                    new NamespaceBindingsResolver(
-                        decl.Element.InScopeNamespaces,
-                        defaultElementNamespace: string.Empty,
-                        defaultFunctionNamespace: BuiltInFunctionLibrary.FnNamespace));
+                NamespaceBindingsResolver resolver = new NamespaceBindingsResolver(
+                    decl.Element.InScopeNamespaces,
+                    defaultElementNamespace: string.Empty,
+                    defaultFunctionNamespace: BuiltInFunctionLibrary.FnNamespace);
+                parsed = XPathParser.ParsePattern(decl.MatchPattern, decl.Location, resolver);
+
+                // Compile the step predicates now: matching evaluates them at run time (XSLT 2.0 §5.5.3).
+                patterns.Register(parsed, resolver, functions, decl.Location, bag);
             }
             catch (XTransformException ex)
             {
