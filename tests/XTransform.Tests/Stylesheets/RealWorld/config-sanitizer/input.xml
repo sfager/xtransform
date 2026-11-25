@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<settings version="3">
+  <!-- primary database -->
+  <connection name="primary" host="db1" password="hunter2" port="5432">
+    <secret>abc123</secret>
+    <option key="timeout">30</option>
+  </connection>
+  <?audit reviewed?>
+  <connection name="replica" host="db2" token="xyz" port="5432"/>
+  <logging level="info"><sink type="file">app.log</sink></logging>
+</settings>

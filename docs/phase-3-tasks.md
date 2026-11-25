@@ -394,7 +394,7 @@ Known-failures file `known-failures/xslt-g3.txt`. Summary at
 
 ## P3-17 Real-world stylesheet corpus
 
-- [ ] Done
+- [x] Done
 
 **Scope.** Five real stylesheets chosen by Stephen (e.g. DocBook-xsl
 subsection, DITA Open Toolkit snippet, an internal integration stylesheet),

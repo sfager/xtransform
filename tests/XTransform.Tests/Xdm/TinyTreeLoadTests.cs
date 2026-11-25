@@ -91,6 +91,25 @@ internal sealed class TinyTreeLoadTests
     }
 
     [Test]
+    public void Load_WhitespaceInPrologAndEpilog_IsNotPartOfTheTree()
+    {
+        // Arrange
+        NamePool pool = new NamePool();
+        const string xml = "<?xml version=\"1.0\"?>\n<!-- c -->\n<root> </root>\n";
+
+        // Act
+        using XmlReader reader = ReaderFromString(xml);
+        TinyTree tree = TinyTreeBuilder.Load(reader, pool);
+
+        // Assert — XDM §6.1: the document node has the comment and root element as children
+        // only; whitespace inside the root element is kept.
+        Assert.That(tree.NodeCount, Is.EqualTo(4));
+        Assert.That(tree.GetKind(1), Is.EqualTo(XdmNodeKind.Comment));
+        Assert.That(tree.GetKind(2), Is.EqualTo(XdmNodeKind.Element));
+        Assert.That(tree.GetKind(3), Is.EqualTo(XdmNodeKind.Text));
+    }
+
+    [Test]
     public void Load_ComplexFixture_RoundTripsStringValue()
     {
         // Arrange

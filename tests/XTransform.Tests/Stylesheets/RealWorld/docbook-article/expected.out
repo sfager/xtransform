@@ -1,0 +1,7 @@
+<html><head><title>Getting Started</title></head><body><h1>Getting Started</h1><p class="author">Ada Lovelace</p><div class="section" id="intro"><h2>Introduction</h2><p>This guide covers <em>installation</em> and <strong>first steps</strong>.</p><div class="section" id="req"><h3>Requirements</h3><ul>
+        <li>A <code>.NET</code> runtime</li>
+        <li>An XML editor</li>
+      </ul></div></div><div class="section" id="steps"><h2>Steps</h2><ol>
+      <li>Install the package.</li>
+      <li>Read <a href="#intro">Introduction</a> again.</li>
+    </ol><pre>dotnet add package XTransform</pre></div></body></html>

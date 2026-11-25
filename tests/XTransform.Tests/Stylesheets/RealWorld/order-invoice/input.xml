@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed>
+  <customers>
+    <customer id="c1" country="DE"><name>Acme GmbH</name></customer>
+    <customer id="c2" country="FR"><name>Globex SA</name></customer>
+  </customers>
+  <products>
+    <product sku="A-100" price="12">Widget</product>
+    <product sku="B-200" price="5">Gadget</product>
+    <product sku="C-300" price="40">Gizmo</product>
+  </products>
+  <orders>
+    <order id="1001" customer="c1">
+      <line sku="A-100" qty="3"/>
+      <line sku="C-300" qty="1"/>
+    </order>
+    <order id="1002" customer="c2">
+      <line sku="B-200" qty="10"/>
+    </order>
+  </orders>
+</feed>
