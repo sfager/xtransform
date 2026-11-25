@@ -88,6 +88,14 @@ public static class XsltErrors
     public static readonly QName XTTE1000 = new QName("err", XPathErrors.Namespace, "XTTE1000");
     /// <summary>XTSE0975: xsl:number has a value attribute together with select, level, count or from. (XSLT 2.0 §12.1)</summary>
     public static readonly QName XTSE0975 = new QName("err", XPathErrors.Namespace, "XTSE0975");
+    /// <summary>XTDE1140: the regex of xsl:analyze-string is not a valid regular expression. (XSLT 2.0 §15.1)</summary>
+    public static readonly QName XTDE1140 = new QName("err", XPathErrors.Namespace, "XTDE1140");
+    /// <summary>XTDE1145: the flags of xsl:analyze-string are not valid. (XSLT 2.0 §15.1)</summary>
+    public static readonly QName XTDE1145 = new QName("err", XPathErrors.Namespace, "XTDE1145");
+    /// <summary>XTDE1150: the regex of xsl:analyze-string matches a zero-length string. (XSLT 2.0 §15.1)</summary>
+    public static readonly QName XTDE1150 = new QName("err", XPathErrors.Namespace, "XTDE1150");
+    /// <summary>XTSE1130: xsl:analyze-string has neither xsl:matching-substring nor xsl:non-matching-substring. (XSLT 2.0 §15.1)</summary>
+    public static readonly QName XTSE1130 = new QName("err", XPathErrors.Namespace, "XTSE1130");
 
     /// <summary>It is a dynamic error if xsl:call-template is invoked without a value for a required xsl:param. (XSLT 2.0 §9.5)</summary>
     public static readonly QName XTDE0700 = new QName("err", XPathErrors.Namespace, "XTDE0700");

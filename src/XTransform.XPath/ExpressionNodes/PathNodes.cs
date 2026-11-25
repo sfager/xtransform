@@ -43,6 +43,7 @@ internal sealed class PathNode : ExpressionNode
 
         // Determine the input iterator based on the path anchor.
         IXdmIterator input;
+        int startStep = 0;
 
         switch (Anchor)
         {
@@ -65,6 +66,15 @@ internal sealed class PathNode : ExpressionNode
 
             default:
             {
+                // E1/E2 where E1 does not read the focus ($v/x, doc('u')/x, (a, b)/x): E1 is evaluated
+                // as written, so an atomic or absent context item is fine (XPath 2.0 §3.2).
+                if (Steps.Length > 1 && (Steps[0].Dependencies & ExpressionDependencies.Focus) == ExpressionDependencies.None)
+                {
+                    input = Steps[0].Iterate(context);
+                    startStep = 1;
+                    break;
+                }
+
                 // Relative path — input is the context item (must be a node).
                 if (context.ContextItem is null)
                 {
@@ -82,7 +92,7 @@ internal sealed class PathNode : ExpressionNode
         // Thread the input through each step in turn.
         // XPath 2.0 §3.2: each step takes a sequence of nodes and produces a new sequence.
         // Between steps we apply document-order deduplication when input had >1 node.
-        for (int i = 0; i < Steps.Length; i++)
+        for (int i = startStep; i < Steps.Length; i++)
         {
             ExpressionNode step = Steps[i];
             bool isLastStep = i == Steps.Length - 1;
@@ -104,7 +114,7 @@ internal sealed class PathNode : ExpressionNode
                 if (first is not XdmNode firstNode)
                 {
                     throw new XPathDynamicException(
-                        XPathErrors.XPTY0004,
+                        i == 0 ? XPathErrors.XPTY0020 : XPathErrors.XPTY0019,
                         "A path step is being applied to an atomic value",
                         step.Location);
                 }
@@ -185,7 +195,7 @@ internal sealed class PathNode : ExpressionNode
         if (inputItem is not XdmNode inputNode)
         {
             throw new XPathDynamicException(
-                XPathErrors.XPTY0004,
+                XPathErrors.XPTY0019,
                 "A path step is being applied to an atomic value",
                 step.Location);
         }
@@ -239,7 +249,7 @@ internal sealed class PathNode : ExpressionNode
         if (context.ContextItem is not XdmNode contextNode)
         {
             throw new XPathDynamicException(
-                XPathErrors.XPTY0004,
+                XPathErrors.XPTY0020,
                 "The context item is not a node; cannot evaluate an absolute path expression",
                 Location);
         }
@@ -341,7 +351,7 @@ internal sealed class AxisStepNode : ExpressionNode
         if (context.ContextItem is not XdmNode contextNode)
         {
             throw new XPathDynamicException(
-                XPathErrors.XPTY0004,
+                XPathErrors.XPTY0020,
                 "A path step is being applied to an atomic value",
                 Location);
         }

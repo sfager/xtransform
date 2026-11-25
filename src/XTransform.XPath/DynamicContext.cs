@@ -180,7 +180,12 @@ internal sealed class DynamicContext
             frame[i] = XdmSequence.Empty;
         }
 
-        return new DynamicContext(Run, _focusIterator, ContextItem, _contextPosition, frame, CurrentItem);
+        DynamicContext child = new DynamicContext(Run, _focusIterator, ContextItem, _contextPosition, frame, CurrentItem);
+
+        // A pinned focus (WithContextItem / WithCurrentItem) has no iterator to count; keep its known size so
+        // that last() still answers inside an expression evaluated with a fresh frame.
+        child._contextSizeCached = _contextSizeCached;
+        return child;
     }
 
     /// <summary>Throws <see cref="OperationCanceledException"/> if the run's token is cancelled.</summary>

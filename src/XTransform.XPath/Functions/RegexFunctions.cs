@@ -180,7 +180,7 @@ internal static class RegexFunctions
     /// using the static cache. The cache key is "pattern\x00flags".
     /// </summary>
     // F&O §7.6
-    private static Regex GetOrCompile(string xpathPattern, string flags, SourceSpan location)
+    internal static Regex GetOrCompile(string xpathPattern, string flags, SourceSpan location)
     {
         // Use '\x00' (NUL) as separator since it cannot appear in XPath patterns.
         string key = xpathPattern + "\x00" + flags;

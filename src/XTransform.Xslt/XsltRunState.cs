@@ -44,6 +44,9 @@ internal sealed class XsltRunState
     /// <summary>Name pool shared with the receiver chain; used by output instructions to allocate name codes.</summary>
     public NamePool NamePool { get; }
 
+    /// <summary>The match whose groups <c>regex-group()</c> reads: set while an xsl:matching-substring body runs, null elsewhere.</summary>
+    public System.Text.RegularExpressions.Match? CurrentRegexMatch { get; set; }
+
     /// <summary>The underlying XPath run state (current-dateTime, cancellation, timezone).</summary>
     public RunState XPathRun { get; }
 

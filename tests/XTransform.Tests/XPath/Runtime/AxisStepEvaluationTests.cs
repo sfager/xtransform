@@ -204,7 +204,7 @@ internal sealed class AxisStepEvaluationTests
     // ── Context item not a node → XPTY0004 ────────────────────────────────────
 
     [Test]
-    public void Iterate_ContextItemIsAtomic_RaisesXPTY0004()
+    public void Iterate_ContextItemIsAtomic_RaisesXPTY0020()
     {
         // Arrange
         CompiledExpression ce = Compile("child::*");
@@ -213,7 +213,7 @@ internal sealed class AxisStepEvaluationTests
         // Act / Assert
         XPathDynamicException ex = Assert.Throws<XPathDynamicException>(() =>
             Drain(ce.Root.Iterate(ctx)))!;
-        Assert.That(ex.ErrorCode, Is.EqualTo(XPathErrors.XPTY0004));
+        Assert.That(ex.ErrorCode, Is.EqualTo(XPathErrors.XPTY0020));
     }
 
     // ── Context item undefined → XPDY0002 ─────────────────────────────────────

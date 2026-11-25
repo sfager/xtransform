@@ -59,6 +59,9 @@ internal static class StringFunctions
         => ConcatArgs(args);
 
     /// <summary>Implements fn:concat for 10 arguments.</summary>
+    internal static IXdmIterator FnConcatN(DynamicContext ctx, XdmSequence[] args)
+        => ConcatArgs(args);
+
     internal static IXdmIterator FnConcat10(DynamicContext ctx, XdmSequence[] args)
         => ConcatArgs(args);
 
