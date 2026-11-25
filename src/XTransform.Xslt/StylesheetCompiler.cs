@@ -10,13 +10,15 @@ using XTransform.Xslt.Instructions;
 namespace XTransform.Xslt;
 
 /// <summary>The XSLT 2.0 compiler.</summary>
-internal static class XsltCompiler
+internal static class StylesheetCompiler
 {
     /// <summary>
     /// Runs every compiler pass over <paramref name="assembly"/>. Static errors are collected
     /// into a <see cref="DiagnosticBag"/> and raised as a single <see cref="XsltStaticException"/>.
     /// </summary>
-    public static CompiledStylesheet Compile(StylesheetAssembly assembly)
+    public static CompiledStylesheet Compile(
+        StylesheetAssembly assembly,
+        System.Action<XsltFunctionLibrary>? configureFunctions = null)
     {
 #pragma warning disable CA1510 // ArgumentNullException.ThrowIfNull not available on netstandard2.0
         if (assembly is null)
@@ -53,6 +55,7 @@ internal static class XsltCompiler
         // Build the function library: register user function signatures first so inter-function
         // references resolve; bodies are populated in pass 2 via the slot.
         XsltFunctionLibrary functions = new XsltFunctionLibrary();
+        configureFunctions?.Invoke(functions);
         Dictionary<FunctionKey, UserFunctionSlot> userSlots = new Dictionary<FunctionKey, UserFunctionSlot>();
         foreach (KeyValuePair<FunctionKey, FunctionDecl> kv in declarations.Functions)
         {

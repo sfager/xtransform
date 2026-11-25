@@ -10,7 +10,7 @@ using XTransform.Xslt;
 namespace XTransform.Tests.Xslt;
 
 /// <summary>
-/// Tests for <see cref="XsltCompiler"/> — P3-04 declaration collection and name binding.
+/// Tests for <see cref="StylesheetCompiler"/> — P3-04 declaration collection and name binding.
 /// </summary>
 [TestFixture]
 internal sealed class XsltCompilerTests
@@ -28,7 +28,7 @@ internal sealed class XsltCompilerTests
             "<xsl:variable name='x' select='2'/>")));
 
         // Act + Assert
-        XsltStaticException ex = Assert.Throws<XsltStaticException>(() => XsltCompiler.Compile(asm))!;
+        XsltStaticException ex = Assert.Throws<XsltStaticException>(() => StylesheetCompiler.Compile(asm))!;
         Assert.That(ex.Errors.Any(d => d.Code == XsltErrors.XTSE0630), Is.True);
     }
 
@@ -42,7 +42,7 @@ internal sealed class XsltCompilerTests
             ("a.xsl", Wrap("<xsl:variable name='x' select='1'/>")));
 
         // Act
-        CompiledStylesheet compiled = XsltCompiler.Compile(asm);
+        CompiledStylesheet compiled = StylesheetCompiler.Compile(asm);
 
         // Assert — only one 'x', from the higher-precedence module.
         QName xName = new QName(string.Empty, string.Empty, "x");
@@ -62,7 +62,7 @@ internal sealed class XsltCompilerTests
             "<xsl:template name='t'/>")));
 
         // Act + Assert
-        XsltStaticException ex = Assert.Throws<XsltStaticException>(() => XsltCompiler.Compile(asm))!;
+        XsltStaticException ex = Assert.Throws<XsltStaticException>(() => StylesheetCompiler.Compile(asm))!;
         Assert.That(ex.Errors.Any(d => d.Code == XsltErrors.XTSE0660), Is.True);
     }
 
@@ -74,7 +74,7 @@ internal sealed class XsltCompilerTests
             "<xsl:function name='bad-name'/>")));
 
         // Act + Assert
-        XsltStaticException ex = Assert.Throws<XsltStaticException>(() => XsltCompiler.Compile(asm))!;
+        XsltStaticException ex = Assert.Throws<XsltStaticException>(() => StylesheetCompiler.Compile(asm))!;
         Assert.That(ex.Errors.Any(d => d.Code == XsltErrors.XTSE0740), Is.True);
     }
 
@@ -90,7 +90,7 @@ internal sealed class XsltCompilerTests
             "</xsl:template>")));
 
         // Act + Assert
-        XsltStaticException ex = Assert.Throws<XsltStaticException>(() => XsltCompiler.Compile(asm))!;
+        XsltStaticException ex = Assert.Throws<XsltStaticException>(() => StylesheetCompiler.Compile(asm))!;
         Assert.That(ex.Errors.Any(d => d.Code == XsltErrors.XTSE0680), Is.True);
     }
 
@@ -105,7 +105,7 @@ internal sealed class XsltCompilerTests
             "</xsl:template>")));
 
         // Act + Assert — no exception.
-        Assert.That(() => XsltCompiler.Compile(asm), Throws.Nothing);
+        Assert.That(() => StylesheetCompiler.Compile(asm), Throws.Nothing);
     }
 
     [Test]
@@ -116,7 +116,7 @@ internal sealed class XsltCompilerTests
             "<xsl:variable name='v' select='$missing'/>")));
 
         // Act + Assert
-        XsltStaticException ex = Assert.Throws<XsltStaticException>(() => XsltCompiler.Compile(asm))!;
+        XsltStaticException ex = Assert.Throws<XsltStaticException>(() => StylesheetCompiler.Compile(asm))!;
         Assert.That(ex.Errors.Any(d => d.Code.LocalName == "XPST0008"), Is.True);
     }
 
@@ -129,7 +129,7 @@ internal sealed class XsltCompilerTests
             "<xsl:variable name='b' select='1'/>")));
 
         // Act + Assert
-        Assert.That(() => XsltCompiler.Compile(asm), Throws.Nothing);
+        Assert.That(() => StylesheetCompiler.Compile(asm), Throws.Nothing);
     }
 
     // ── Diagnostic aggregation ───────────────────────────────────────────────
@@ -146,7 +146,7 @@ internal sealed class XsltCompilerTests
             "<xsl:function name='noprefix'/>")));
 
         // Act + Assert
-        XsltStaticException ex = Assert.Throws<XsltStaticException>(() => XsltCompiler.Compile(asm))!;
+        XsltStaticException ex = Assert.Throws<XsltStaticException>(() => StylesheetCompiler.Compile(asm))!;
         Assert.Multiple(() =>
         {
             Assert.That(ex.Errors.Count, Is.GreaterThanOrEqualTo(3));

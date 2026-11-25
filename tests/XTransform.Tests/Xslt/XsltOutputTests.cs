@@ -208,7 +208,7 @@ internal sealed class XsltOutputTests
     private static CompiledStylesheet Compile(InMemoryResolver resolver, string primary)
     {
         StylesheetAssembly asm = StylesheetLinker.Link(new Uri("file:///suite/" + primary), resolver);
-        return XsltCompiler.Compile(asm);
+        return StylesheetCompiler.Compile(asm);
     }
 
     private static byte[] Run(string xsl, string input)

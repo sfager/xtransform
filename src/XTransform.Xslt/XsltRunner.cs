@@ -20,19 +20,24 @@ namespace XTransform.Xslt;
 internal static class XsltRunner
 {
     /// <summary>
-    /// Transforms <paramref name="input"/> through <paramref name="compiled"/>. Starts by
-    /// applying templates in the default mode to the input document node.
+    /// Transforms <paramref name="input"/> through <paramref name="compiled"/>. Without an
+    /// <paramref name="initialTemplate"/> it starts by applying templates (in
+    /// <paramref name="initialMode"/>, default mode when null) to the input document node;
+    /// with one it invokes that named template, with <paramref name="input"/> as the context
+    /// item when supplied. Returns the non-fatal diagnostics collected during the run.
     /// </summary>
 #pragma warning disable CA1068 // Optional parameters after the token keep call sites tidy
-    public static void Transform(
+    public static IReadOnlyList<Diagnostic> Transform(
         CompiledStylesheet compiled,
-        XdmNode input,
+        XdmNode? input,
         IResultReceiver receiver,
         NamePool? namePool = null,
         IReadOnlyDictionary<QName, XdmSequence>? parameters = null,
         IResourceResolver? resolver = null,
         CancellationToken cancellationToken = default,
-        int maxRecursionDepth = XsltRunState.DefaultMaxRecursionDepth)
+        int maxRecursionDepth = XsltRunState.DefaultMaxRecursionDepth,
+        QName? initialMode = null,
+        QName? initialTemplate = null)
 #pragma warning restore CA1068
     {
 #pragma warning disable CA1510 // ArgumentNullException.ThrowIfNull not available on netstandard2.0
@@ -41,9 +46,11 @@ internal static class XsltRunner
             throw new ArgumentNullException(nameof(compiled));
         }
 
-        if (input is null)
+        if (input is null && initialTemplate is null)
         {
-            throw new ArgumentNullException(nameof(input));
+            throw new ArgumentException(
+                "An input document or an initial named template is required",
+                nameof(input));
         }
 
         if (receiver is null)
@@ -77,30 +84,66 @@ internal static class XsltRunner
             }
         }
 
-        DynamicContext rootCtx = DynamicContext.Root(xpathRun).WithContextItem(input, position: 1, size: 1);
+        DynamicContext rootCtx = input is null
+            ? DynamicContext.Root(xpathRun)
+            : DynamicContext.Root(xpathRun).WithContextItem(input, position: 1, size: 1);
+
+        // Validate the entry point before running anything (XSLT 2.0 §2.3).
+        TemplateDecl? entryTemplate = null;
+        QName mode = initialMode ?? DeclarationCollector.DefaultMode;
+        if (initialTemplate is QName templateName)
+        {
+            if (!compiled.Declarations.NamedTemplates.TryGetValue(templateName, out entryTemplate))
+            {
+                throw new XsltDynamicException(
+                    XsltErrors.XTDE0040,
+                    $"The initial template '{templateName.ClarkName}' is not declared in the stylesheet",
+                    SourceSpan.None);
+            }
+        }
+        else if (!mode.Equals(DeclarationCollector.DefaultMode) &&
+                 !System.Linq.Enumerable.Contains(compiled.Declarations.DeclaredModes, mode))
+        {
+            throw new XsltDynamicException(
+                XsltErrors.XTDE0045,
+                $"The initial mode '{mode.ClarkName}' is not used by any template rule",
+                SourceSpan.None);
+        }
+
         GlobalVariableEvaluator.EvaluateAll(compiled, rootCtx, run);
 
         SequenceNormalizer normalizer = new SequenceNormalizer(receiver, effectivePool);
         normalizer.StartDocument();
         try
         {
-            ModeDispatcher.Dispatch(
-                rootCtx,
-                normalizer,
-                run,
-                DeclarationCollector.DefaultMode,
-                System.Array.Empty<WithParamInstruction>(),
-                SourceSpan.None);
+            if (entryTemplate is not null)
+            {
+                TemplateInvoker.Invoke(
+                    rootCtx,
+                    normalizer,
+                    run,
+                    compiled.CompiledTemplates[entryTemplate],
+                    entryTemplate,
+                    System.Array.Empty<WithParamInstruction>(),
+                    SourceSpan.None);
+            }
+            else
+            {
+                run.CurrentMode = mode;
+                ModeDispatcher.Dispatch(
+                    rootCtx,
+                    normalizer,
+                    run,
+                    mode,
+                    System.Array.Empty<WithParamInstruction>(),
+                    SourceSpan.None);
+            }
         }
         finally
         {
             normalizer.EndDocument();
         }
 
-        // Promote any XTDE0410 warnings collected during the run.
-        LastRunDiagnostics = normalizer.Diagnostics;
+        return normalizer.Diagnostics;
     }
-
-    /// <summary>Diagnostics from the most recent <see cref="Transform"/> run (used by tests).</summary>
-    public static IReadOnlyList<Diagnostic> LastRunDiagnostics { get; private set; } = System.Array.Empty<Diagnostic>();
 }

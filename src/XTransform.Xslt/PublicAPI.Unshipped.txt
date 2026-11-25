@@ -1,1 +1,23 @@
 #nullable enable
+XTransform.IResourceResolver
+XTransform.IResourceResolver.Open(System.Uri! uri) -> System.IO.Stream?
+XTransform.XsltOutputSettings
+XTransform.XsltOutputSettings.XsltOutputSettings() -> void
+XTransform.XsltOutputSettings.Method.get -> string!
+XTransform.XsltOutputSettings.Method.init -> void
+XTransform.XsltOutputSettings.Encoding.get -> string!
+XTransform.XsltOutputSettings.Encoding.init -> void
+XTransform.XsltOutputSettings.Indent.get -> bool
+XTransform.XsltOutputSettings.Indent.init -> void
+XTransform.XsltOutputSettings.OmitXmlDeclaration.get -> bool
+XTransform.XsltOutputSettings.OmitXmlDeclaration.init -> void
+XTransform.XsltOutputSettings.Standalone.get -> bool?
+XTransform.XsltOutputSettings.Standalone.init -> void
+XTransform.XsltOutputSettings.DoctypePublic.get -> string?
+XTransform.XsltOutputSettings.DoctypePublic.init -> void
+XTransform.XsltOutputSettings.DoctypeSystem.get -> string?
+XTransform.XsltOutputSettings.DoctypeSystem.init -> void
+XTransform.XsltOutputSettings.CdataSectionElements.get -> System.Collections.Generic.IReadOnlyList<XTransform.Xdm.QName>!
+XTransform.XsltOutputSettings.CdataSectionElements.init -> void
+XTransform.XsltOutputSettings.ByteOrderMark.get -> bool?
+XTransform.XsltOutputSettings.ByteOrderMark.init -> void

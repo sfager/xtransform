@@ -48,6 +48,27 @@ internal sealed class XsltFunctionLibrary : FunctionLibrary
         return BuiltInFunctionLibrary.Instance.TryResolve(name, arity, out signature);
     }
 
+    /// <summary>
+    /// Registers a .NET extension function. Its arity is the number of
+    /// <paramref name="parameterTypes"/>; arguments reach <paramref name="invoke"/> already
+    /// converted to those types (F&amp;O §3.1.5).
+    /// </summary>
+    public void RegisterExtension(
+        QName name,
+        IReadOnlyList<SequenceType> parameterTypes,
+        SequenceType returnType,
+        System.Func<IReadOnlyList<XdmSequence>, XdmSequence> invoke)
+    {
+        int arity = parameterTypes.Count;
+        FunctionSignature signature = new FunctionSignature(
+            name,
+            arity,
+            returnType,
+            System.Collections.Immutable.ImmutableArray.CreateRange(parameterTypes),
+            (context, args) => invoke(args).GetIterator());
+        _xslt[MakeKey(name.NamespaceUri, name.LocalName, arity)] = signature;
+    }
+
     /// <summary>Registers a user-defined function signature with a late-bound invoker.</summary>
     public UserFunctionSlot RegisterUser(QName name, int arity)
     {
