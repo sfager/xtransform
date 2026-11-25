@@ -49,6 +49,9 @@ public static class XsltErrors
     /// <summary>Recoverable dynamic error: attribute or namespace node emitted after a child node on the same element. (XSLT 2.0 §5.6.3)</summary>
     public static readonly QName XTDE0410 = new QName("err", XPathErrors.Namespace, "XTDE0410");
 
+    /// <summary>Non-recoverable dynamic error: an attribute or namespace node was added to a document node (no open element). (XSLT 2.0 §5.7.1)</summary>
+    public static readonly QName XTDE0420 = new QName("err", XPathErrors.Namespace, "XTDE0420");
+
     /// <summary>Recoverable dynamic error: xsl:comment body contains a two-hyphen sequence or ends with a hyphen. (XSLT 2.0 §11.8)</summary>
     public static readonly QName XTDE0450 = new QName("err", XPathErrors.Namespace, "XTDE0450");
 

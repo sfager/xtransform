@@ -311,7 +311,7 @@ cancellation token actually stops a runaway stylesheet.
 
 ## P3-13 `SequenceNormalizer` and `XmlEmitter`
 
-- [ ] Done
+- [x] Done
 
 **Scope.** `SequenceNormalizer` implements XSLT 2.0 §5.6.3: adjacent atomic
 values join with a single space, text nodes with empty string values are
