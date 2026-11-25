@@ -63,6 +63,11 @@ if awk "BEGIN{exit !($drift > 0.01)}"; then
   fail=1
 fi
 
+# Also enforce the XSLT (gate G3) baseline when the XSLT summaries are present.
+if ls "$root"/artifacts/conformance/xslt-summary-*.json >/dev/null 2>&1; then
+  bash "$root/eng/check-xslt-baseline.sh" || fail=1
+fi
+
 if [ "$fail" -eq 0 ]; then
   echo "OK: conformance baseline satisfied."
 fi

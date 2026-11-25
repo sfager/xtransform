@@ -15,8 +15,8 @@
 
   <!-- Package metadata (only src projects are packable; see src/Directory.Build.props). -->
   <PropertyGroup>
-    <VersionPrefix>0.2.0</VersionPrefix>
-    <VersionSuffix>alpha.1</VersionSuffix>
+    <VersionPrefix>0.3.0</VersionPrefix>
+    <VersionSuffix>preview.1</VersionSuffix>
     <Authors>Stephen Fager</Authors>
     <Copyright>Copyright (c) 2026 Stephen Fager</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>

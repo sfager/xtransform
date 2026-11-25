@@ -48,12 +48,10 @@ internal static class StylesheetCompiler
 
         DeclarationTable declarations = DeclarationCollector.Collect(assembly, bag);
         NameBindingValidator.Validate(declarations, bag);
-        GlobalBindingValidator.Validate(declarations, bag);
-        IReadOnlyDictionary<QName, ModeTable> modes = ModeCompiler.Compile(declarations, bag);
-        IReadOnlyDictionary<QName, XsltOutputSettings> outputs = OutputDeclarationCollector.Collect(assembly, bag);
 
         // Build the function library: register user function signatures first so inter-function
-        // references resolve; bodies are populated in pass 2 via the slot.
+        // references resolve; bodies are populated in pass 2 via the slot. Global variable
+        // initialisers see the same library (XSLT 2.0 §5.4: doc(), key(), user functions).
         XsltFunctionLibrary functions = new XsltFunctionLibrary();
         configureFunctions?.Invoke(functions);
         Dictionary<FunctionKey, UserFunctionSlot> userSlots = new Dictionary<FunctionKey, UserFunctionSlot>();
@@ -62,6 +60,10 @@ internal static class StylesheetCompiler
             UserFunctionSlot slot = functions.RegisterUser(kv.Value.Name, kv.Value.Arity);
             userSlots[kv.Key] = slot;
         }
+
+        GlobalBindingValidator.Validate(declarations, functions, bag);
+        IReadOnlyDictionary<QName, ModeTable> modes = ModeCompiler.Compile(declarations, bag);
+        IReadOnlyDictionary<QName, XsltOutputSettings> outputs = OutputDeclarationCollector.Collect(assembly, bag);
 
         // Pass 2: compile every template and function body.
         Dictionary<TemplateDecl, CompiledTemplate> compiledTemplates =
