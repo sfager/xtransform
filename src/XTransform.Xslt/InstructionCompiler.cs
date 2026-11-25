@@ -27,13 +27,19 @@ internal static class InstructionCompiler
     [System.ThreadStatic]
     private static FunctionLibrary? s_functions;
 
+    /// <summary>Thread-local table receiving the compiled predicates of patterns met while compiling.</summary>
+    [System.ThreadStatic]
+    private static PatternPredicateTable? s_patterns;
+
     public static CompiledTemplate? CompileTemplate(
         TemplateDecl decl,
         DeclarationTable declarations,
         FunctionLibrary functions,
+        PatternPredicateTable patterns,
         DiagnosticBag bag)
     {
         s_functions = functions;
+        s_patterns = patterns;
         try
         {
             return CompileTemplateInner(decl, declarations, bag);
@@ -41,6 +47,7 @@ internal static class InstructionCompiler
         finally
         {
             s_functions = null;
+            s_patterns = null;
         }
     }
 
@@ -53,9 +60,11 @@ internal static class InstructionCompiler
         FunctionDecl decl,
         DeclarationTable declarations,
         FunctionLibrary functions,
+        PatternPredicateTable patterns,
         DiagnosticBag bag)
     {
         s_functions = functions;
+        s_patterns = patterns;
         try
         {
             XsltCompileScope scope = XsltCompileScope.WithGlobals(declarations.GlobalVariables.Keys);
@@ -113,6 +122,7 @@ internal static class InstructionCompiler
         finally
         {
             s_functions = null;
+            s_patterns = null;
         }
     }
 
@@ -312,13 +322,12 @@ internal static class InstructionCompiler
 
         try
         {
-            pattern = XPathParser.ParsePattern(
-                text,
-                element.Location,
-                new NamespaceBindingsResolver(
-                    element.InScopeNamespaces,
-                    defaultElementNamespace: string.Empty,
-                    defaultFunctionNamespace: BuiltInFunctionLibrary.FnNamespace));
+            NamespaceBindingsResolver resolver = new NamespaceBindingsResolver(
+                element.InScopeNamespaces,
+                defaultElementNamespace: string.Empty,
+                defaultFunctionNamespace: BuiltInFunctionLibrary.FnNamespace);
+            pattern = XPathParser.ParsePattern(text, element.Location, resolver);
+            s_patterns?.Register(pattern, resolver, s_functions ?? BuiltInFunctionLibrary.Instance, element.Location, bag);
             return true;
         }
         catch (XTransformException ex)

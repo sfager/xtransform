@@ -414,6 +414,17 @@ steps, reverse-axis positions), `tunnel` parameters (propagation through `apply-
 
 **Acceptance.** `match`, `position`, `axes`, `tunnel`, `apply-templates` sets ≥ 85% passing.
 
+**Progress (branch `p4-22-pattern-predicates`).** Pattern predicates are now compiled with the
+stylesheet (`PatternPredicateTable`: template `match`, `xsl:key match`, `xsl:number count` / `from`) and
+evaluated by `PatternMatcher` with the step's own focus: position and `last()` are taken among the
+siblings that satisfy the node test and the earlier predicates; `current()` is the node being matched;
+global variables and user functions are visible. Predicates that cannot read the position and cannot
+yield a number are decided on the node alone, so flat documents stay linear. Core shard 3,013 → 3,086
+(73 fixed, 0 regressed). Still open in this task: `id()` / `key()` patterns (`MatchId` ignores `id($var)`;
+key patterns never match), `mode="#all"` / `#current`, tunnel parameters, and the `position` / `axes` /
+`tunnel` sets. A positional predicate on a step with very many siblings is evaluated in time linear in
+the sibling count per match.
+
 ## P4-23 Static error catalogue (XTSE*)
 
 - [ ] Done

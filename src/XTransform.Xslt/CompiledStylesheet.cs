@@ -18,6 +18,7 @@ internal sealed class CompiledStylesheet
         IReadOnlyDictionary<TemplateDecl, CompiledTemplate> compiledTemplates,
         IReadOnlyDictionary<QName, KeyDecl> keys,
         XsltFunctionLibrary functions,
+        PatternPredicateTable patternPredicates,
         IReadOnlyList<Diagnostic> warnings,
         IReadOnlyDictionary<QName, XsltOutputSettings>? outputs = null)
     {
@@ -27,6 +28,7 @@ internal sealed class CompiledStylesheet
         CompiledTemplates = compiledTemplates;
         Keys = keys;
         Functions = functions;
+        PatternPredicates = patternPredicates;
         Warnings = warnings;
         Outputs = outputs ?? new Dictionary<QName, XsltOutputSettings>
         {
@@ -60,6 +62,9 @@ internal sealed class CompiledStylesheet
 
     /// <summary>The composite function library used at compile and run time.</summary>
     public XsltFunctionLibrary Functions { get; }
+
+    /// <summary>Compiled predicates of the step patterns in this stylesheet (templates, keys, xsl:number).</summary>
+    public PatternPredicateTable PatternPredicates { get; }
 
     /// <summary>Non-fatal warnings produced during compilation.</summary>
     public IReadOnlyList<Diagnostic> Warnings { get; }
