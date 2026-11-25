@@ -27,6 +27,14 @@ So G4 is unreachable while `unicode-90` counts in full, however good the engine 
 below is written to be useful under any of them; pass-count targets are stated for the `core`
 shard.
 
+> **Correction (P4-11).** The `unicode-90` figures quoted earlier in this document and in the G3 / P4-07 / P4-22 /
+> P4-10 PRs (597 passing, ceiling about 650) were inflated. The Gen stylesheet computes its verdict in a local
+> `xsl:variable` defined by content, and until P4-11 such variables were silently empty, so checks that compare
+> against nothing passed. With variable bodies implemented the same tests evaluate for real and fail unless the
+> document's category equals the default `charclass` (`Ll`). The shard's true pass count, re-measured in P4-11,
+> is **192** (a lower bound: the 847 tests that already failed before were not re-run), not 597. The conclusion in
+> "G4 cannot be reached as written" is therefore stronger, not weaker; G3 still holds (core alone: 3,613 of 7,489).
+
 ## How to work through this list
 
 - One task = one branch (`p4-NN-short-name`) = one pull request, in order unless "Depends on"
@@ -261,13 +269,29 @@ none of which equals the runtime's Unicode version; it is expected to stay in th
 
 ## P4-11 `xsl:analyze-string`, `regex-group()`
 
-- [ ] Done
+- [x] Done
 
 **Scope.** XSLT 2.0 §15: `xsl:matching-substring`, `xsl:non-matching-substring`, `xsl:fallback`,
 the `flags` attribute, `regex-group(n)` and its dynamic-context slot, zero-length-match error
 `XTDE1150`, the `FORX0001` / `FORX0002` pass-through, empty-string input.
 
 **Acceptance.** `analyze-string` set ≥ 90% passing.
+
+**Result.** `analyze-string` set: 38 of 45 in-scope tests pass (was 0 of 45 executed); core shard 3,295 →
+3,613 (322 fixed; 4 tests that had passed only because the code they exercise was silently ignored now
+fail for their real reasons: `xsl:sort` ×2, `generate-id()` ×2). The set stays below 90%: the remaining
+failures need `xsl:next-match` (P4-12), typed parameters (P4-19) and `xsl:strip-space` (P4-21). Delivered
+with it, because the tests exposed them:
+- **Variables defined by content** (`<xsl:variable>` and `<xsl:param>` with a body, local and global) now
+  hold a document node, or the constructed sequence when `as` is given; an empty untyped variable is `""`
+  (XSLT 2.0 §9.3). This was previously ignored (the value was empty). Template `xsl:param` defaults and
+  `xsl:with-param` bodies are still missing: P4-19.
+- **`last()` returned 0** inside any expression evaluated with its own variable frame
+  (`xsl:for-each`, `xsl:apply-templates`, this instruction): the focus size was lost in `WithFrame`.
+- **`$v//x` and `doc('u')/x` failed when the context item was atomic**: a path whose first step does not
+  read the focus is now evaluated as written. An axis step on an atomic context item is `XPTY0020`, and a
+  non-last step yielding non-nodes is `XPTY0019` (both were `XPTY0004`).
+- New codes: `XTDE1140`, `XTDE1145`, `XTDE1150`, `XTSE1130`, `XPTY0019`, `XPTY0020`.
 
 ## P4-12 `xsl:next-match`, `xsl:apply-imports`, import precedence in dispatch
 
@@ -375,6 +399,11 @@ The `as` attribute on `xsl:variable`, `xsl:param`, `xsl:with-param`, `xsl:templa
 violation" run failures (28 tests) that come from over-strict argument checking on
 sequence-typed variables.
 
+
+**Progress (with P4-11).** Local and global `xsl:variable` / `xsl:param` bodies are implemented
+(`VariableValueBody`): a document node without `as`, the constructed sequence with it. Still open here:
+template `xsl:param` and `xsl:with-param` bodies, applying the `as` type (function conversion rules) to the
+value, and the body forms of `xsl:value-of` / `xsl:sequence`.
 **Acceptance.** `as`, `variable` and `sequence` sets ≥ 85% passing.
 
 ## P4-20 Documents, base URIs and entities

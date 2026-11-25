@@ -19,6 +19,7 @@ internal sealed class CompiledStylesheet
         IReadOnlyDictionary<QName, KeyDecl> keys,
         XsltFunctionLibrary functions,
         PatternPredicateTable patternPredicates,
+        IReadOnlyDictionary<GlobalVariableDecl, VariableValueBody> globalBodies,
         IReadOnlyList<Diagnostic> warnings,
         IReadOnlyDictionary<QName, XsltOutputSettings>? outputs = null)
     {
@@ -29,6 +30,7 @@ internal sealed class CompiledStylesheet
         Keys = keys;
         Functions = functions;
         PatternPredicates = patternPredicates;
+        GlobalBodies = globalBodies;
         Warnings = warnings;
         Outputs = outputs ?? new Dictionary<QName, XsltOutputSettings>
         {
@@ -65,6 +67,9 @@ internal sealed class CompiledStylesheet
 
     /// <summary>Compiled predicates of the step patterns in this stylesheet (templates, keys, xsl:number).</summary>
     public PatternPredicateTable PatternPredicates { get; }
+
+    /// <summary>Compiled content of global variables and parameters defined by a sequence constructor.</summary>
+    public IReadOnlyDictionary<GlobalVariableDecl, VariableValueBody> GlobalBodies { get; }
 
     /// <summary>Non-fatal warnings produced during compilation.</summary>
     public IReadOnlyList<Diagnostic> Warnings { get; }

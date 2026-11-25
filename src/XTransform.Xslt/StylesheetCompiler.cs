@@ -66,6 +66,8 @@ internal static class StylesheetCompiler
         GlobalBindingValidator.Validate(declarations, functions, bag);
         PatternPredicateTable patterns = new PatternPredicateTable(new List<QName>(declarations.GlobalVariables.Keys));
         CompileKeyPatterns(declarations, functions, patterns, bag);
+        IReadOnlyDictionary<GlobalVariableDecl, VariableValueBody> globalBodies =
+            InstructionCompiler.CompileGlobalBodies(declarations, functions, patterns, bag);
         IReadOnlyDictionary<QName, ModeTable> modes = ModeCompiler.Compile(declarations, functions, patterns, bag);
         IReadOnlyDictionary<QName, XsltOutputSettings> outputs = OutputDeclarationCollector.Collect(assembly, bag);
 
@@ -126,6 +128,7 @@ internal static class StylesheetCompiler
             declarations.Keys,
             functions,
             patterns,
+            globalBodies,
             warnings,
             outputs);
     }

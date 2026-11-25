@@ -339,6 +339,7 @@ internal sealed class XsltRunnerTests
             compiled.Keys,
             compiled.Functions,
             compiled.PatternPredicates,
+            compiled.GlobalBodies,
             compiled.Warnings);
     }
 

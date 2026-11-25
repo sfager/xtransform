@@ -101,6 +101,11 @@ internal sealed class XsltFunctionLibrary : FunctionLibrary
             System.Array.Empty<SequenceType>(),
             CurrentInvoker);
 
+        Register("regex-group", 1,
+            SeqStringOne(),
+            new[] { new SequenceType(ItemType.Atomic(XdmTypeCode.Integer), Occurrence.ExactlyOne) },
+            RegexGroupInvoker);
+
         Register("doc-available", 1,
             SeqBoolOne(),
             new[] { SeqStringOne() },
@@ -174,6 +179,28 @@ internal sealed class XsltFunctionLibrary : FunctionLibrary
         }
 
         return new XTransform.Xdm.Iterators.SingleItemIterator(loaded);
+    }
+
+    // XSLT 2.0 §15.2: regex-group(N) returns the string captured by group N of the match being processed
+    // by xsl:matching-substring; group 0 is the whole match. The result is the zero-length string when
+    // there is no such group, the group did not take part in the match, or the call is outside a
+    // matching-substring (including inside xsl:non-matching-substring).
+    private static IXdmIterator RegexGroupInvoker(DynamicContext context, XdmSequence[] args)
+    {
+        XsltRunState run = GetRun(context);
+        long n = ((XdmAtomicValue)args[0].FirstOrNull()!).AsInt64();
+        string value = string.Empty;
+        System.Text.RegularExpressions.Match? match = run.CurrentRegexMatch;
+        if (match is not null && n >= 0 && n < match.Groups.Count)
+        {
+            System.Text.RegularExpressions.Group group = match.Groups[(int)n];
+            if (group.Success)
+            {
+                value = group.Value;
+            }
+        }
+
+        return new XTransform.Xdm.Iterators.SingleItemIterator(XdmAtomicValue.String(value));
     }
 
     // XSLT 2.0 §16.1: fn:current() returns the current item — the item being processed by the
