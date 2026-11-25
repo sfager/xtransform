@@ -35,6 +35,13 @@ internal sealed record FunctionSignature(
     public ExpressionDependencies CallDependencies { get; init; } = ExpressionDependencies.None;
 
     /// <summary>
+    /// For functions that interpret a lexical QName argument (<c>system-property</c>, <c>function-available</c>,
+    /// <c>key</c>, ...): given the namespaces in scope at the call site, returns the invoker to use for that call.
+    /// When null the <see cref="Invoker"/> is used as is.
+    /// </summary>
+    public System.Func<IStaticNamespaceResolver, FunctionInvoker>? BindStaticContext { get; init; }
+
+    /// <summary>
     /// Creates a compile-time-only signature (no runtime invoker).
     /// Used by test helpers and the <see cref="AcceptAllFunctionLibrary"/> that compile
     /// but do not evaluate expressions containing function calls.

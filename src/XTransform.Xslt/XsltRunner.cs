@@ -19,6 +19,10 @@ namespace XTransform.Xslt;
 /// </summary>
 internal static class XsltRunner
 {
+    // The static base URI is the stylesheet module's absolute URI; a local path becomes a file: URI.
+    private static string? ToAbsoluteUri(string? moduleUri) =>
+        moduleUri is not null && Uri.TryCreate(moduleUri, UriKind.Absolute, out Uri? uri) ? uri.AbsoluteUri : null;
+
     /// <summary>
     /// Transforms <paramref name="input"/> through <paramref name="compiled"/>. Without an
     /// <paramref name="initialTemplate"/> it starts by applying templates (in
@@ -59,7 +63,10 @@ internal static class XsltRunner
         }
 #pragma warning restore CA1510
 
-        RunState xpathRun = new RunState(cancellation: cancellationToken);
+        RunState xpathRun = new RunState(cancellation: cancellationToken)
+        {
+            StaticBaseUri = ToAbsoluteUri(compiled.Assembly.Primary.Module.ModuleUri),
+        };
         NamePool effectivePool = namePool ?? new NamePool();
         XsltRunState run = new XsltRunState(compiled, xpathRun, effectivePool, maxRecursionDepth)
         {

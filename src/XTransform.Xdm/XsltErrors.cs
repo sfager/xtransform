@@ -100,6 +100,21 @@ public static class XsltErrors
     public static readonly QName XTSE0280 = new QName("err", XPathErrors.Namespace, "XTSE0280");
     /// <summary>XTRE0270: an element matches conflicting xsl:strip-space and xsl:preserve-space declarations. Recoverable. (XSLT 2.0 §4.4)</summary>
     public static readonly QName XTRE0270 = new QName("err", XPathErrors.Namespace, "XTRE0270");
+
+    /// <summary>XTDE1390: the argument of system-property has a prefix with no namespace binding. (XSLT 2.0 §16.6.3)</summary>
+    public static readonly QName XTDE1390 = new QName("err", XPathErrors.Namespace, "XTDE1390");
+
+    /// <summary>XTDE1400: the argument of function-available has a prefix with no namespace binding. (XSLT 2.0 §16.6.1)</summary>
+    public static readonly QName XTDE1400 = new QName("err", XPathErrors.Namespace, "XTDE1400");
+
+    /// <summary>XTDE1425: the argument of type-available has a prefix with no namespace binding. (XSLT 2.0 §16.6.5)</summary>
+    public static readonly QName XTDE1425 = new QName("err", XPathErrors.Namespace, "XTDE1425");
+
+    /// <summary>XTDE1440: the argument of element-available has a prefix with no namespace binding. (XSLT 2.0 §16.6.2)</summary>
+    public static readonly QName XTDE1440 = new QName("err", XPathErrors.Namespace, "XTDE1440");
+
+    /// <summary>FOUT1170: unparsed-text could not read the resource (not found, bad encoding, invalid characters).</summary>
+    public static readonly QName FOUT1170 = new QName("err", XPathErrors.Namespace, "FOUT1170");
     /// <summary>XTDE1270: the third argument of key() is not a single node in a document. (XSLT 2.0 §16.4)</summary>
     public static readonly QName XTDE1270 = new QName("err", XPathErrors.Namespace, "XTDE1270");
 

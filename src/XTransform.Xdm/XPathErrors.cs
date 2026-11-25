@@ -37,6 +37,12 @@ public static class XPathErrors
     /// <summary>It is a type error if, in an axis step (or a rooted path), the context item is not a node.</summary>
     public static readonly QName XPTY0020 = new QName("err", Namespace, "XPTY0020");
 
+    /// <summary>fn:resolve-uri: a URI argument is invalid, or the base is not an absolute URI.</summary>
+    public static readonly QName FORG0002 = new QName("err", Namespace, "FORG0002");
+
+    /// <summary>The static base URI is needed (fn:resolve-uri with one argument, fn:static-base-uri) but is not defined.</summary>
+    public static readonly QName FONS0005 = new QName("err", Namespace, "FONS0005");
+
     /// <summary>It is a dynamic error if the context item is undefined where it is needed.</summary>
     public static readonly QName XPDY0002 = new QName("err", Namespace, "XPDY0002");
 

@@ -321,6 +321,19 @@ from the reader — see P4-20), `resolve-uri` (two forms), `static-base-uri`, `c
 failures (≈ 330 call sites) drop to zero; values for `xsl:vendor` and friends are recorded in
 `implementation-defined.md`.
 
+**Progress (branch `p4-13-system-functions`).** Done: `generate-id` (0 and 1 argument; unique across
+trees in a run), `system-property`, `function-available` (1 and 2 arguments), `element-available`,
+`type-available`, `unparsed-entity-uri` / `unparsed-entity-public-id` (always `""` until the reader supplies
+DTD data, P4-20), `resolve-uri` (1 and 2 arguments), `static-base-uri`, `current-output-uri` (empty),
+`unparsed-text` / `unparsed-text-available` (1 and 2 arguments). Functions that read a lexical QName
+(`system-property`, `function-available`, `element-available`, `type-available`) are bound to the
+namespaces in scope at the call through the new `FunctionSignature.BindStaticContext`, and the `use-when`
+library shares the same implementations.
+Core shard 3,655 → 3,720
+(65 fixed, 0 regressed). The unknown-function failures that remain are other tasks: `format-number`
+(P4-06), `format-date` / `format-time` / `format-dateTime` (P4-08), `document` with two arguments (P4-20),
+`collection`, `current-group` (P4-05).
+
 ## P4-14 Namespaces: `xsl:namespace`, `xsl:namespace-alias`, namespace fix-up
 
 - [ ] Done
