@@ -32,6 +32,9 @@ internal static class AstralCategories
     // Immutable once built (derived from the runtime's Unicode data); built on first use.
     private static readonly Lazy<byte[]> s_categories = new Lazy<byte[]>(Build);
 
+    /// <summary>The .NET categories making up the XSD category <paramref name="name"/>, or null when it is not one.</summary>
+    public static HashSet<UnicodeCategory>? CategorySet(string name) => TryGetCategories(name, out HashSet<UnicodeCategory>? set) ? set : null;
+
     /// <summary>
     /// Returns the supplementary-plane ranges whose general category is in
     /// <paramref name="categoryName"/> (<c>L</c>, <c>Lu</c>, …), or whose category is
