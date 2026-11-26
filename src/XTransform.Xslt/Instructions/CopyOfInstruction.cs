@@ -30,7 +30,7 @@ internal sealed class CopyOfInstruction : XsltInstruction
             switch (item)
             {
                 case XdmAtomicValue atomic:
-                    receiver.Text(atomic.GetStringValue());
+                    receiver.Append(atomic);
                     break;
 
                 case XdmNode node:

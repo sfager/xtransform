@@ -476,7 +476,7 @@ test asserting the exact code.
 
 ## P4-19 Body forms for `value-of` / `sequence`; `as` attribute and variable typing
 
-- [ ] Done
+- [x] Done
 
 **Scope.** `xsl:value-of` and `xsl:sequence` with a sequence-constructor body instead of
 `select` (the compiler currently rejects both: "body form is deferred"), `separator`.
@@ -492,6 +492,25 @@ sequence-typed variables.
 template `xsl:param` and `xsl:with-param` bodies, applying the `as` type (function conversion rules) to the
 value, and the body forms of `xsl:value-of` / `xsl:sequence`.
 **Acceptance.** `as`, `variable` and `sequence` sets ≥ 85% passing.
+
+**Result (branch `p4-19-sequence-typing`).** Done: the `as` attribute is applied with the XPath 2.0 §3.1.5 function conversion rules
+(atomization, untypedAtomic cast, numeric and anyURI promotion, cardinality, item type) to `xsl:variable` (`XTTE0570`),
+a supplied `xsl:param` / `xsl:with-param` value (`XTTE0590`), a parameter default (`XTTE0600`), a parameter with no default
+whose type rejects the empty sequence (`XTDE0610`), the result of a template (`XTTE0505`), and the arguments and result of a
+stylesheet function (`XTTE0790`, `XTTE0780`). Template `xsl:param` and `xsl:with-param` take a content body (a document node
+without `as`, a sequence with it). `xsl:value-of` takes a content body and an AVT `separator` (default zero-length with content,
+a space with `select`) and applies simple-content rules (zero-length text nodes dropped, `XTSE0870`). Static errors
+`XTSE0620`, `XTSE0580`, `XTSE0760`; `xsl:sequence` keeps requiring `select` (a body is 3.0; the 2.0 tests want `XTSE0010`).
+Sequence building was reworked so typed variables get what they expect: text nodes are separate items (including
+zero-length ones), top-level attributes and document nodes (`xsl:document`, `xsl:copy` of a document) are items, atomic
+values stay atomic through `xsl:copy-of` / `xsl:copy`, and stylesheet functions can build nodes. Other fixes the tests
+exposed: `xs:integer` for `xs:decimal` is subtype substitution (the value keeps its type), an unabbreviated `attribute()`
+step is on the attribute axis, `xsl:with-param` of `xsl:apply-templates` is evaluated in the caller's focus, and a later
+attribute of the same name replaces an earlier one. The XSLT filter now honours inverted `year_component_values`
+dependencies (see D2). Core shard 4,269 → 4,448 (181 fixed; two tests that passed only because `as` was ignored now fail: `as-0201`
+needs tunnel parameters, `xslt-compat-013` needs extension-instruction fallback); `as` 90 of 104 (86.5%), `variable` 89 of
+102 (87.3%), `sequence` 75 of 88 (85.2%). Left in those sets: tunnel parameters (P4-22), the static error catalogue (P4-23),
+`document()` with relative URIs (P4-20), backwards-compatibility mode (P4-25), dateTime range overflow (P4-26).
 
 ## P4-20 Documents, base URIs and entities
 

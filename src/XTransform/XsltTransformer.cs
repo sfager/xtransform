@@ -110,7 +110,7 @@ public sealed class XsltTransformer
             input,
             pool =>
             {
-                receiver = new SequenceResultReceiver(pool);
+                receiver = new SequenceResultReceiver(pool, principalResult: true);
                 return receiver;
             },
             CancellationToken.None);

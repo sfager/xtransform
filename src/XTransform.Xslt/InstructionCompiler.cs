@@ -54,7 +54,7 @@ internal static class InstructionCompiler
     /// <summary>
     /// Compiles an <c>xsl:function</c> body into a <see cref="UserFunctionBody"/>. Params are
     /// pushed onto the variable scope stack at invocation time; the body's returned items are
-    /// collected via <see cref="ItemCollectorReceiver"/>.
+    /// collected via <see cref="SequenceResultReceiver"/>.
     /// </summary>
     public static UserFunctionBody? CompileUserFunction(
         FunctionDecl decl,
@@ -69,6 +69,7 @@ internal static class InstructionCompiler
         {
             XsltCompileScope scope = XsltCompileScope.WithGlobals(declarations.GlobalVariables.Keys);
             List<QName> paramNames = new List<QName>();
+            List<SequenceType?> paramTypes = new List<SequenceType?>();
             int firstNonParam = 0;
             for (int i = 0; i < decl.Element.Children.Count; i++)
             {
@@ -98,6 +99,25 @@ internal static class InstructionCompiler
                     return null;
                 }
 
+                // XTSE0580: parameters have distinct names. XTSE0760: a function parameter has no default.
+                if (paramNames.Contains(name))
+                {
+                    bag.Error(XsltErrors.XTSE0580, $"Two parameters of the function have the name '{name.ClarkName}'", child.Location);
+                    return null;
+                }
+
+                if (!string.IsNullOrEmpty(GetAttribute(child, "select")) || child.Children.Count > 0)
+                {
+                    bag.Error(XsltErrors.XTSE0760, "An xsl:param of an xsl:function cannot have a default value", child.Location);
+                    return null;
+                }
+
+                if (!SequenceTypes.TryParse(GetAttribute(child, "as"), child, bag, out SequenceType? paramType))
+                {
+                    return null;
+                }
+
+                paramTypes.Add(paramType);
                 paramNames.Add(name);
                 scope.Declare(name, SequenceType.AnySequence);
                 firstNonParam = i + 1;
@@ -117,7 +137,12 @@ internal static class InstructionCompiler
                 ? bodyInstructions[0]
                 : new SequenceInstruction(bodyInstructions, decl.Location);
 
-            return new UserFunctionBody(paramNames, body);
+            if (!SequenceTypes.TryParse(GetAttribute(decl.Element, "as"), decl.Element, bag, out SequenceType? resultType))
+            {
+                return null;
+            }
+
+            return new UserFunctionBody(paramNames, body, paramTypes, resultType, decl.Location);
         }
         finally
         {
@@ -157,6 +182,12 @@ internal static class InstructionCompiler
                 return null;
             }
 
+            if (paramSlots.Exists(existing => existing.Name.Equals(slot!.Name)))
+            {
+                bag.Error(XsltErrors.XTSE0580, $"Two parameters of the template have the name '{slot!.Name.ClarkName}'", child.Location);
+                return null;
+            }
+
             paramSlots.Add(slot!);
             scope.Declare(slot!.Name, SequenceType.AnySequence);
             firstNonParam = i + 1;
@@ -177,7 +208,12 @@ internal static class InstructionCompiler
             ? bodyInstructions[0]
             : new SequenceInstruction(bodyInstructions, decl.Location);
 
-        return new CompiledTemplate(decl, paramSlots, body);
+        if (!SequenceTypes.TryParse(GetAttribute(decl.Element, "as"), decl.Element, bag, out SequenceType? resultType))
+        {
+            return null;
+        }
+
+        return new CompiledTemplate(decl, paramSlots, body, resultType);
     }
 
     private static XsltInstruction? CompileNode(
@@ -663,9 +699,16 @@ internal static class InstructionCompiler
     private static XsltInstruction? CompileXslSequence(StylesheetElement element, XsltCompileScope scope, DiagnosticBag bag)
     {
         string? selectAttr = GetAttribute(element, "select");
+        if (selectAttr is not null && HasNonFallbackContent(element))
+        {
+            bag.Error(XsltErrors.XTSE0010, "xsl:sequence has both a select attribute and content", element.Location);
+            return null;
+        }
+
         if (selectAttr is null)
         {
-            bag.Error(XsltErrors.XTSE0010, "xsl:sequence requires a select attribute (body form is deferred)", element.Location);
+            // XSLT 2.0 §11.10: select is required; the body form is XSLT 3.0.
+            bag.Error(XsltErrors.XTSE0010, "xsl:sequence requires a select attribute", element.Location);
             return null;
         }
 
@@ -675,6 +718,32 @@ internal static class InstructionCompiler
         }
 
         return new XslSequenceInstruction(select!, element.Location);
+    }
+
+    // True when the element has children other than whitespace text and xsl:fallback.
+    private static bool HasNonFallbackContent(StylesheetElement element)
+    {
+        for (int i = 0; i < element.Children.Count; i++)
+        {
+            StylesheetNode node = element.Children[i];
+            if (node is StylesheetText text)
+            {
+                if (!text.IsWhitespaceOnly)
+                {
+                    return true;
+                }
+
+                continue;
+            }
+
+            if (node is StylesheetElement child &&
+                !(child.IsXsltElement && string.Equals(child.Name.LocalName, "fallback", StringComparison.Ordinal)))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static XsltInstruction? CompileCopy(StylesheetElement element, XsltCompileScope scope, DiagnosticBag bag)
@@ -705,10 +774,26 @@ internal static class InstructionCompiler
     private static XsltInstruction? CompileValueOf(StylesheetElement element, XsltCompileScope scope, DiagnosticBag bag)
     {
         string? selectAttr = GetAttribute(element, "select");
+
+        // XSLT 2.0 §11.4: the value is the select expression or the sequence constructor, not both (XTSE0870).
+        if (selectAttr is not null && element.Children.Count > 0)
+        {
+            bag.Error(XsltErrors.XTSE0870, "xsl:value-of has both a select attribute and content", element.Location);
+            return null;
+        }
+
+        CompiledAvt? separator = CompileOptionalAvt(element, "separator", scope, bag, out bool separatorOk);
+        if (!separatorOk)
+        {
+            return null;
+        }
+
         if (selectAttr is null)
         {
-            bag.Error(XsltErrors.XTSE0010, "xsl:value-of requires a select attribute (body form is deferred)", element.Location);
-            return null;
+            VariableValueBody? body = element.Children.Count > 0
+                ? new VariableValueBody(CompileChildren(element, scope, bag), buildsDocument: false)
+                : null;
+            return new ValueOfInstruction(null, separator, element.Location, body);
         }
 
         if (!TryCompileXPath(selectAttr, element, scope, bag, out BoundExpression? select))
@@ -716,7 +801,6 @@ internal static class InstructionCompiler
             return null;
         }
 
-        string separator = GetAttribute(element, "separator") ?? " ";
         return new ValueOfInstruction(select!, separator, element.Location);
     }
 
@@ -787,6 +871,18 @@ internal static class InstructionCompiler
         // XSLT 2.0 §9.3: without select the value is the content — a document node when there is no
         // as attribute, else the sequence the content constructs; an empty untyped variable is "".
         // The content is compiled before the variable is declared, so it cannot see itself.
+        // XTSE0620: select and content together.
+        if (!string.IsNullOrEmpty(selectExpr) && element.Children.Count > 0)
+        {
+            bag.Error(XsltErrors.XTSE0620, "xsl:variable has both a select attribute and content", element.Location);
+            return null;
+        }
+
+        if (!SequenceTypes.TryParse(GetAttribute(element, "as"), element, bag, out SequenceType? asType))
+        {
+            return null;
+        }
+
         VariableValueBody? body = null;
         if (select is null && string.IsNullOrEmpty(selectExpr))
         {
@@ -804,7 +900,7 @@ internal static class InstructionCompiler
         // Add to scope so subsequent siblings see $name. Lexical extent is the enclosing
         // SequenceInstruction (restored by its finally block at runtime).
         scope.Declare(name, SequenceType.AnySequence);
-        return new VariableInstruction(name, select, body, element.Location);
+        return new VariableInstruction(name, select, body, element.Location, asType);
     }
 
     // ── Literal result elements ────────────────────────────────────────────
@@ -879,7 +975,19 @@ internal static class InstructionCompiler
 
         bool required = string.Equals(GetAttribute(element, "required"), "yes", StringComparison.Ordinal);
         string? selectExpr = GetAttribute(element, "select");
+        if (!string.IsNullOrEmpty(selectExpr) && element.Children.Count > 0)
+        {
+            bag.Error(XsltErrors.XTSE0620, "xsl:param has both a select attribute and content", element.Location);
+            return false;
+        }
+
+        if (!SequenceTypes.TryParse(GetAttribute(element, "as"), element, bag, out SequenceType? asType))
+        {
+            return false;
+        }
+
         BoundExpression? defaultSelect = null;
+        VariableValueBody? defaultBody = null;
         if (!string.IsNullOrEmpty(selectExpr))
         {
             if (!TryCompileXPath(selectExpr!, element, scope, bag, out defaultSelect))
@@ -887,8 +995,13 @@ internal static class InstructionCompiler
                 return false;
             }
         }
+        else if (element.Children.Count > 0)
+        {
+            // XSLT 2.0 §9.3: the content is a document node unless there is an as attribute.
+            defaultBody = new VariableValueBody(CompileChildren(element, scope, bag), buildsDocument: asType is null);
+        }
 
-        slot = new ParamSlot(name, defaultSelect, required, element.Location);
+        slot = new ParamSlot(name, defaultSelect, required, element.Location, defaultBody, asType);
         return true;
     }
 
@@ -1334,7 +1447,19 @@ internal static class InstructionCompiler
             }
 
             string? select = GetAttribute(child, "select");
+            if (!string.IsNullOrEmpty(select) && child.Children.Count > 0)
+            {
+                bag.Error(XsltErrors.XTSE0620, "xsl:with-param has both a select attribute and content", child.Location);
+                continue;
+            }
+
+            if (!SequenceTypes.TryParse(GetAttribute(child, "as"), child, bag, out SequenceType? asType))
+            {
+                continue;
+            }
+
             BoundExpression? expr = null;
+            VariableValueBody? body = null;
             if (!string.IsNullOrEmpty(select))
             {
                 if (!TryCompileXPath(select!, child, scope, bag, out expr))
@@ -1342,8 +1467,13 @@ internal static class InstructionCompiler
                     continue;
                 }
             }
+            else if (child.Children.Count > 0)
+            {
+                // XSLT 2.0 §9.3: the content is a document node unless there is an as attribute.
+                body = new VariableValueBody(CompileChildren(child, scope, bag), buildsDocument: asType is null);
+            }
 
-            list.Add(new WithParamInstruction(name, expr, child.Location));
+            list.Add(new WithParamInstruction(name, expr, child.Location, body, asType));
         }
 
         return list;

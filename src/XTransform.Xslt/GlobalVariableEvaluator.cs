@@ -51,6 +51,13 @@ internal static class GlobalVariableEvaluator
             // External parameter overrides win when present.
             if (decl.IsParam && run.ExternalParameters.TryGetValue(name, out XdmSequence? external))
             {
+                // A supplied parameter value is converted to the as type (XTTE0590).
+                SequenceType? suppliedType = SequenceTypes.ParseOrNull(decl.AsType, decl.Element);
+                if (suppliedType is not null)
+                {
+                    external = SequenceTypes.Convert(external, suppliedType, XsltErrors.XTTE0590, decl.Location, $"The value supplied for parameter ${name.LocalName}");
+                }
+
                 run.Globals[name] = external;
                 return external;
             }
@@ -119,6 +126,18 @@ internal static class GlobalVariableEvaluator
                 }
 
                 value = XdmSequence.From(items);
+            }
+
+            // The value of a variable (XTTE0570) or the default of a parameter (XTTE0600) is converted to the as type.
+            SequenceType? valueType = SequenceTypes.ParseOrNull(decl.AsType, decl.Element);
+            if (valueType is not null)
+            {
+                value = SequenceTypes.Convert(
+                    value,
+                    valueType,
+                    decl.IsParam ? XsltErrors.XTTE0600 : XsltErrors.XTTE0570,
+                    decl.Location,
+                    $"The value of ${name.LocalName}");
             }
 
             run.Globals[name] = value;

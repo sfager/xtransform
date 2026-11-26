@@ -81,6 +81,20 @@ internal sealed class ApplyTemplatesInstruction : XsltInstruction
         };
 
         int size = items.Count;
+
+        // The xsl:with-param values are computed once, in the focus of this instruction (XSLT 2.0 §6.5).
+        IReadOnlyList<WithParamInstruction> bound = WithParams;
+        if (WithParams.Count > 0)
+        {
+            List<WithParamInstruction> values = new List<WithParamInstruction>(WithParams.Count);
+            foreach (WithParamInstruction p in WithParams)
+            {
+                values.Add(p.Bind(context, run));
+            }
+
+            bound = values;
+        }
+
         QName savedMode = run.CurrentMode;
         try
         {
@@ -89,7 +103,7 @@ internal sealed class ApplyTemplatesInstruction : XsltInstruction
             {
                 context.CheckCancellation();
                 DynamicContext childCtx = context.WithCurrentItem(items[i], position: i + 1, size: size);
-                ModeDispatcher.Dispatch(childCtx, receiver, run, effectiveMode, WithParams, Location);
+                ModeDispatcher.Dispatch(childCtx, receiver, run, effectiveMode, bound, Location);
             }
         }
         finally
