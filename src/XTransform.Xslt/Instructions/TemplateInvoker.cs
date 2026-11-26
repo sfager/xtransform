@@ -23,11 +23,16 @@ internal static class TemplateInvoker
         // Template entry — cheap cancellation check (P3-12).
         context.CheckCancellation();
 
+        // The tunnel context for this template: what the calling chain passed, plus this call's tunnel with-params.
+        IReadOnlyDictionary<QName, XdmSequence> savedTunnel = run.TunnelParameters;
+        IReadOnlyDictionary<QName, XdmSequence> tunnel = MergeTunnel(context, run, withParams);
+
         run.EnterTemplate(source, callSite);
         int varMarker = run.VariableScopeMarker;
         try
         {
-            BindParameters(context, run, compiled, withParams, callSite);
+            BindParameters(context, run, compiled, withParams, tunnel, callSite);
+            run.TunnelParameters = tunnel;
             if (compiled.ResultType is null)
             {
                 compiled.Body.Execute(context, receiver, run);
@@ -47,6 +52,7 @@ internal static class TemplateInvoker
         finally
         {
             run.RestoreVariablesTo(varMarker);
+            run.TunnelParameters = savedTunnel;
             run.LeaveTemplate();
         }
     }
@@ -56,11 +62,27 @@ internal static class TemplateInvoker
         XsltRunState run,
         CompiledTemplate compiled,
         IReadOnlyList<WithParamInstruction> withParams,
+        IReadOnlyDictionary<QName, XdmSequence> tunnel,
         SourceSpan callSite)
     {
         foreach (ParamSlot slot in compiled.Parameters)
         {
-            WithParamInstruction? supplied = FindWithParam(withParams, slot.Name);
+            // A tunnel parameter takes its value from the tunnel context, an ordinary one from an ordinary with-param.
+            if (slot.IsTunnel)
+            {
+                if (tunnel.TryGetValue(slot.Name, out XdmSequence? tunnelled))
+                {
+                    if (slot.AsType is not null)
+                    {
+                        tunnelled = SequenceTypes.Convert(tunnelled, slot.AsType, XsltErrors.XTTE0590, slot.Location, $"The tunnel value of parameter ${slot.Name.LocalName}");
+                    }
+
+                    run.PushVariable(slot.Name, tunnelled);
+                    continue;
+                }
+            }
+
+            WithParamInstruction? supplied = slot.IsTunnel ? null : FindWithParam(withParams, slot.Name);
             if (supplied is not null)
             {
                 // A supplied value is converted to the as type of the parameter (XTTE0590).
@@ -123,13 +145,42 @@ internal static class TemplateInvoker
         }
     }
 
+    // The tunnel parameters of the call: those in force already, replaced or extended by this call's tunnel with-params.
+    private static IReadOnlyDictionary<QName, XdmSequence> MergeTunnel(
+        DynamicContext context,
+        XsltRunState run,
+        IReadOnlyList<WithParamInstruction> withParams)
+    {
+        Dictionary<QName, XdmSequence>? merged = null;
+        for (int i = 0; i < withParams.Count; i++)
+        {
+            if (!withParams[i].IsTunnel)
+            {
+                continue;
+            }
+
+            if (merged is null)
+            {
+                merged = new Dictionary<QName, XdmSequence>();
+                foreach (KeyValuePair<QName, XdmSequence> existing in run.TunnelParameters)
+                {
+                    merged[existing.Key] = existing.Value;
+                }
+            }
+
+            merged[withParams[i].Name] = withParams[i].Evaluate(context, run);
+        }
+
+        return merged ?? run.TunnelParameters;
+    }
+
     private static WithParamInstruction? FindWithParam(
         IReadOnlyList<WithParamInstruction> withParams,
         QName name)
     {
         for (int i = 0; i < withParams.Count; i++)
         {
-            if (withParams[i].Name.Equals(name))
+            if (withParams[i].Name.Equals(name) && !withParams[i].IsTunnel)
             {
                 return withParams[i];
             }

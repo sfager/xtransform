@@ -974,6 +974,13 @@ internal static class InstructionCompiler
         }
 
         bool required = string.Equals(GetAttribute(element, "required"), "yes", StringComparison.Ordinal);
+        if (required && (!string.IsNullOrEmpty(GetAttribute(element, "select")) || element.Children.Count > 0))
+        {
+            // XSLT 2.0 §9.2: a required parameter has no default value.
+            bag.Error(XsltErrors.XTSE0010, "xsl:param with required=\"yes\" must not have a select attribute or content", element.Location);
+            return false;
+        }
+
         string? selectExpr = GetAttribute(element, "select");
         if (!string.IsNullOrEmpty(selectExpr) && element.Children.Count > 0)
         {
@@ -1001,7 +1008,12 @@ internal static class InstructionCompiler
             defaultBody = new VariableValueBody(CompileChildren(element, scope, bag), buildsDocument: asType is null);
         }
 
-        slot = new ParamSlot(name, defaultSelect, required, element.Location, defaultBody, asType);
+        if (!TryParseTunnel(element, bag, out bool tunnelParam))
+        {
+            return false;
+        }
+
+        slot = new ParamSlot(name, defaultSelect, required, element.Location, defaultBody, asType, tunnelParam);
         return true;
     }
 
@@ -1473,12 +1485,56 @@ internal static class InstructionCompiler
                 body = new VariableValueBody(CompileChildren(child, scope, bag), buildsDocument: asType is null);
             }
 
-            list.Add(new WithParamInstruction(name, expr, child.Location, body, asType));
+            if (GetAttribute(child, "required") is not null)
+            {
+                bag.Error(XsltErrors.XTSE0090, "xsl:with-param does not allow a required attribute", child.Location);
+                continue;
+            }
+
+            if (!TryParseTunnel(child, bag, out bool tunnelWithParam))
+            {
+                continue;
+            }
+
+            // XTSE0670: two with-params of one call name the same parameter (and both are, or neither is, tunnel).
+            if (list.Exists(existing => existing.Name.Equals(name) && existing.IsTunnel == tunnelWithParam))
+            {
+                bag.Error(XsltErrors.XTSE0670, $"Two xsl:with-param elements of one call have the name '{name.ClarkName}'", child.Location);
+                continue;
+            }
+
+            list.Add(new WithParamInstruction(name, expr, child.Location, body, asType, tunnelWithParam));
         }
 
         return list;
     }
 
+
+    // tunnel="yes" | "no" (default no) on xsl:param and xsl:with-param; anything else is XTSE0020 (XSLT 2.0 §10.1.2).
+    private static bool TryParseTunnel(StylesheetElement element, DiagnosticBag bag, out bool tunnel)
+    {
+        tunnel = false;
+        string? value = GetAttribute(element, "tunnel");
+        if (value is null)
+        {
+            return true;
+        }
+
+        value = value.Trim();
+        if (value == "yes" || value == "true" || value == "1")
+        {
+            tunnel = true;
+            return true;
+        }
+
+        if (value == "no" || value == "false" || value == "0")
+        {
+            return true;
+        }
+
+        bag.Error(XsltErrors.XTSE0020, $"The tunnel attribute must be yes or no, not '{value}'", element.Location);
+        return false;
+    }
     // ── Helpers ────────────────────────────────────────────────────────────
 
     private static XsltInstruction CompileChildren(StylesheetElement element, XsltCompileScope parentScope, DiagnosticBag bag)

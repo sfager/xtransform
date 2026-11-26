@@ -19,6 +19,9 @@ internal static class DeclarationCollector
     /// <summary>Sentinel value representing the default (unnamed) mode.</summary>
     internal static readonly QName DefaultMode = new QName(string.Empty, string.Empty, string.Empty);
 
+    /// <summary>Marker for <c>mode="#all"</c> on a template: the rule belongs to every mode (XSLT 2.0 §6.5).</summary>
+    internal static readonly QName AllModes = new QName(string.Empty, string.Empty, "#all");
+
 
     /// <summary>Runs the declaration-collection pass and appends diagnostics to <paramref name="bag"/>.</summary>
     public static DeclarationTable Collect(StylesheetAssembly assembly, DiagnosticBag bag)
@@ -425,7 +428,14 @@ internal static class DeclarationCollector
             }
             else
             {
-                name = n;
+                if (n.NamespaceUri == "http://www.w3.org/1999/XSL/Transform")
+                {
+                    bag.Error(XsltErrors.XTSE0080, $"The template name '{nameAttr}' is in a reserved namespace", element.Location);
+                }
+                else
+                {
+                    name = n;
+                }
             }
         }
 
@@ -435,11 +445,16 @@ internal static class DeclarationCollector
         {
             foreach (string token in modeAttr.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries))
             {
-                if (string.Equals(token, "#default", StringComparison.Ordinal) ||
-                    string.Equals(token, "#all", StringComparison.Ordinal))
+                if (string.Equals(token, "#default", StringComparison.Ordinal))
                 {
-                    // Default mode is represented by the empty-string QName; #all is handled later.
+                    // The default mode is represented by the empty-string QName.
                     modes.Add(DefaultMode);
+                    continue;
+                }
+
+                if (string.Equals(token, "#all", StringComparison.Ordinal))
+                {
+                    modes.Add(AllModes);
                     continue;
                 }
 

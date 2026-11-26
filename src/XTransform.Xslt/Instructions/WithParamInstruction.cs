@@ -15,13 +15,15 @@ internal sealed class WithParamInstruction
         BoundExpression? select,
         SourceSpan location,
         VariableValueBody? body = null,
-        SequenceType? asType = null)
+        SequenceType? asType = null,
+        bool isTunnel = false)
     {
         Name = name;
         Select = select;
         Location = location;
         Body = body;
         AsType = asType;
+        IsTunnel = isTunnel;
     }
 
     /// <summary>The parameter name.</summary>
@@ -36,6 +38,9 @@ internal sealed class WithParamInstruction
     /// <summary>The required type from the <c>as</c> attribute, or null.</summary>
     public SequenceType? AsType { get; }
 
+    /// <summary>True for <c>tunnel="yes"</c>: the value goes into the tunnel context instead of binding a parameter directly.</summary>
+    public bool IsTunnel { get; }
+
     /// <summary>Source location.</summary>
     public SourceSpan Location { get; }
 
@@ -47,7 +52,7 @@ internal sealed class WithParamInstruction
     /// </summary>
     public WithParamInstruction Bind(DynamicContext context, XsltRunState run)
     {
-        WithParamInstruction bound = new WithParamInstruction(Name, null, Location, null, null);
+        WithParamInstruction bound = new WithParamInstruction(Name, null, Location, null, null, IsTunnel);
         bound._fixedValue = Evaluate(context, run);
         return bound;
     }

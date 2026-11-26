@@ -581,6 +581,8 @@ yield a number are decided on the node alone, so flat documents stay linear. Cor
 key patterns never match), `mode="#all"` / `#current`, tunnel parameters, and the `position` / `axes` /
 `tunnel` sets. A positional predicate on a step with very many siblings is evaluated in time linear in
 the sibling count per match.
+**Progress (branch `p4-22-tunnel`).** Tunnel parameters (§10.1.2: `tunnel` on `xsl:param` / `xsl:with-param`, propagation through apply-templates, call-template and built-in rules, cleared inside functions), `mode="#all"`, the call checks XTSE0650 / XTSE0680 / XTSE0690 / XTSE0670 / XTSE0090, required-parameter checks (XTSE0010, XTDE0060) and XTSE0080. The static XTSE0680 (undeclared mode) and XTRE0540 (equal priority) checks are gone: XSLT 2.0 has neither as a static error. Measured on the eight related sets only: tunnel 54/54, call-template 35/35, mode 28/33, param 22/26, match 103/110, apply-templates 28/42 (still below 85%: XTRE0540 pairs and conflict-resolution cases). The full core shard was killed twice for memory, so `xslt-baseline.json` and the known-failures list are not updated yet. Task not ticked.
+
 
 ## P4-23 Static error catalogue (XTSE*)
 

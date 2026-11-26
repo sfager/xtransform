@@ -101,6 +101,21 @@ public static class XsltErrors
     /// <summary>XTRE0270: an element matches conflicting xsl:strip-space and xsl:preserve-space declarations. Recoverable. (XSLT 2.0 §4.4)</summary>
     public static readonly QName XTRE0270 = new QName("err", XPathErrors.Namespace, "XTRE0270");
 
+    /// <summary>XTSE0080: a name in a reserved namespace is used for a user-defined component. (XSLT 2.0 §3.5)</summary>
+    public static readonly QName XTSE0080 = new QName("err", XPathErrors.Namespace, "XTSE0080");
+
+    /// <summary>XTDE0060: the initial named template has a required non-tunnel parameter, which a processor cannot supply. (XSLT 2.0 §2.3)</summary>
+    public static readonly QName XTDE0060 = new QName("err", XPathErrors.Namespace, "XTDE0060");
+
+    /// <summary>XTSE0650: xsl:call-template names a template that does not exist. (XSLT 2.0 §10.1)</summary>
+    public static readonly QName XTSE0650 = new QName("err", XPathErrors.Namespace, "XTSE0650");
+
+    /// <summary>XTSE0690: xsl:call-template does not supply a required non-tunnel parameter of the template. (XSLT 2.0 §10.1.1)</summary>
+    public static readonly QName XTSE0690 = new QName("err", XPathErrors.Namespace, "XTSE0690");
+
+    /// <summary>XTSE0670: two xsl:with-param elements of one call name the same parameter. (XSLT 2.0 §10.1.1)</summary>
+    public static readonly QName XTSE0670 = new QName("err", XPathErrors.Namespace, "XTSE0670");
+
     /// <summary>XTSE0870: xsl:value-of has both a select attribute and content. (XSLT 2.0 §11.4)</summary>
     public static readonly QName XTSE0870 = new QName("err", XPathErrors.Namespace, "XTSE0870");
 

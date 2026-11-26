@@ -33,7 +33,7 @@ internal static class ModeDispatcher
             return;
         }
 
-        if (!run.Stylesheet.Modes.TryGetValue(mode, out ModeTable? table))
+        if (!TryGetTable(run, mode, out ModeTable? table))
         {
             BuiltInRules.Apply(context, receiver, run, withParams, callSite);
             return;
@@ -63,12 +63,12 @@ internal static class ModeDispatcher
         IReadOnlyList<WithParamInstruction> withParams,
         SourceSpan callSite)
     {
+        // The mode stays the one in effect: a rule from mode="#all" has no mode of its own.
         QName savedMode = run.CurrentMode;
-        run.CurrentMode = current.Mode;
         try
         {
             TemplateRule? chosen = null;
-            if (context.ContextItem is XdmNode node && run.Stylesheet.Modes.TryGetValue(current.Mode, out ModeTable? table))
+            if (context.ContextItem is XdmNode node && TryGetTable(run, run.CurrentMode, out ModeTable? table))
             {
                 chosen = importsOnly
                     ? FindMatchingRule(
@@ -94,6 +94,10 @@ internal static class ModeDispatcher
             run.CurrentMode = savedMode;
         }
     }
+    // The table of a mode: its own, else the table of the mode="#all" rules, when there are any.
+    private static bool TryGetTable(XsltRunState run, QName mode, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out ModeTable? table) =>
+        run.Stylesheet.Modes.TryGetValue(mode, out table) || run.Stylesheet.Modes.TryGetValue(DeclarationCollector.AllModes, out table);
+
 
     // ── Candidate assembly + first-match selection ─────────────────────────
 

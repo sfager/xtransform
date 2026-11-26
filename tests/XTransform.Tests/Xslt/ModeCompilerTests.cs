@@ -38,18 +38,6 @@ internal sealed class ModeCompilerTests
     // ── Conflict detection ──────────────────────────────────────────────────
 
     [Test]
-    public void Compile_EqualPrecedenceAndPriority_RecordsXtre0540Warning()
-    {
-        // Arrange — two templates matching the same element at the same priority.
-        CompiledStylesheet compiled = Compile(Wrap(
-            "<xsl:template match='x'/>" +
-            "<xsl:template match='x'/>"));
-
-        // Assert
-        Assert.That(compiled.Warnings.Any(w => w.Code == XsltErrors.XTRE0540), Is.True);
-    }
-
-    [Test]
     public void Compile_DifferentPriority_NoWarning()
     {
         // Arrange

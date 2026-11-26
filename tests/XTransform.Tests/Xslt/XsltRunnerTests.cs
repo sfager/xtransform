@@ -117,10 +117,10 @@ internal sealed class XsltRunnerTests
     [Test]
     public void Transform_RequiredParamWithoutValue_RaisesXtde0700()
     {
-        // Arrange — called template declares a required param; caller omits it.
+        // Arrange — the matched template declares a required param; apply-templates omits it.
         CompiledStylesheet compiled = CompileWithRecorder(Wrap(
-            "<xsl:template match='/'><xsl:call-template name='n'/></xsl:template>" +
-            "<xsl:template name='n'>" +
+            "<xsl:template match='/'><xsl:apply-templates select='doc'/></xsl:template>" +
+            "<xsl:template match='doc'>" +
             "  <xsl:param name='p' required='yes'/>" +
             "  <!--body-->" +
             "</xsl:template>"),
