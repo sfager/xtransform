@@ -7,6 +7,13 @@ namespace XTransform.Conformance;
 /// <summary>Applies the XSLT filter from decisions.md D2.</summary>
 internal static class XsltFilter
 {
+    // The year_component_values capabilities this engine provides (see D2 in docs/decisions.md).
+    private static readonly HashSet<string> s_supportedYearComponents = new HashSet<string>(StringComparer.Ordinal)
+    {
+        "support year above 9999",
+        "support negative year",
+    };
+
     private static readonly HashSet<string> s_excludedFeatures = new HashSet<string>(StringComparer.Ordinal)
     {
         "schema_aware",
@@ -32,6 +39,13 @@ internal static class XsltFilter
     {
         foreach (XsltDependency dep in caseLevel.Concat(setLevel))
         {
+            // A year_component_values dependency with satisfied="false" describes a processor that lacks the capability: the test
+            // expects an overflow error there. XTransform supports years above 9999 and negative years, so it does not apply.
+            if (!dep.Satisfied && dep.Type == "year_component_values" && s_supportedYearComponents.Contains(dep.Value.Trim()))
+            {
+                return false;
+            }
+
             if (dep.Type == "feature" && dep.Satisfied && s_excludedFeatures.Contains(dep.Value.Trim()))
             {
                 return false;

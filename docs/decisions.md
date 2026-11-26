@@ -51,7 +51,10 @@ Catalog namespace: `http://www.w3.org/2010/09/qt-fots-catalog`; dependencies are
 `http://www.w3.org/2012/10/xslt-test-catalog`.
 
 A dependency with `satisfied="false"` inverts its meaning (the test applies only when the
-feature is *absent*); honour it.
+feature is *absent*); honour it. This covers `year_component_values` as well as `feature`: a test whose
+dependency is `year_component_values` with `satisfied="false"` for "support year above 9999" or "support negative year"
+expects an overflow error from a processor that lacks that support, and XTransform supports both, so it is out of
+scope.
 
 Update a pin only in a dedicated commit that records the before/after pass-rates.
 
