@@ -192,6 +192,19 @@ Registered as an XSLT function (it needs the stylesheet's decimal formats).
   separators, negative numbers, infinity and NaN.
 - `format-number` set ≥ 90% passing; the 178 call-site failures elsewhere drop accordingly.
 
+**Progress (branch `p4-06-format-number`).** Done: `xsl:decimal-format` (named and unnamed, all ten
+attributes, merging of several declarations by import precedence, `XTSE0020`, `XTSE0090`, `XTSE1290`,
+`XTSE1295`, `XTSE1300`) and `format-number` with 2 and 3 arguments (picture grammar and all `XTDE1310`
+conditions, grouping with the repeated-interval rule, percent / per-mille, half-to-even rounding on exact
+digit strings, NaN, infinity, negative zero, custom zero-digit families, `XTDE1280`). About 100 table-driven
+unit cases. Two related fixes: XML output in a non-Unicode encoding now writes unrepresentable characters as
+numeric character references (it wrote `?`), and `xs:double('-0')` / `xs:float('-0')` keep their sign on
+.NET Framework. Core shard 3,720 → 3,824 (104 fixed, 0 regressed); `format-number` set 62 of 70 (88.6%),
+just under the 90% target. The eight left: six use `version="1.0"` backwards-compatibility mode (a
+non-numeric argument becomes NaN; P4-25), one needs a decimal literal with more than 28 digits (`XsdDecimal` is
+backed by `System.Decimal`), and one (`format-number-070`) names an initial template its stylesheet never
+declares. Reaching 90% needs P4-25 or arbitrary-precision decimals.
+
 ## P4-07 `xsl:number` and picture tokens
 
 - [x] Done

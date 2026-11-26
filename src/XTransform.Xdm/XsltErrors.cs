@@ -101,6 +101,24 @@ public static class XsltErrors
     /// <summary>XTRE0270: an element matches conflicting xsl:strip-space and xsl:preserve-space declarations. Recoverable. (XSLT 2.0 §4.4)</summary>
     public static readonly QName XTRE0270 = new QName("err", XPathErrors.Namespace, "XTRE0270");
 
+    /// <summary>XTSE0090: an element has an attribute that is not allowed on it. (XSLT 2.0 §3.7)</summary>
+    public static readonly QName XTSE0090 = new QName("err", XPathErrors.Namespace, "XTSE0090");
+
+    /// <summary>XTDE1310: the picture string of format-number is invalid. (XSLT 2.0 §16.4.2)</summary>
+    public static readonly QName XTDE1310 = new QName("err", XPathErrors.Namespace, "XTDE1310");
+
+    /// <summary>XTDE1280: format-number names a decimal format that is not declared (or the name is not a valid QName). (XSLT 2.0 §16.4)</summary>
+    public static readonly QName XTDE1280 = new QName("err", XPathErrors.Namespace, "XTDE1280");
+
+    /// <summary>XTSE1300: two picture symbols of a decimal format use the same character. (XSLT 2.0 §16.4.1)</summary>
+    public static readonly QName XTSE1300 = new QName("err", XPathErrors.Namespace, "XTSE1300");
+
+    /// <summary>XTSE1295: the zero-digit of a decimal format is not a digit with value zero. (XSLT 2.0 §16.4.1)</summary>
+    public static readonly QName XTSE1295 = new QName("err", XPathErrors.Namespace, "XTSE1295");
+
+    /// <summary>XTSE1290: two xsl:decimal-format declarations of one format give different values for a property at the same import precedence. (XSLT 2.0 §16.4.1)</summary>
+    public static readonly QName XTSE1290 = new QName("err", XPathErrors.Namespace, "XTSE1290");
+
     /// <summary>XTDE1390: the argument of system-property has a prefix with no namespace binding. (XSLT 2.0 §16.6.3)</summary>
     public static readonly QName XTDE1390 = new QName("err", XPathErrors.Namespace, "XTDE1390");
 
