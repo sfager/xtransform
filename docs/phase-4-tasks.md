@@ -242,7 +242,7 @@ bodies now run with no focus (so `xsl:number` and `current()` raise their errors
 
 ## P4-08 `fn:format-date` / `format-dateTime` / `format-time`
 
-- [ ] Done
+- [x] Done
 
 **Scope.** F&O §9.8: the picture grammar (`[Y0001]`, `[MNn]`, `[FNn]`, widths, presentation
 modifiers), language and calendar arguments (the English `-en` forms first; other languages
@@ -264,8 +264,10 @@ fixes that the conformance tests exposed: date and time plus a duration now foll
 the day of the month twice), the canonical zero `xs:yearMonthDuration` is `P0M`, and `fn:sum`, `fn:avg`,
 `fn:min` and `fn:max` accept durations, dates, times and strings. Core shard 3,824 → 3,910 (86 fixed, 0
 regressed); `format-date` 37 of 37, `format-date-en` 33 of 33, `date` 81 of 98 (82.7%, target 85%). The
-`date` failures left are not formatting: comparison and subtraction of dates with time zones (F&O §10.4,
+`date` failures left were not formatting: comparison and subtraction of dates with time zones (F&O §10.4,
 §10.7.4), ordering by `xsl:sort` (P4-04), `xs:dateTime` edge cases such as 24:00:00, and one error-code test.
+**Completed in P4-09:** time-zone aware comparison of dates and times and the sorter brought the `date` set to 93 of 98 (94.9%), so the
+85% target is met and the box above is ticked. Five `date` tests remain (subtraction across time zones and `24:00:00`).
 
 ## P4-09 `xsl:for-each-group`, `current-group()`, `current-grouping-key()`
 
@@ -279,6 +281,22 @@ instruction (P4-04). The current group and grouping key are part of the dynamic 
 
 **Acceptance.** `for-each-group` set ≥ 90% passing; a 100,000-item grouping completes in under
 two seconds (hash-based grouping for `group-by`).
+
+**Progress (branch `p4-09-for-each-group`).** Done: `xsl:for-each-group` with `group-by` (hash based; an item can join
+several groups, never the same one twice), `group-adjacent`, `group-starting-with`, `group-ending-with` (the first
+node always starts a group), `collation` (codepoint only), `xsl:sort` over the groups with `current-group()` and
+`current-grouping-key()` available in the keys, nested groups, the group being empty inside a stylesheet function and
+restored afterwards. `XTSE1080`, `XTSE1090`, `XTSE1060`, `XTSE1070`, `XTSE1017`, `XTTE1100`, `XTTE1120`, `XTDE1110`
+(the codes in the task note above were wrong; these follow the spec). A 100,000-item grouping runs well inside the
+two-second budget. Supporting changes the tests exposed: **simplified stylesheets** (§3.7: a literal result element
+root with `xsl:version` is the implicit `match="/"` template, `XTSE0150` without it; about 60 tests use them),
+pattern predicates can use local variables and function parameters, a stylesheet function can construct elements,
+comments and processing instructions (they were dropped), `xs:dateTime` / `xs:date` / `xs:time` compare as instants with
+the implicit time zone taken to be UTC (F&O §10.4), and `fn:deep-equal` treats `xs:untypedAtomic` as `xs:string`.
+Core shard 4,044 → 4,137 (93 fixed, 0 regressed). `for-each-group` set 48 of 55 in scope (87.3%, target 90%). The seven
+left need other tasks: `for-each-group-029` (`document()` with a relative URI, P4-20), `-067` (`xsl:next-match`, P4-12), `-085`
+(sequence-constructor typing, P4-19), `-068` (non-transitive numeric grouping, erratum E25), `-084` (an XPath 3.0 `!`),
+`-086` (a UCA collation URI), and `-081a` (its assertion reads indented output, a harness matter; the result is right).
 
 ## P4-10 XPath regex dialect completion
 

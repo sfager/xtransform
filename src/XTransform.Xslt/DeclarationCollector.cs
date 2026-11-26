@@ -43,8 +43,9 @@ internal static class DeclarationCollector
                 (!string.Equals(root.Name.LocalName, "stylesheet", StringComparison.Ordinal) &&
                  !string.Equals(root.Name.LocalName, "transform", StringComparison.Ordinal)))
             {
-                // Simplified stylesheet — root is a literal result element acting as the body
-                // of an implicit xsl:template match="/". No top-level decls to collect here.
+                // XSLT 2.0 §3.7: a simplified stylesheet (the root is a literal result element) is shorthand for a
+                // stylesheet with one xsl:template match="/" whose body is that element.
+                CollectSimplifiedStylesheet(root, entry.ImportPrecedence, templates, namedTemplates, declaredModes, bag);
                 continue;
             }
 
@@ -100,6 +101,42 @@ internal static class DeclarationCollector
         }
 
         return new DeclarationTable(globals, templates, namedTemplates, functions, declaredModes, keyGroups, new WhitespaceTable(whitespaceRules), DecimalFormatTable.Build(decimalFormats, bag));
+    }
+
+    // The implicit template of a simplified stylesheet. The literal result element must carry xsl:version (XTSE0150).
+    private static void CollectSimplifiedStylesheet(
+        StylesheetElement root,
+        int precedence,
+        List<TemplateDecl> templates,
+        Dictionary<QName, TemplateDecl> namedTemplates,
+        HashSet<QName> declaredModes,
+        DiagnosticBag bag)
+    {
+        bool hasXslVersion = false;
+        for (int i = 0; i < root.Attributes.Count; i++)
+        {
+            StylesheetAttribute a = root.Attributes[i];
+            if (string.Equals(a.Name.NamespaceUri, XsltNamespace.Uri, StringComparison.Ordinal) &&
+                string.Equals(a.Name.LocalName, "version", StringComparison.Ordinal))
+            {
+                hasXslVersion = true;
+            }
+        }
+
+        if (!hasXslVersion)
+        {
+            bag.Error(
+                XsltErrors.XTSE0150,
+                "A literal result element used as the stylesheet module must have an xsl:version attribute",
+                root.Location);
+            return;
+        }
+
+        StylesheetElement template = new StylesheetElement(
+            new QName("xsl", XsltNamespace.Uri, "template"), root.InScopeNamespaces, root.Location);
+        template.AppendAttribute(new StylesheetAttribute(new QName(string.Empty, string.Empty, "match"), "/", root.Location));
+        template.AppendChild(root);
+        CollectTemplate(template, precedence, templates, namedTemplates, declaredModes, bag);
     }
 
     // ── xsl:decimal-format (XSLT 2.0 §16.4.1) ──────────────────────────────────

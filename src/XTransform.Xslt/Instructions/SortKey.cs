@@ -96,6 +96,27 @@ internal static class ItemSorter
         DynamicContext context,
         XsltRunState run)
     {
+        int[] order = SortIndices(items, keys, context, run, null);
+        List<XdmItem> result = new List<XdmItem>(order.Length);
+        for (int i = 0; i < order.Length; i++)
+        {
+            result.Add(items[order[i]]);
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Returns the input positions of <paramref name="items"/> in sorted order. <paramref name="prepare"/>, when given, is called
+    /// with the position of an item just before its keys are computed (xsl:for-each-group uses it to set the current group).
+    /// </summary>
+    internal static int[] SortIndices(
+        List<XdmItem> items,
+        IReadOnlyList<SortKey> keys,
+        DynamicContext context,
+        XsltRunState run,
+        Action<int>? prepare)
+    {
         // The attributes are AVTs evaluated once, in the context of the instruction (§13.1.1).
         ResolvedKey[] resolved = new ResolvedKey[keys.Count];
         for (int k = 0; k < keys.Count; k++)
@@ -103,38 +124,25 @@ internal static class ItemSorter
             resolved[k] = Resolve(keys[k], context, run);
         }
 
-        int n = items.Count;
-        if (n < 2)
-        {
-            // Keys are still evaluated so that errors in them are reported.
-            for (int k = 0; k < resolved.Length; k++)
-            {
-                resolved[k].Values = EvaluateKeys(keys[k], resolved[k], items, context, run);
-            }
-
-            return new List<XdmItem>(items);
-        }
-
+        // Keys are evaluated even for fewer than two items so that errors in them are reported.
         for (int k = 0; k < resolved.Length; k++)
         {
-            resolved[k].Values = EvaluateKeys(keys[k], resolved[k], items, context, run);
+            resolved[k].Values = EvaluateKeys(keys[k], resolved[k], items, context, run, prepare);
         }
 
+        int n = items.Count;
         int[] order = new int[n];
         for (int i = 0; i < n; i++)
         {
             order[i] = i;
         }
 
-        MergeSort(order, new int[n], 0, n, resolved, keys);
-
-        List<XdmItem> result = new List<XdmItem>(n);
-        for (int i = 0; i < n; i++)
+        if (n >= 2)
         {
-            result.Add(items[order[i]]);
+            MergeSort(order, new int[n], 0, n, resolved, keys);
         }
 
-        return result;
+        return order;
     }
 
     // ── Attribute resolution ─────────────────────────────────────────────────
@@ -291,13 +299,15 @@ internal static class ItemSorter
         ResolvedKey resolved,
         List<XdmItem> items,
         DynamicContext context,
-        XsltRunState run)
+        XsltRunState run,
+        Action<int>? prepare)
     {
         int n = items.Count;
         KeyValue[] values = new KeyValue[n];
         for (int i = 0; i < n; i++)
         {
             context.CheckCancellation();
+            prepare?.Invoke(i);
             DynamicContext focus = context.WithCurrentItem(items[i], position: i + 1, size: n);
             IXdmIterator source = key.Select is not null
                 ? key.Select.Iterate(focus, run)
