@@ -71,7 +71,7 @@ internal sealed class NumberFormatterTests
     [TestCase("w", 1234L, "one thousand two hundred and thirty-four")]
     [TestCase("W", 21L, "TWENTY-ONE")]
     [TestCase("Ww", 21L, "Twenty-One")]
-    [TestCase("Ww", 105L, "One Hundred And Five")]
+    [TestCase("Ww", 105L, "One Hundred and Five")]
     public void Format_WordTokens_ProduceEnglishWords(string format, long n, string expected)
     {
         Assert.That(Format(format, n), Is.EqualTo(expected));

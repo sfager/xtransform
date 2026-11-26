@@ -240,6 +240,20 @@ lacks them (check `BuiltInFunctionLibrary` first; QT3 may already cover part of 
 **Acceptance.** `format-date`, `format-date-en`, `date` sets ≥ 85% passing; 200 call-site
 failures elsewhere drop accordingly.
 
+**Progress (branch `p4-08-format-dates`).** Done: `format-dateTime`, `format-date` and `format-time` with 2 and
+5 arguments (XSLT 2.0 §16.5, not F&O §9.8, which is the 3.0 numbering): the picture grammar with `[[` / `]]`
+escapes, all component specifiers (`Y M D d F W w H h P m s f Z z C E`), first and second presentation
+modifiers (any `xsl:number` token, `n` / `N` / `Nn` names, `o` ordinals, digit families), width modifiers with
+the Y high-order truncation, `f` rounding and padding rules, English names with conventional abbreviations,
+ISO week numbers, week in month, `XTDE1340`, `XTDE1350`. Unsupported languages and calendars fall back to
+English / the Gregorian calendar and say so with a `[Language: en]` / `[Calendar: AD]` prefix. Supporting
+fixes that the conformance tests exposed: date and time plus a duration now follows F&O Appendix E (it added
+the day of the month twice), the canonical zero `xs:yearMonthDuration` is `P0M`, and `fn:sum`, `fn:avg`,
+`fn:min` and `fn:max` accept durations, dates, times and strings. Core shard 3,824 → 3,910 (86 fixed, 0
+regressed); `format-date` 37 of 37, `format-date-en` 33 of 33, `date` 81 of 98 (82.7%, target 85%). The
+`date` failures left are not formatting: comparison and subtraction of dates with time zones (F&O §10.4,
+§10.7.4), ordering by `xsl:sort` (P4-04), `xs:dateTime` edge cases such as 24:00:00, and one error-code test.
+
 ## P4-09 `xsl:for-each-group`, `current-group()`, `current-grouping-key()`
 
 - [ ] Done
