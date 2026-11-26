@@ -101,6 +101,9 @@ public static class XsltErrors
     /// <summary>XTRE0270: an element matches conflicting xsl:strip-space and xsl:preserve-space declarations. Recoverable. (XSLT 2.0 §4.4)</summary>
     public static readonly QName XTRE0270 = new QName("err", XPathErrors.Namespace, "XTRE0270");
 
+    /// <summary>XTDE0560: xsl:apply-imports or xsl:next-match is evaluated when there is no current template rule. (XSLT 2.0 §6.7)</summary>
+    public static readonly QName XTDE0560 = new QName("err", XPathErrors.Namespace, "XTDE0560");
+
     /// <summary>XTSE1070: current-grouping-key() is used within a pattern. (XSLT 2.0 §14.2)</summary>
     public static readonly QName XTSE1070 = new QName("err", XPathErrors.Namespace, "XTSE1070");
 

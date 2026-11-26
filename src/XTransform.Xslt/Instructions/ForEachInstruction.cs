@@ -52,21 +52,33 @@ internal sealed class ForEachInstruction : XsltInstruction
         }
 
         int size = items.Count;
-        for (int i = 0; i < size; i++)
-        {
-            // Loop back-edge — give the cancellation token a chance to stop runaway stylesheets.
-            context.CheckCancellation();
 
-            DynamicContext child = context.WithCurrentItem(items[i], position: i + 1, size: size);
-            int marker = run.VariableScopeMarker;
-            try
+        // There is no current template rule inside the body of xsl:for-each (XSLT 2.0 §6.7): xsl:next-match and
+        // xsl:apply-imports there are XTDE0560.
+        TemplateRule? savedRule = run.CurrentRule;
+        run.CurrentRule = null;
+        try
+        {
+            for (int i = 0; i < size; i++)
             {
-                Body.Execute(child, receiver, run);
+                // Loop back-edge — give the cancellation token a chance to stop runaway stylesheets.
+                context.CheckCancellation();
+
+                DynamicContext child = context.WithCurrentItem(items[i], position: i + 1, size: size);
+                int marker = run.VariableScopeMarker;
+                try
+                {
+                    Body.Execute(child, receiver, run);
+                }
+                finally
+                {
+                    run.RestoreVariablesTo(marker);
+                }
             }
-            finally
-            {
-                run.RestoreVariablesTo(marker);
-            }
+        }
+        finally
+        {
+            run.CurrentRule = savedRule;
         }
     }
 }

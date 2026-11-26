@@ -102,6 +102,8 @@ internal sealed class ForEachGroupInstruction : XsltInstruction
 
         IReadOnlyList<XdmItem>? savedGroup = run.CurrentGroup;
         XdmAtomicValue? savedKey = run.CurrentGroupingKey;
+        TemplateRule? savedRule = run.CurrentRule;
+        run.CurrentRule = null; // no current template rule inside xsl:for-each-group (XSLT 2.0 §6.7)
         try
         {
             if (Sorts.Count > 0 && groups.Count > 0)
@@ -157,6 +159,7 @@ internal sealed class ForEachGroupInstruction : XsltInstruction
         {
             run.CurrentGroup = savedGroup;
             run.CurrentGroupingKey = savedKey;
+            run.CurrentRule = savedRule;
         }
     }
 

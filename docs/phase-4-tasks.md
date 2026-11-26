@@ -362,6 +362,22 @@ pass-through, `XTSE0010` and `XTDE0560` cases.
 
 **Acceptance.** `next-match`, `apply-imports` and `import` sets ≥ 85% passing.
 
+**Progress (branch `p4-12-next-match`).** Done: `xsl:next-match` and `xsl:apply-imports` with `xsl:with-param` (and `xsl:fallback`
+ignored), the current template rule kept on the run state and cleared inside `xsl:for-each`, `xsl:for-each-group` and
+stylesheet functions, `XTDE0560`, `XTSE0010` for other content. `xsl:apply-imports` reaches exactly the rules of the
+modules the current rule's module imports (the linker now records each module's import subtree range of
+precedences); `xsl:next-match` takes the next rule in rank order, treating alternatives of one template that share an explicit
+`priority` as one rule. Fixes the tests exposed: `xsl:include` is a textual insert (the included module's top-level elements
+are spliced in at the include's position, so declaration order and "last rule wins" follow the text; nested includes
+were being dropped; the same module can be included twice; a simplified module can be included, and a non-stylesheet
+without `xsl:version` is `XTSE0150`), `match="node()"` no longer matches the document node, `attribute()` and typed
+kind tests (`element(N, T)`, `attribute(*, T)`) are on the right axis with the right priority (0.25 with a name and a type)
+and only match untyped nodes. Core shard 4,137 → 4,269 (132 fixed, 0 regressed). `next-match` 27 of 28 (96.4%);
+`import` 31 of 39 (79.5%, target 85%). The eight left in `import`: `-0001` (namespace nodes, P4-14), `-0701` and `-2201`
+(attribute sets, P4-15), `-1201` (`FORG0001` on a long `xs:integer` list), `-0502b` and `-0902b` (`XTRE0540`; see
+implementation-defined.md: the suite has paired tests that need opposite policies), `-2402` and `-2404` (static errors
+inside an included or imported module, P4-23). `next-match-012` needs `xsl:attribute-set` (P4-15). The `apply-imports` set holds one XSLT 3.0 test and is out of scope.
+
 ## P4-13 System and environment functions
 
 - [ ] Done

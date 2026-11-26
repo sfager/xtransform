@@ -561,12 +561,14 @@ internal sealed class UserFunctionSlot
                         SourceSpan.None);
                 }
 
-                // The current group and grouping key are empty inside a stylesheet function (XSLT 2.0 §14.1).
-                if (ctx.Run.Tag is not XsltRunState run || (run.CurrentGroup is null && run.CurrentGroupingKey is null))
+                // The current group, grouping key and template rule are empty inside a stylesheet function (XSLT 2.0 §14.1, §6.7).
+                if (ctx.Run.Tag is not XsltRunState run || (run.CurrentGroup is null && run.CurrentGroupingKey is null && run.CurrentRule is null))
                 {
                     return _body.Invoke(ctx, args);
                 }
 
+                TemplateRule? savedRule = run.CurrentRule;
+                run.CurrentRule = null;
                 IReadOnlyList<XdmItem>? savedGroup = run.CurrentGroup;
                 XdmAtomicValue? savedKey = run.CurrentGroupingKey;
                 run.CurrentGroup = null;
@@ -577,6 +579,7 @@ internal sealed class UserFunctionSlot
                 }
                 finally
                 {
+                    run.CurrentRule = savedRule;
                     run.CurrentGroup = savedGroup;
                     run.CurrentGroupingKey = savedKey;
                 }

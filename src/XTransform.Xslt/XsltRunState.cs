@@ -47,6 +47,9 @@ internal sealed class XsltRunState
     /// <summary>The match whose groups <c>regex-group()</c> reads: set while an xsl:matching-substring body runs, null elsewhere.</summary>
     public System.Text.RegularExpressions.Match? CurrentRegexMatch { get; set; }
 
+    /// <summary>The template rule being evaluated (the <c>current template rule</c> of XSLT 2.0 §6.7); null outside any rule, and inside a stylesheet function.</summary>
+    internal TemplateRule? CurrentRule { get; set; }
+
     /// <summary>The group <c>current-group()</c> returns: set while the body of an xsl:for-each-group runs, null elsewhere (§14.1).</summary>
     public IReadOnlyList<XdmItem>? CurrentGroup { get; set; }
 

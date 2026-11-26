@@ -223,6 +223,13 @@ internal sealed record StepPatternAst(
             return 0.0;
         }
 
+        // element(N, T) / attribute(N, T) with a type → 0.25; element(*, T) / attribute(*, T) → 0 (XSLT 2.0 §6.4)
+        if ((kt.Kind == XdmNodeKind.Element || kt.Kind == XdmNodeKind.Attribute) && kt.TypeArg.HasValue)
+        {
+            bool named = kt.NameArg.HasValue && !string.Equals(kt.NameArg.Value.LocalName, "*", System.StringComparison.Ordinal);
+            return named ? 0.25 : 0.0;
+        }
+
         // element(name) or attribute(name) with specific QName → 0
         // Note: element(*) / attribute(*) use a sentinel QName with LocalName="*" to record
         // that the wildcard was explicit; that is treated the same as element() / attribute().
