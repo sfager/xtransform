@@ -101,6 +101,21 @@ public static class XsltErrors
     /// <summary>XTRE0270: an element matches conflicting xsl:strip-space and xsl:preserve-space declarations. Recoverable. (XSLT 2.0 §4.4)</summary>
     public static readonly QName XTRE0270 = new QName("err", XPathErrors.Namespace, "XTRE0270");
 
+    /// <summary>XTSE1015: xsl:sort has both a select attribute and content. (XSLT 2.0 §13.1)</summary>
+    public static readonly QName XTSE1015 = new QName("err", XPathErrors.Namespace, "XTSE1015");
+
+    /// <summary>XTTE1020: a sort key evaluates to a sequence of more than one item. (XSLT 2.0 §13.1.2)</summary>
+    public static readonly QName XTTE1020 = new QName("err", XPathErrors.Namespace, "XTTE1020");
+
+    /// <summary>XTDE1035: xsl:sort names a collation that is not supported. (XSLT 2.0 §13.1.3)</summary>
+    public static readonly QName XTDE1035 = new QName("err", XPathErrors.Namespace, "XTDE1035");
+
+    /// <summary>XTDE1030: sort keys that cannot be compared with each other. (XSLT 2.0 §13.1.2)</summary>
+    public static readonly QName XTDE1030 = new QName("err", XPathErrors.Namespace, "XTDE1030");
+
+    /// <summary>XTDE0030: an attribute value template of xsl:sort (order, data-type, case-order, stable) gives an invalid value. (XSLT 2.0 §13.1.1)</summary>
+    public static readonly QName XTDE0030 = new QName("err", XPathErrors.Namespace, "XTDE0030");
+
     /// <summary>XTDE1350: a date or time picture refers to a component the value does not have, such as a year in a time. (XSLT 2.0 §16.5.1)</summary>
     public static readonly QName XTDE1350 = new QName("err", XPathErrors.Namespace, "XTDE1350");
 

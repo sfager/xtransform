@@ -152,7 +152,7 @@ unknown instructions).
 
 ## P4-04 `xsl:sort`, `xsl:perform-sort`, sort keys
 
-- [ ] Done
+- [x] Done
 
 **Scope.** XSLT 2.0 §13: `xsl:sort` in `xsl:apply-templates` and `xsl:for-each` (and, with
 P4-09, `xsl:for-each-group`), multiple keys, `select`, `data-type`, `order`, `case-order`,
@@ -164,6 +164,19 @@ the XPath 2.0 `lt` rules (typed) or as strings with the default collation until 
 - `sort` set: ≥ 90% of in-scope tests pass.
 - Stability test: equal keys keep input order for 10,000 items.
 - Hot path rule applies: no LINQ in the comparison loop.
+
+**Result (branch `p4-04-sort`).** Done: `xsl:sort` in `xsl:for-each` and `xsl:apply-templates`, `xsl:perform-sort`
+(with `select` or content), multiple keys, keys from `select` or content, `data-type` `text` / `number`,
+`order`, `case-order`, `lang`, `collation` and `stable` as AVTs (a literal with an invalid value is
+`XTSE0020`, a computed one `XTDE0030`), empty and NaN keys first (last when descending), typed key
+comparison with `XTDE1030` for incomparable types, `XTTE1020` for a multi-item key, `XTSE1015`, `XTDE1035`
+for an unsupported collation. The sort is a stable merge sort over precomputed keys with no LINQ in the
+comparison. `sort` set 68 of 74 (91.9%); core shard 3,910 → 4,044 (135 fixed, 0
+regressed). A reverse-axis step such as `ancestor::x` returned its nodes nearest-first; the result of a
+step is now in document order (XPath 2.0 §3.2), which sorting by `position()` exposed. The six failing
+`sort` tests are not sort bugs: `sort-052` / `sort-053` fail on `intersect` with more than one item,
+`sort-054` on an `xs:anyURI` parameter, and `sort-063` / `sort-064` / `sort-073` need a sequence constructor
+to keep adjacent text nodes (and top-level attributes) as separate items (P4-19).
 
 ## P4-05 Collations
 

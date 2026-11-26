@@ -369,6 +369,21 @@ internal sealed class AxisStepNode : ExpressionNode
             axisResult = PredicateApplicator.Apply(axisResult, predicate, context);
         }
 
+        // A reverse axis is walked nearest-first so that predicate positions count that way, but the result of
+        // the step is in document order (XPath 2.0 §3.2): reverse it once the predicates have been applied.
+        if (Axis is Axis.Ancestor or Axis.AncestorOrSelf or Axis.PrecedingSibling or Axis.Preceding)
+        {
+            List<XdmItem> nodes = new List<XdmItem>();
+            XdmItem? node;
+            while ((node = axisResult.Next()) is not null)
+            {
+                nodes.Add(node);
+            }
+
+            nodes.Reverse();
+            return new ArrayIterator(nodes.ToArray());
+        }
+
         return axisResult;
     }
 
