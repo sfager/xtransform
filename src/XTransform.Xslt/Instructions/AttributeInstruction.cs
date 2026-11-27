@@ -47,12 +47,16 @@ internal sealed class AttributeInstruction : XsltInstruction
     /// <inheritdoc/>
     public override void Execute(DynamicContext context, IResultReceiver receiver, XsltRunState run)
     {
-        string lexical = Name.Stringify(context, run);
+        string lexical = Name.Stringify(context, run).Trim();
         string? explicitNs = Namespace?.Stringify(context, run);
 
-        int colon = lexical.IndexOf(':');
-        string prefix = colon < 0 ? string.Empty : lexical.Substring(0, colon);
-        string local = colon < 0 ? lexical : lexical.Substring(colon + 1);
+        // XSLT 2.0 §11.3.1 (XTDE0850): the name must be a lexical QName.
+        if (!LexicalNames.IsQName(lexical))
+        {
+            throw new XsltDynamicException(XsltErrors.XTDE0850, $"'{lexical}' is not a lexical QName, so it cannot name an attribute", Location);
+        }
+
+        LexicalNames.Split(lexical, out string prefix, out string local);
 
         string ns;
         if (explicitNs is not null)
@@ -61,12 +65,20 @@ internal sealed class AttributeInstruction : XsltInstruction
         }
         else if (prefix.Length == 0)
         {
+            // XTDE0855: an attribute named xmlns would declare a namespace.
+            if (local == "xmlns")
+            {
+                throw new XsltDynamicException(XsltErrors.XTDE0855, "An attribute cannot be named xmlns", Location);
+            }
+
             // Attributes with no prefix are in no namespace (XSLT 2.0 §11.3, unlike elements).
             ns = string.Empty;
         }
         else
         {
-            ns = StaticScope.Resolve(prefix) ?? string.Empty;
+            // XTDE0860: with no namespace attribute, the prefix must be bound where the instruction is.
+            ns = StaticScope.Resolve(prefix)
+                ?? throw new XsltDynamicException(XsltErrors.XTDE0860, $"The prefix '{prefix}' of the attribute name '{lexical}' has no namespace declaration in scope", Location);
         }
 
         // Evaluate the value: @select wins; otherwise run the body into a scratch collector.

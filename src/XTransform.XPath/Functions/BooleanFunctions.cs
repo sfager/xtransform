@@ -60,12 +60,12 @@ internal static class BooleanFunctions
             return true;
         }
 
-        // If first item is atomic, sequence must be a singleton (else XPTY0004).
+        // If first item is atomic, sequence must be a singleton (else FORG0006).
         if (seq.Count > 1)
         {
-            // F&O §15.1.1: more than one item in a non-node sequence → XPTY0004.
+            // F&O §15.1.1: more than one item in a non-node sequence → FORG0006.
             throw new XPathDynamicException(
-                XPathErrors.XPTY0004,
+                XPathErrors.FORG0006,
                 "fn:boolean: sequence of more than one item (not starting with a node) has no defined EBV.",
                 default);
         }
@@ -128,9 +128,9 @@ internal static class BooleanFunctions
                 return av.AsInt64() != 0;
 
             default:
-                // F&O §15.1.1: all other atomic types raise XPTY0004.
+                // F&O §15.1.1: all other atomic types raise FORG0006.
                 throw new XPathDynamicException(
-                    XPathErrors.XPTY0004,
+                    XPathErrors.FORG0006,
                     $"fn:boolean: xs:{CastTable.GetXsLocalName(av.TypeCode)} has no defined EBV.",
                     default);
         }

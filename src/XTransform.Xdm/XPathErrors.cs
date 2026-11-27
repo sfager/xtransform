@@ -126,4 +126,10 @@ public static class XPathErrors
     /// Raised by fn:resolve-QName when the prefix cannot be resolved.
     /// </summary>
     public static readonly QName FONS0004 = new QName("err", Namespace, "FONS0004");
+
+    /// <summary>Dynamic error: the operand of treat as does not match the required sequence type. (XPath 2.0 §3.10.5)</summary>
+    public static readonly QName XPDY0050 = new QName("err", XPathErrors.Namespace, "XPDY0050");
+
+    /// <summary>Invalid argument type: for example fn:min, fn:max or fn:sum over values that cannot be compared or added, or an effective boolean value that is not defined. (F&amp;O §15)</summary>
+    public static readonly QName FORG0006 = new QName("err", XPathErrors.Namespace, "FORG0006");
 }

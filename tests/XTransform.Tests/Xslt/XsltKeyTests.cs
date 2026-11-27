@@ -1,6 +1,7 @@
 using System.IO;
 using System.Text;
 using NUnit.Framework;
+using XTransform.Xdm;
 
 namespace XTransform.Tests.Xslt;
 
@@ -70,9 +71,12 @@ internal sealed class XsltKeyTests
     }
 
     [Test]
-    public void KeyThatIsNotDeclared_YieldsNoNodes()
+    public void KeyThatIsNotDeclared_RaisesXtde1260()
     {
-        Assert.That(Run(Value("count(key('nope', '1'))"), Doc), Is.EqualTo("0"));
+        // XSLT 2.0 §16.3: the name must be the name of an xsl:key declaration.
+        XsltDynamicException ex = Assert.Throws<XsltDynamicException>(() => Run(Value("count(key('nope', '1'))"), Doc))!;
+
+        Assert.That(ex.ErrorCode, Is.EqualTo(XsltErrors.XTDE1260));
     }
 
     private static string Run(string body, string input)

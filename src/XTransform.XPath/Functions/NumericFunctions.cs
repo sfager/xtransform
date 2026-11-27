@@ -556,7 +556,7 @@ internal static class NumericFunctions
             if (!durations || v.TypeCode != first)
             {
                 throw new XPathDynamicException(
-                    XPathErrors.XPTY0004,
+                    XPathErrors.FORG0006,
                     $"{fnName} requires numeric values or durations of one kind; item has type xs:{CastTable.GetXsLocalName(v.TypeCode)}.",
                     default);
             }
@@ -576,7 +576,7 @@ internal static class NumericFunctions
                 or XdmTypeCode.GDay or XdmTypeCode.GMonth or XdmTypeCode.QName or XdmTypeCode.Notation or XdmTypeCode.HexBinary)
             {
                 throw new XPathDynamicException(
-                    XPathErrors.XPTY0004,
+                    XPathErrors.FORG0006,
                     $"{fnName} cannot order values of type xs:{CastTable.GetXsLocalName(v.TypeCode)}.",
                     default);
             }
@@ -588,7 +588,7 @@ internal static class NumericFunctions
             if (cmp is null)
             {
                 throw new XPathDynamicException(
-                    XPathErrors.XPTY0004,
+                    XPathErrors.FORG0006,
                     $"{fnName} encountered values that cannot be compared.",
                     default);
             }
@@ -641,7 +641,7 @@ internal static class NumericFunctions
             if (cmp is null)
             {
                 throw new XPathDynamicException(
-                    XPathErrors.XPTY0004,
+                    XPathErrors.FORG0006,
                     $"{fnName} encountered incomparable values.",
                     default);
             }
@@ -872,7 +872,7 @@ internal static class NumericFunctions
             if (requireNumeric && !NumericPromotion.IsNumeric(av.TypeCode))
             {
                 throw new XPathDynamicException(
-                    XPathErrors.XPTY0004,
+                    XPathErrors.FORG0006,
                     $"{fnName} requires a numeric sequence; item has type xs:{CastTable.GetXsLocalName(av.TypeCode)}.",
                     default);
             }

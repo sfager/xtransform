@@ -96,11 +96,11 @@ internal sealed class XsltDateArithmeticTests
     [TestCase("avg((xs:date('2003-12-07'), xs:date('2003-12-08')))")]
     [TestCase("min(('a', 1))")]
     [TestCase("max((xs:date('2003-12-07'), xs:time('10:00:00')))")]
-    public void Aggregates_OverIncompatibleValues_RaiseXpty0004(string expression)
+    public void Aggregates_OverIncompatibleValues_RaiseForg0006(string expression)
     {
         XPathDynamicException ex = Assert.Throws<XPathDynamicException>(() => Eval($"string({expression})"))!;
 
-        Assert.That(ex.ErrorCode, Is.EqualTo(XPathErrors.XPTY0004));
+        Assert.That(ex.ErrorCode, Is.EqualTo(XPathErrors.FORG0006));
     }
 
     private static string Eval(string xpath)

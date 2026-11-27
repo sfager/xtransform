@@ -77,7 +77,7 @@ internal sealed class ApplyTemplatesInstruction : XsltInstruction
         {
             if (item is not XdmNode)
             {
-                throw new XsltDynamicException(XsltErrors.XTTE0510, "The sequence selected by xsl:apply-templates must contain only nodes", Location);
+                throw new XsltDynamicException(XsltErrors.XTTE0520, "The sequence selected by xsl:apply-templates must contain only nodes", Location);
             }
 
             items.Add(item);

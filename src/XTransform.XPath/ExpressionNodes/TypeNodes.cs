@@ -110,12 +110,12 @@ internal sealed class TreatNode : ExpressionNode
     public override IXdmIterator Iterate(DynamicContext context)
     {
         // XPath 2.0 §3.10.5: treat-as checks the operand's dynamic type against the target.
-        // Mismatch → XPTY0004; otherwise the operand passes through unchanged.
+        // Mismatch → XPDY0050; otherwise the operand passes through unchanged.
         XdmSequence materialised = InstanceOfNode.MaterialiseOperand(Expr, context);
         if (!TargetType.Matches(materialised))
         {
             throw new XPathDynamicException(
-                XPathErrors.XPTY0004,
+                XPathErrors.XPDY0050,
                 $"treat as {TargetType}: value does not match the declared type",
                 Location);
         }

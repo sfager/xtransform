@@ -261,7 +261,15 @@ internal static class AccessorFunctions
                 default);
         }
 
-        string result = ci is XdmNode n ? (n.NodeName?.LocalName ?? string.Empty) : string.Empty;
+        if (ci is not XdmNode n)
+        {
+            throw new XPathDynamicException(
+                XPathErrors.XPTY0004,
+                "fn:local-name() requires the context item to be a node.",
+                default);
+        }
+
+        string result = n.NodeName?.LocalName ?? string.Empty;
         return new SingleItemIterator(XdmAtomicValue.String(result));
     }
 
@@ -286,7 +294,15 @@ internal static class AccessorFunctions
                 default);
         }
 
-        string result = ci is XdmNode n ? (n.NodeName?.NamespaceUri ?? string.Empty) : string.Empty;
+        if (ci is not XdmNode n)
+        {
+            throw new XPathDynamicException(
+                XPathErrors.XPTY0004,
+                "fn:namespace-uri() requires the context item to be a node.",
+                default);
+        }
+
+        string result = n.NodeName?.NamespaceUri ?? string.Empty;
         return new SingleItemIterator(XdmAtomicValue.AnyUri(result));
     }
 
@@ -311,7 +327,15 @@ internal static class AccessorFunctions
                 default);
         }
 
-        string result = ci is XdmNode n ? GetNodeName(n) : string.Empty;
+        if (ci is not XdmNode n)
+        {
+            throw new XPathDynamicException(
+                XPathErrors.XPTY0004,
+                "fn:name() requires the context item to be a node.",
+                default);
+        }
+
+        string result = GetNodeName(n);
         return new SingleItemIterator(XdmAtomicValue.String(result));
     }
 

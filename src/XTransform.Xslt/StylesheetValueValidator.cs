@@ -156,34 +156,9 @@ internal static class StylesheetValueValidator
             }
         }
     }
-    private static bool IsQName(string value)
-    {
-        int colon = value.IndexOf(':');
-        if (colon < 0)
-        {
-            return IsNCName(value);
-        }
+    private static bool IsQName(string value) => LexicalNames.IsQName(value);
 
-        return IsNCName(value.Substring(0, colon)) && IsNCName(value.Substring(colon + 1));
-    }
-
-    private static bool IsNCName(string value)
-    {
-        if (value.Length == 0 || !XmlConvert.IsStartNCNameChar(value[0]))
-        {
-            return false;
-        }
-
-        for (int i = 1; i < value.Length; i++)
-        {
-            if (!XmlConvert.IsNCNameChar(value[i]))
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
+    private static bool IsNCName(string value) => LexicalNames.IsNCName(value);
 
     // XSLT 2.0 §6.5 (XTSE0550): "#all" alone, or a non-empty whitespace-separated list of distinct QNames and "#default".
     private static bool IsTemplateMode(string value)

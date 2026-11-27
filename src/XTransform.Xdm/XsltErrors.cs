@@ -131,7 +131,7 @@ public static class XsltErrors
     /// <summary>XTRE0270: an element matches conflicting xsl:strip-space and xsl:preserve-space declarations. Recoverable. (XSLT 2.0 §4.4)</summary>
     public static readonly QName XTRE0270 = new QName("err", XPathErrors.Namespace, "XTRE0270");
 
-    /// <summary>XTTE0510: xsl:apply-templates selects an item that is not a node, or has no select and a non-node context item. (XSLT 2.0 §6.1)</summary>
+    /// <summary>XTTE0510: xsl:apply-templates has no select attribute and the context item is not a node. (XSLT 2.0 §6.1)</summary>
     public static readonly QName XTTE0510 = new QName("err", XPathErrors.Namespace, "XTTE0510");
 
     /// <summary>XTSE0080: a name in a reserved namespace is used for a user-defined component. (XSLT 2.0 §3.5)</summary>
@@ -279,4 +279,28 @@ public static class XsltErrors
 
     /// <summary>Raised by xsl:message with terminate="yes". (XSLT 2.0 §16)</summary>
     public static readonly QName XTMM9000 = new QName("err", XPathErrors.Namespace, "XTMM9000");
+
+    /// <summary>It is a non-recoverable dynamic error if the effective value of the name attribute of xsl:element is not a lexical QName. (XSLT 2.0 §11.2)</summary>
+    public static readonly QName XTDE0820 = new QName("err", XPathErrors.Namespace, "XTDE0820");
+
+    /// <summary>It is a non-recoverable dynamic error if the name of an xsl:element has a prefix that no namespace declaration binds and the instruction has no namespace attribute. (XSLT 2.0 §11.2)</summary>
+    public static readonly QName XTDE0830 = new QName("err", XPathErrors.Namespace, "XTDE0830");
+
+    /// <summary>It is a non-recoverable dynamic error if the effective value of the name attribute of xsl:attribute is not a lexical QName. (XSLT 2.0 §11.3.1)</summary>
+    public static readonly QName XTDE0850 = new QName("err", XPathErrors.Namespace, "XTDE0850");
+
+    /// <summary>It is a non-recoverable dynamic error if the name of an xsl:attribute is xmlns and there is no namespace attribute. (XSLT 2.0 §11.3.1)</summary>
+    public static readonly QName XTDE0855 = new QName("err", XPathErrors.Namespace, "XTDE0855");
+
+    /// <summary>It is a non-recoverable dynamic error if the name of an xsl:attribute has a prefix that no namespace declaration binds and the instruction has no namespace attribute. (XSLT 2.0 §11.3.1)</summary>
+    public static readonly QName XTDE0860 = new QName("err", XPathErrors.Namespace, "XTDE0860");
+
+    /// <summary>It is a non-recoverable dynamic error if the name of an xsl:processing-instruction is not an NCName, or is xml in any case. (XSLT 2.0 §11.5)</summary>
+    public static readonly QName XTDE0890 = new QName("err", XPathErrors.Namespace, "XTDE0890");
+
+    /// <summary>It is a non-recoverable dynamic error if the name argument of key() is not a lexical QName with a bound prefix, or is not the name of an xsl:key declaration. (XSLT 2.0 §16.3)</summary>
+    public static readonly QName XTDE1260 = new QName("err", XPathErrors.Namespace, "XTDE1260");
+
+    /// <summary>It is a type error if the sequence selected by xsl:apply-templates contains an item that is not a node. (XSLT 2.0 §6.1)</summary>
+    public static readonly QName XTTE0520 = new QName("err", XPathErrors.Namespace, "XTTE0520");
 }

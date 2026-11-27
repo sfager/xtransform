@@ -35,7 +35,13 @@ internal sealed class ProcessingInstructionInstruction : XsltInstruction
     /// <inheritdoc/>
     public override void Execute(DynamicContext context, IResultReceiver receiver, XsltRunState run)
     {
-        string target = Name.Stringify(context, run);
+        string target = Name.Stringify(context, run).Trim();
+
+        // XSLT 2.0 §11.5 (XTDE0890): the target must be an NCName, and not xml in any case.
+        if (!LexicalNames.IsNCName(target) || string.Equals(target, "xml", System.StringComparison.OrdinalIgnoreCase))
+        {
+            throw new XsltDynamicException(XsltErrors.XTDE0890, $"'{target}' is not a valid name for a processing instruction", Location);
+        }
 
         string data;
         if (Select is not null)

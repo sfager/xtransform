@@ -409,3 +409,13 @@ override XTransform.Xdm.SequenceType.ToString() -> string!
 static XTransform.Xdm.SequenceType.AnySequence.get -> XTransform.Xdm.SequenceType!
 static XTransform.Xdm.SequenceType.EmptySequence.get -> XTransform.Xdm.SequenceType!
 static readonly XTransform.Xdm.XPathErrors.FONS0004 -> XTransform.Xdm.QName
+static readonly XTransform.Xdm.XsltErrors.XTDE0820 -> XTransform.Xdm.QName
+static readonly XTransform.Xdm.XsltErrors.XTDE0830 -> XTransform.Xdm.QName
+static readonly XTransform.Xdm.XsltErrors.XTDE0850 -> XTransform.Xdm.QName
+static readonly XTransform.Xdm.XsltErrors.XTDE0855 -> XTransform.Xdm.QName
+static readonly XTransform.Xdm.XsltErrors.XTDE0860 -> XTransform.Xdm.QName
+static readonly XTransform.Xdm.XsltErrors.XTDE0890 -> XTransform.Xdm.QName
+static readonly XTransform.Xdm.XsltErrors.XTDE1260 -> XTransform.Xdm.QName
+static readonly XTransform.Xdm.XPathErrors.XPDY0050 -> XTransform.Xdm.QName
+static readonly XTransform.Xdm.XPathErrors.FORG0006 -> XTransform.Xdm.QName
+static readonly XTransform.Xdm.XsltErrors.XTTE0520 -> XTransform.Xdm.QName
