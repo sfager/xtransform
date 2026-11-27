@@ -320,7 +320,7 @@ internal sealed class StylesheetReaderTests
     // ── Unknown xsl:* behaviour ──────────────────────────────────────────
 
     [Test]
-    public void Read_UnknownXsltElement_UnderVersion2_ThrowsXtse0805()
+    public void Read_UnknownXsltElement_UnderVersion2_ThrowsXtse0010()
     {
         // Arrange
         string xml =
@@ -330,7 +330,7 @@ internal sealed class StylesheetReaderTests
 
         // Act + Assert
         XsltStaticException ex = Assert.Throws<XsltStaticException>(() => ReadInline(xml))!;
-        Assert.That(ex.Errors.Any(e => e.Code == XsltErrors.XTSE0805), Is.True);
+        Assert.That(ex.Errors.Any(e => e.Code == XsltErrors.XTSE0010), Is.True);
     }
 
     [Test]

@@ -190,7 +190,7 @@ internal static class StylesheetReader
             element.DeclaredVersion = declaredHere!;
         }
 
-        // Handle unknown xsl:* elements (XTSE0805 outside forwards-compatible mode;
+        // Handle unknown xsl:* elements (XTSE0010 outside forwards-compatible mode;
         // XTSE0150 warning inside). XSLT 2.0 §3.7.
         if (element.IsUnknownXsltElement)
         {
@@ -206,7 +206,7 @@ internal static class StylesheetReader
             else
             {
                 diagnostics.Error(
-                    XsltErrors.XTSE0805,
+                    XsltErrors.XTSE0010,
                     $"Unknown XSLT element xsl:{element.Name.LocalName}",
                     location);
             }
