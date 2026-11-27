@@ -1,3 +1,4 @@
+using System;
 using System.Text;
 
 namespace XTransform.Serialization;
@@ -9,18 +10,43 @@ namespace XTransform.Serialization;
 internal static class EncodingResolver
 {
     /// <summary>Returns an encoding instance whose preamble matches the BOM decision.</summary>
-    public static Encoding Resolve(Encoding encoding, bool? byteOrderMark)
+    /// <param name="encoding">The requested encoding.</param>
+    /// <param name="byteOrderMark">An explicit byte-order-mark setting, or null for the default.</param>
+    /// <param name="characterReferences">
+    /// True for the markup methods: a character the encoding cannot represent is written as a numeric
+    /// character reference instead of being replaced (Serialization §6).
+    /// </param>
+    public static Encoding Resolve(Encoding encoding, bool? byteOrderMark, bool characterReferences = false)
     {
         bool wide = encoding.CodePage is 1200 or 1201 or 12000 or 12001;
         bool bom = byteOrderMark ?? wide;
-        return encoding.CodePage switch
+        switch (encoding.CodePage)
         {
-            65001 => new UTF8Encoding(bom),
-            1200 => new UnicodeEncoding(false, bom),
-            1201 => new UnicodeEncoding(true, bom),
-            12000 => new UTF32Encoding(false, bom),
-            12001 => new UTF32Encoding(true, bom),
-            _ => encoding,
-        };
+            case 65001:
+                return new UTF8Encoding(bom);
+            case 1200:
+                return new UnicodeEncoding(false, bom);
+            case 1201:
+                return new UnicodeEncoding(true, bom);
+            case 12000:
+                return new UTF32Encoding(false, bom);
+            case 12001:
+                return new UTF32Encoding(true, bom);
+        }
+
+        if (!characterReferences)
+        {
+            return encoding;
+        }
+
+        try
+        {
+            return Encoding.GetEncoding(encoding.CodePage, new CharacterReferenceFallback(), DecoderFallback.ReplacementFallback);
+        }
+        catch (ArgumentException)
+        {
+            // The code page is not available with a custom fallback; keep the encoding as it is.
+            return encoding;
+        }
     }
 }

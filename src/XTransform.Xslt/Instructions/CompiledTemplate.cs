@@ -14,11 +14,13 @@ internal sealed class CompiledTemplate
     public CompiledTemplate(
         TemplateDecl source,
         IReadOnlyList<ParamSlot> parameters,
-        XsltInstruction body)
+        XsltInstruction body,
+        SequenceType? resultType = null)
     {
         Source = source;
         Parameters = parameters;
         Body = body;
+        ResultType = resultType;
     }
 
     /// <summary>The source template declaration this was compiled from.</summary>
@@ -26,6 +28,9 @@ internal sealed class CompiledTemplate
 
     /// <summary>The template's <c>xsl:param</c> declarations in order.</summary>
     public IReadOnlyList<ParamSlot> Parameters { get; }
+
+    /// <summary>The required type of the result from the template's <c>as</c> attribute, or null.</summary>
+    public SequenceType? ResultType { get; }
 
     /// <summary>The compiled body instruction tree.</summary>
     public XsltInstruction Body { get; }

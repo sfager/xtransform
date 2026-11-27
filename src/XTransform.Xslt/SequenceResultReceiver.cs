@@ -9,18 +9,23 @@ using XTransform.Xdm;
 namespace XTransform.Xslt;
 
 /// <summary>Receiver that gathers the result sequence rather than serialising it.</summary>
-internal sealed class SequenceResultReceiver : IResultReceiver
+internal sealed class SequenceResultReceiver : IResultReceiver, ISequenceReceiver
 {
     private readonly NamePool _pool;
     private readonly List<XdmItem> _items = new List<XdmItem>();
     private readonly StringBuilder _pendingText = new StringBuilder();
     private TreeBuilder? _current;
     private int _depth;
+    private bool _ownsDocument;
+    private readonly bool _ignoreOutermostDocument;
+    private int _documentNesting;
+    private bool _outermostIgnored;
 
     /// <summary>Initializes a receiver whose constructed nodes use <paramref name="pool"/>.</summary>
-    public SequenceResultReceiver(NamePool pool)
+    public SequenceResultReceiver(NamePool pool, bool principalResult = false)
     {
         _pool = pool;
+        _ignoreOutermostDocument = principalResult;
     }
 
     /// <summary>Returns the collected sequence. Call once the transformation has finished.</summary>
@@ -33,11 +38,53 @@ internal sealed class SequenceResultReceiver : IResultReceiver
     /// <inheritdoc/>
     public void StartDocument()
     {
+        // The principal result of a transformation is wrapped in one document event that is not itself an item.
+        _documentNesting++;
+        if (_ignoreOutermostDocument && _documentNesting == 1)
+        {
+            _outermostIgnored = true;
+            return;
+        }
+
+        // A document node constructed at the top level (xsl:document) is an item of the sequence; its content is
+        // built into it. Inside an element the document wrapper is transparent.
+        if (_depth == 0 && _current is null)
+        {
+            FlushText();
+            _current = new TreeBuilder(_pool);
+            _current.StartDocument();
+            _ownsDocument = true;
+        }
+
+        if (_ownsDocument)
+        {
+            _depth++;
+        }
     }
 
     /// <inheritdoc/>
     public void EndDocument()
     {
+        _documentNesting--;
+        if (_outermostIgnored && _documentNesting == 0)
+        {
+            _outermostIgnored = false;
+            return;
+        }
+
+        if (!_ownsDocument)
+        {
+            return;
+        }
+
+        _depth--;
+        if (_depth == 0)
+        {
+            _current!.EndDocument();
+            _items.Add(_current.Build());
+            _current = null;
+            _ownsDocument = false;
+        }
     }
 
     /// <inheritdoc/>
@@ -64,6 +111,22 @@ internal sealed class SequenceResultReceiver : IResultReceiver
         if (_current is not null && _depth > 0)
         {
             _current.Attribute(nameCode, value, location);
+            return;
+        }
+
+        // An attribute outside any element is an item of its own (xsl:attribute in a sequence constructor).
+        FlushText();
+        TreeBuilder holder = new TreeBuilder(_pool);
+        holder.StartElement(nameCode, location);
+        holder.Attribute(nameCode, value, location);
+        holder.EndElement();
+        foreach (XdmNode element in holder.Build().Axis(Axis.Child))
+        {
+            foreach (XdmNode attribute in element.Axis(Axis.Attribute))
+            {
+                _items.Add(attribute);
+                return;
+            }
         }
     }
 
@@ -138,6 +201,29 @@ internal sealed class SequenceResultReceiver : IResultReceiver
 
         FlushText();
         _items.Add(item);
+    }
+
+    /// <summary>A text node that is an item of the sequence in its own right: separate from the text around it, and kept even when empty.</summary>
+    public void TextNode(string text)
+    {
+        if (_depth > 0)
+        {
+            _current!.Text(text);
+            return;
+        }
+
+        FlushText();
+        TreeBuilder builder = new TreeBuilder(_pool);
+        if (text.Length == 0)
+        {
+            builder.ZeroLengthText();
+        }
+        else
+        {
+            builder.Text(text);
+        }
+
+        _items.Add(FirstChild(builder.Build()));
     }
 
     private void FlushText()

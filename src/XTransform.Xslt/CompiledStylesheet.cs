@@ -16,7 +16,7 @@ internal sealed class CompiledStylesheet
         DeclarationTable declarations,
         IReadOnlyDictionary<QName, ModeTable> modes,
         IReadOnlyDictionary<TemplateDecl, CompiledTemplate> compiledTemplates,
-        IReadOnlyDictionary<QName, KeyDecl> keys,
+        IReadOnlyDictionary<QName, IReadOnlyList<KeyDecl>> keys,
         XsltFunctionLibrary functions,
         PatternPredicateTable patternPredicates,
         IReadOnlyDictionary<GlobalVariableDecl, VariableValueBody> globalBodies,
@@ -59,8 +59,8 @@ internal sealed class CompiledStylesheet
     /// <summary>Compiled template bodies keyed by their source <see cref="TemplateDecl"/>.</summary>
     public IReadOnlyDictionary<TemplateDecl, CompiledTemplate> CompiledTemplates { get; }
 
-    /// <summary>Key declarations keyed by expanded name (multiple xsl:key with the same name combine at lookup).</summary>
-    public IReadOnlyDictionary<QName, KeyDecl> Keys { get; }
+    /// <summary>Key declarations by expanded name; every xsl:key with the same name is in the list and they combine (XSLT 2.0 §16.3).</summary>
+    public IReadOnlyDictionary<QName, IReadOnlyList<KeyDecl>> Keys { get; }
 
     /// <summary>The composite function library used at compile and run time.</summary>
     public XsltFunctionLibrary Functions { get; }

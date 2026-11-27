@@ -39,14 +39,15 @@ internal sealed class PatternPredicateTable
         IStaticNamespaceResolver namespaces,
         FunctionLibrary functions,
         SourceSpan location,
-        DiagnosticBag bag)
+        DiagnosticBag bag,
+        IReadOnlyCollection<QName>? locals = null)
     {
         switch (pattern)
         {
             case UnionPatternAst union:
                 foreach (PatternAst alternative in union.Alternatives)
                 {
-                    Register(alternative, namespaces, functions, location, bag);
+                    Register(alternative, namespaces, functions, location, bag, locals);
                 }
 
                 break;
@@ -54,7 +55,7 @@ internal sealed class PatternPredicateTable
             case PathPatternAst path:
                 foreach (StepPatternAst step in path.Steps)
                 {
-                    RegisterStep(step, namespaces, functions, location, bag);
+                    RegisterStep(step, namespaces, functions, location, bag, locals);
                 }
 
                 break;
@@ -62,7 +63,7 @@ internal sealed class PatternPredicateTable
             case IdKeyWithPathAst tail:
                 foreach (StepPatternAst step in tail.TailSteps)
                 {
-                    RegisterStep(step, namespaces, functions, location, bag);
+                    RegisterStep(step, namespaces, functions, location, bag, locals);
                 }
 
                 break;
@@ -79,19 +80,36 @@ internal sealed class PatternPredicateTable
     /// <summary>The parsed <c>match</c> pattern of <paramref name="key"/>, or null when none was recorded.</summary>
     public PatternAst? GetKeyPattern(KeyDecl key) => _keyPatterns.TryGetValue(key, out PatternAst? p) ? p : null;
 
+    private static List<QName> Union(IReadOnlyCollection<QName> a, IReadOnlyCollection<QName> b)
+    {
+        List<QName> result = new List<QName>(a);
+        foreach (QName name in b)
+        {
+            if (!result.Contains(name))
+            {
+                result.Add(name);
+            }
+        }
+
+        return result;
+    }
+
     private void RegisterStep(
         StepPatternAst step,
         IStaticNamespaceResolver namespaces,
         FunctionLibrary functions,
         SourceSpan location,
-        DiagnosticBag bag)
+        DiagnosticBag bag,
+        IReadOnlyCollection<QName>? locals = null)
     {
         if (step.Predicates.IsEmpty || _bySteps.ContainsKey(step))
         {
             return;
         }
 
-        XsltCompileScope scope = XsltCompileScope.WithGlobals(_globalNames);
+        // Local variables and parameters in scope where the pattern appears (xsl:for-each-group) are visible too;
+        // they are found through the run state when the pattern is matched.
+        XsltCompileScope scope = XsltCompileScope.WithGlobals(locals is null ? _globalNames : Union(_globalNames, locals));
         BoundExpression[] compiled = new BoundExpression[step.Predicates.Length];
         for (int i = 0; i < compiled.Length; i++)
         {

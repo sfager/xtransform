@@ -164,7 +164,9 @@ internal sealed class DeclarationTable
         IReadOnlyDictionary<QName, TemplateDecl> namedTemplates,
         IReadOnlyDictionary<FunctionKey, FunctionDecl> functions,
         IReadOnlyCollection<QName> declaredModes,
-        IReadOnlyDictionary<QName, KeyDecl> keys)
+        IReadOnlyDictionary<QName, IReadOnlyList<KeyDecl>> keys,
+        WhitespaceTable whitespace,
+        DecimalFormatTable decimalFormats)
     {
         GlobalVariables = globalVariables;
         Templates = templates;
@@ -172,10 +174,18 @@ internal sealed class DeclarationTable
         Functions = functions;
         DeclaredModes = declaredModes;
         Keys = keys;
+        Whitespace = whitespace;
+        DecimalFormats = decimalFormats;
     }
 
     /// <summary>Global variables and parameters, keyed by expanded name — higher-precedence wins.</summary>
     public IReadOnlyDictionary<QName, GlobalVariableDecl> GlobalVariables { get; }
+
+    /// <summary>The xsl:strip-space / xsl:preserve-space declarations of the stylesheet.</summary>
+    public WhitespaceTable Whitespace { get; }
+
+    /// <summary>The decimal formats for <c>format-number</c> (XSLT 2.0 §16.4).</summary>
+    public DecimalFormatTable DecimalFormats { get; }
 
     /// <summary>Every template declaration in the assembly (named and match templates).</summary>
     public IReadOnlyList<TemplateDecl> Templates { get; }
@@ -190,5 +200,5 @@ internal sealed class DeclarationTable
     public IReadOnlyCollection<QName> DeclaredModes { get; }
 
     /// <summary>xsl:key declarations keyed by expanded name.</summary>
-    public IReadOnlyDictionary<QName, KeyDecl> Keys { get; }
+    public IReadOnlyDictionary<QName, IReadOnlyList<KeyDecl>> Keys { get; }
 }

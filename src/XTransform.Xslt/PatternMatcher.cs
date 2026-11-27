@@ -148,12 +148,23 @@ internal static class PatternMatcher
         return parent;
     }
 
+    // A step is on the attribute axis when it says so (@x) or when its test is an attribute kind test: attribute(), attribute(n).
+    private static bool UsesAttributeAxis(StepPatternAst step) =>
+        step.Axis == Axis.Attribute || step.Test is KindTestAst { Kind: XdmNodeKind.Attribute };
+
     private static bool MatchStep(StepPatternAst step, XdmNode node, DynamicContext context)
     {
         // Axis must agree with the node kind.
-        bool wantAttribute = step.Axis == Axis.Attribute;
+        bool wantAttribute = UsesAttributeAxis(step);
         bool isAttribute = node.NodeKind == XdmNodeKind.Attribute;
         if (wantAttribute != isAttribute)
+        {
+            return false;
+        }
+
+        // A step without an axis is on the child axis, and the document node is nobody's child: match="node()" does
+        // not match it (XSLT 2.0 §5.5.2).
+        if (!wantAttribute && step.Test is AnyKindTestAst && node.NodeKind == XdmNodeKind.Document)
         {
             return false;
         }
@@ -214,7 +225,7 @@ internal static class PatternMatcher
         }
         else
         {
-            foreach (XdmNode sibling in parent.Axis(step.Axis == Axis.Attribute ? Axis.Attribute : Axis.Child))
+            foreach (XdmNode sibling in parent.Axis(UsesAttributeAxis(step) ? Axis.Attribute : Axis.Child))
             {
                 if (MatchNodeTest(step.Test, sibling))
                 {
@@ -306,9 +317,28 @@ internal static class PatternMatcher
         }
     }
 
+    private static bool UntypedTypeMatches(XdmNodeKind kind, QName type)
+    {
+        if (!string.Equals(type.NamespaceUri, "http://www.w3.org/2001/XMLSchema", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        return kind == XdmNodeKind.Element
+            ? type.LocalName is "untyped" or "anyType"
+            : type.LocalName is "untypedAtomic" or "anyAtomicType" or "anySimpleType";
+    }
+
     private static bool MatchKindTest(KindTestAst kt, XdmNode node)
     {
         if (node.NodeKind != kt.Kind)
+        {
+            return false;
+        }
+
+        // A type argument: schema-unaware nodes are xs:untyped (elements) and xs:untypedAtomic (attributes), so only
+        // those types, and their ancestors, can match.
+        if (kt.TypeArg.HasValue && !UntypedTypeMatches(kt.Kind, kt.TypeArg.Value))
         {
             return false;
         }

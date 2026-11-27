@@ -422,7 +422,8 @@ internal static class NumericFunctions
     internal static IXdmIterator FnSum1(DynamicContext ctx, XdmSequence[] args)
     {
         // F&O §15.4.9: empty seq → xs:integer(0).
-        List<XdmAtomicValue> prepared = PrepareNumericSequence(args[0], "fn:sum");
+        List<XdmAtomicValue> prepared = PrepareNumericSequence(args[0], "fn:sum", requireNumeric: false);
+        ValidateSummable(prepared, "fn:sum");
         if (prepared.Count == 0)
         {
             return new SingleItemIterator(XdmAtomicValue.Integer(0L));
@@ -435,7 +436,8 @@ internal static class NumericFunctions
     internal static IXdmIterator FnSum2(DynamicContext ctx, XdmSequence[] args)
     {
         // F&O §15.4.9: empty seq → return the second argument (which may itself be empty).
-        List<XdmAtomicValue> prepared = PrepareNumericSequence(args[0], "fn:sum");
+        List<XdmAtomicValue> prepared = PrepareNumericSequence(args[0], "fn:sum", requireNumeric: false);
+        ValidateSummable(prepared, "fn:sum");
         if (prepared.Count == 0)
         {
             XdmAtomicValue? zero = (XdmAtomicValue?)args[1].FirstOrNull();
@@ -470,7 +472,8 @@ internal static class NumericFunctions
     internal static IXdmIterator FnAvg(DynamicContext ctx, XdmSequence[] args)
     {
         // F&O §15.4.4: empty → empty sequence.
-        List<XdmAtomicValue> prepared = PrepareNumericSequence(args[0], "fn:avg");
+        List<XdmAtomicValue> prepared = PrepareNumericSequence(args[0], "fn:avg", requireNumeric: false);
+        ValidateSummable(prepared, "fn:avg");
 
         if (prepared.Count == 0)
         {
@@ -526,15 +529,99 @@ internal static class NumericFunctions
         return MinMaxImpl(args[0], isMin: false);
     }
 
+    // fn:sum and fn:avg accept numeric values, or durations that are all xs:dayTimeDuration or all
+    // xs:yearMonthDuration (F&O §15.4.4, §15.4.9).
+    private static void ValidateSummable(List<XdmAtomicValue> values, string fnName)
+    {
+        if (values.Count == 0)
+        {
+            return;
+        }
+
+        bool allNumeric = true;
+        foreach (XdmAtomicValue v in values)
+        {
+            allNumeric &= NumericPromotion.IsNumeric(v.TypeCode);
+        }
+
+        if (allNumeric)
+        {
+            return;
+        }
+
+        XdmTypeCode first = values[0].TypeCode;
+        bool durations = first is XdmTypeCode.DayTimeDuration or XdmTypeCode.YearMonthDuration;
+        foreach (XdmAtomicValue v in values)
+        {
+            if (!durations || v.TypeCode != first)
+            {
+                throw new XPathDynamicException(
+                    XPathErrors.XPTY0004,
+                    $"{fnName} requires numeric values or durations of one kind; item has type xs:{CastTable.GetXsLocalName(v.TypeCode)}.",
+                    default);
+            }
+        }
+    }
+
+    // fn:min / fn:max over values that are not all numeric (strings, dates, times, durations): the values must be
+    // comparable with each other (F&O §15.4.5, §15.4.6).
+    private static SingleItemIterator MinMaxComparable(List<XdmAtomicValue> values, bool isMin, string fnName)
+    {
+        XdmAtomicValue extreme = values[0];
+        // Only ordered types may be compared: xs:duration (as opposed to its two subtypes), the Gregorian partial
+        // dates, QName, NOTATION and the binary types have no order (F&O §15.4.5).
+        foreach (XdmAtomicValue v in values)
+        {
+            if (v.TypeCode is XdmTypeCode.Duration or XdmTypeCode.GYearMonth or XdmTypeCode.GYear or XdmTypeCode.GMonthDay
+                or XdmTypeCode.GDay or XdmTypeCode.GMonth or XdmTypeCode.QName or XdmTypeCode.Notation or XdmTypeCode.HexBinary)
+            {
+                throw new XPathDynamicException(
+                    XPathErrors.XPTY0004,
+                    $"{fnName} cannot order values of type xs:{CastTable.GetXsLocalName(v.TypeCode)}.",
+                    default);
+            }
+        }
+
+        for (int i = 1; i < values.Count; i++)
+        {
+            int? cmp = ComparisonOperators.ValueCompare(values[i], extreme);
+            if (cmp is null)
+            {
+                throw new XPathDynamicException(
+                    XPathErrors.XPTY0004,
+                    $"{fnName} encountered values that cannot be compared.",
+                    default);
+            }
+
+            if ((isMin && cmp.Value < 0) || (!isMin && cmp.Value > 0))
+            {
+                extreme = values[i];
+            }
+        }
+
+        return new SingleItemIterator(extreme);
+    }
+
     private static IXdmIterator MinMaxImpl(XdmSequence seq, bool isMin)
     {
         // F&O §15.4.5/§15.4.6: empty → empty.
         string fnName = isMin ? "fn:min" : "fn:max";
-        List<XdmAtomicValue> prepared = PrepareNumericSequence(seq, fnName);
+        List<XdmAtomicValue> prepared = PrepareNumericSequence(seq, fnName, requireNumeric: false);
 
         if (prepared.Count == 0)
         {
             return EmptyIterator.Instance;
+        }
+
+        bool allNumeric = true;
+        foreach (XdmAtomicValue v in prepared)
+        {
+            allNumeric &= NumericPromotion.IsNumeric(v.TypeCode);
+        }
+
+        if (!allNumeric)
+        {
+            return MinMaxComparable(prepared, isMin, fnName);
         }
 
         // Determine common numeric type by folding the promotion lattice across all items.
@@ -767,7 +854,7 @@ internal static class NumericFunctions
     /// xs:untypedAtomic items are cast to xs:double.
     /// Raises XPTY0004 for non-numeric items.
     /// </summary>
-    private static List<XdmAtomicValue> PrepareNumericSequence(XdmSequence seq, string fnName)
+    private static List<XdmAtomicValue> PrepareNumericSequence(XdmSequence seq, string fnName, bool requireNumeric = true)
     {
         List<XdmAtomicValue> result = new List<XdmAtomicValue>(seq.Count);
         IXdmIterator it = seq.GetIterator();
@@ -782,7 +869,7 @@ internal static class NumericFunctions
                 av = CastTable.Cast(av, XdmTypeCode.Double, default);
             }
 
-            if (!NumericPromotion.IsNumeric(av.TypeCode))
+            if (requireNumeric && !NumericPromotion.IsNumeric(av.TypeCode))
             {
                 throw new XPathDynamicException(
                     XPathErrors.XPTY0004,

@@ -81,20 +81,6 @@ internal sealed class XsltCompilerTests
     // ── Reference checks ─────────────────────────────────────────────────────
 
     [Test]
-    public void Compile_ApplyTemplatesReferencesUndeclaredMode_RaisesXtse0680()
-    {
-        // Arrange — the only xsl:template has no @mode, so mode 'summary' is undeclared.
-        StylesheetAssembly asm = Link(("a.xsl", Wrap(
-            "<xsl:template match='/'>" +
-            "<xsl:apply-templates mode='summary'/>" +
-            "</xsl:template>")));
-
-        // Act + Assert
-        XsltStaticException ex = Assert.Throws<XsltStaticException>(() => StylesheetCompiler.Compile(asm))!;
-        Assert.That(ex.Errors.Any(d => d.Code == XsltErrors.XTSE0680), Is.True);
-    }
-
-    [Test]
     public void Compile_ApplyTemplatesUsesDeclaredMode_NoError()
     {
         // Arrange

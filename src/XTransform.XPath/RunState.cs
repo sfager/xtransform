@@ -57,6 +57,12 @@ internal sealed class RunState
     public object? Tag { get; set; }
 
     /// <summary>
+    /// The static base URI (absolute, or null when undefined): what fn:resolve-uri with one argument resolves
+    /// against and what fn:static-base-uri returns. Set by the host (XSLT sets it from the stylesheet).
+    /// </summary>
+    public string? StaticBaseUri { get; set; }
+
+    /// <summary>
     /// Captures UTC now as an <see cref="XsdDateTime"/> with UTC timezone (offset = 0).
     /// Never uses <see cref="System.DateTime"/> for storage; raw components are stored instead.
     /// </summary>

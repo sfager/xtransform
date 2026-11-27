@@ -20,6 +20,10 @@ internal sealed class SequenceNormalizer : IResultReceiver
     private readonly IResultReceiver _downstream;
     private readonly NamePool? _namePool;
     private readonly Stack<bool> _hasContent = new Stack<bool>();
+
+    // Attributes of each open element are held until its content starts, so that a later attribute with the same name
+    // replaces an earlier one (XSLT 2.0 §5.7.1) instead of reaching the serializer twice.
+    private readonly Stack<List<PendingAttribute>> _pendingAttributes = new Stack<List<PendingAttribute>>();
     private readonly List<Diagnostic> _diagnostics = new List<Diagnostic>();
     private bool _lastWasAtomic;
 
@@ -67,6 +71,7 @@ internal sealed class SequenceNormalizer : IResultReceiver
         _lastWasAtomic = false;
         MarkCurrentHasContent();
         _hasContent.Push(false);
+        _pendingAttributes.Push(new List<PendingAttribute>());
         _downstream.StartElement(nameCode, location);
     }
 
@@ -117,13 +122,29 @@ internal sealed class SequenceNormalizer : IResultReceiver
             return;
         }
 
-        _downstream.Attribute(nameCode, value, location);
+        List<PendingAttribute> pending = _pendingAttributes.Peek();
+        for (int i = 0; i < pending.Count; i++)
+        {
+            if (pending[i].NameCode == nameCode)
+            {
+                pending[i] = new PendingAttribute(nameCode, value, location);
+                return;
+            }
+        }
+
+        pending.Add(new PendingAttribute(nameCode, value, location));
     }
 
     /// <inheritdoc/>
     public void EndElement()
     {
         _lastWasAtomic = false;
+        FlushPendingAttributes();
+        if (_pendingAttributes.Count > 0)
+        {
+            _pendingAttributes.Pop();
+        }
+
         if (_hasContent.Count > 0)
         {
             _hasContent.Pop();
@@ -222,12 +243,45 @@ internal sealed class SequenceNormalizer : IResultReceiver
         _downstream.Text(text);
     }
 
+    private void FlushPendingAttributes()
+    {
+        if (_pendingAttributes.Count == 0)
+        {
+            return;
+        }
+
+        List<PendingAttribute> pending = _pendingAttributes.Peek();
+        for (int i = 0; i < pending.Count; i++)
+        {
+            _downstream.Attribute(pending[i].NameCode, pending[i].Value, pending[i].Location);
+        }
+
+        pending.Clear();
+    }
+
+    private readonly struct PendingAttribute
+    {
+        public PendingAttribute(int nameCode, string value, SourceSpan location)
+        {
+            NameCode = nameCode;
+            Value = value;
+            Location = location;
+        }
+
+        public int NameCode { get; }
+
+        public string Value { get; }
+
+        public SourceSpan Location { get; }
+    }
+
     private bool CurrentHasContent() => _hasContent.Count > 0 && _hasContent.Peek();
 
     private void MarkCurrentHasContent()
     {
         if (_hasContent.Count > 0 && !_hasContent.Peek())
         {
+            FlushPendingAttributes();
             _hasContent.Pop();
             _hasContent.Push(true);
         }

@@ -340,9 +340,15 @@ public sealed class XdmAtomicValue : XdmItem, IEquatable<XdmAtomicValue>
             case XdmTypeCode.Float:
                 return FormatFloat((float)_payload);
 
+            case XdmTypeCode.YearMonthDuration:
+            {
+                // F&O §17.1.2: the canonical form of a zero xs:yearMonthDuration is "P0M" (not "PT0S").
+                XsdDuration ym = (XsdDuration)_payload;
+                return ym.Months == 0 ? "P0M" : ym.ToString();
+            }
+
             case XdmTypeCode.Duration:
             case XdmTypeCode.DayTimeDuration:
-            case XdmTypeCode.YearMonthDuration:
                 return ((XsdDuration)_payload).ToString();
 
             case XdmTypeCode.DateTime:
@@ -1005,6 +1011,12 @@ public sealed class XdmAtomicValue : XdmItem, IEquatable<XdmAtomicValue>
             return false;
         }
 
+        // .NET Framework parses "-0" as positive zero; XML Schema says it is negative zero.
+        if (d == 0 && s.Length > 0 && s[0] == '-')
+        {
+            d = -0.0;
+        }
+
         value = new XdmAtomicValue(XdmTypeCode.Double, d);
         return true;
     }
@@ -1033,6 +1045,11 @@ public sealed class XdmAtomicValue : XdmItem, IEquatable<XdmAtomicValue>
         if (!float.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out float f))
         {
             return false;
+        }
+
+        if (f == 0 && s.Length > 0 && s[0] == '-')
+        {
+            f = -0.0f;
         }
 
         value = new XdmAtomicValue(XdmTypeCode.Float, f);

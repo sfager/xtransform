@@ -356,6 +356,16 @@ internal sealed class BuiltInFunctionLibrary : FunctionLibrary
             new[] { ST_String_ZeroOrOne },
             StringFunctions.FnEncodeForUri);
 
+        // F&O §8.1 fn:resolve-uri, fn:static-base-uri
+        Register("resolve-uri", 1, ST_AnyUri_ZeroOrOne,
+            new[] { ST_String_ZeroOrOne },
+            UriFunctions.FnResolveUri1);
+        Register("resolve-uri", 2, ST_AnyUri_ZeroOrOne,
+            new[] { ST_String_ZeroOrOne, ST_String_ExactlyOne },
+            UriFunctions.FnResolveUri2);
+        Register("static-base-uri", 0, ST_AnyUri_ZeroOrOne, System.Array.Empty<SequenceType>(),
+            UriFunctions.FnStaticBaseUri);
+
         // F&O §7.4.11 fn:iri-to-uri
         Register("iri-to-uri", 1, ST_String_ExactlyOne,
             new[] { ST_String_ZeroOrOne },

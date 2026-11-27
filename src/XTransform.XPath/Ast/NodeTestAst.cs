@@ -45,7 +45,7 @@ internal sealed record NameTestAst(SourceSpan Span, QName? Name, NameTestKind Ki
 }
 
 /// <summary>A kind test: element(), text(), comment(), processing-instruction(), document-node(), attribute().</summary>
-internal sealed record KindTestAst(SourceSpan Span, XdmNodeKind Kind, QName? NameArg, NodeTestAst? ElementArg) : NodeTestAst(Span)
+internal sealed record KindTestAst(SourceSpan Span, XdmNodeKind Kind, QName? NameArg, NodeTestAst? ElementArg, QName? TypeArg = null) : NodeTestAst(Span)
 {
     internal override void AppendDebug(StringBuilder sb, int indent)
     {

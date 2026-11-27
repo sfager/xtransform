@@ -52,6 +52,7 @@ internal sealed class SequenceNormalizerTests
         // Act — an attribute after an empty text node is still legal.
         n.Text(string.Empty);
         n.Attribute(2, "v", SourceSpan.None);
+        n.EndElement(); // attributes are released when the element's content starts or the element ends
 
         // Assert
         Assert.Multiple(() =>
@@ -126,9 +127,31 @@ internal sealed class SequenceNormalizerTests
 
         // Act
         n.Append(attrNode);
+        n.EndElement(); // attributes are released when the element's content starts or the element ends
 
         // Assert
         Assert.That(sink.Events, Has.Some.StartsWith("Attribute(").And.EndsWith("=7)"));
+    }
+
+    [Test]
+    public void Attribute_WithTheNameOfAnEarlierOneOnTheSameElement_ReplacesIt()
+    {
+        Recorder sink = new Recorder();
+        SequenceNormalizer n = new SequenceNormalizer(sink);
+        n.StartElement(1, SourceSpan.None);
+
+        n.Attribute(2, "first", SourceSpan.None);
+        n.Attribute(3, "other", SourceSpan.None);
+        n.Attribute(2, "last", SourceSpan.None);
+        n.Text("body");
+        n.EndElement();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(sink.Events, Does.Contain("Attribute(2=last)"));
+            Assert.That(sink.Events, Does.Not.Contain("Attribute(2=first)"));
+            Assert.That(sink.Events, Does.Contain("Attribute(3=other)"));
+        });
     }
 
     private sealed class Recorder : IResultReceiver

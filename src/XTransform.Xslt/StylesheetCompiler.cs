@@ -133,6 +133,17 @@ internal static class StylesheetCompiler
             outputs);
     }
 
+    private static IEnumerable<KeyDecl> AllKeys(DeclarationTable declarations)
+    {
+        foreach (IReadOnlyList<KeyDecl> group in declarations.Keys.Values)
+        {
+            foreach (KeyDecl key in group)
+            {
+                yield return key;
+            }
+        }
+    }
+
     // Parses each xsl:key match pattern once and compiles its predicates (XSLT 2.0 §16.3).
     private static void CompileKeyPatterns(
         DeclarationTable declarations,
@@ -140,7 +151,7 @@ internal static class StylesheetCompiler
         PatternPredicateTable patterns,
         DiagnosticBag bag)
     {
-        foreach (KeyDecl key in declarations.Keys.Values)
+        foreach (KeyDecl key in AllKeys(declarations))
         {
             try
             {

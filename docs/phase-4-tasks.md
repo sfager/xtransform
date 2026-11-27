@@ -152,7 +152,7 @@ unknown instructions).
 
 ## P4-04 `xsl:sort`, `xsl:perform-sort`, sort keys
 
-- [ ] Done
+- [x] Done
 
 **Scope.** XSLT 2.0 §13: `xsl:sort` in `xsl:apply-templates` and `xsl:for-each` (and, with
 P4-09, `xsl:for-each-group`), multiple keys, `select`, `data-type`, `order`, `case-order`,
@@ -164,6 +164,19 @@ the XPath 2.0 `lt` rules (typed) or as strings with the default collation until 
 - `sort` set: ≥ 90% of in-scope tests pass.
 - Stability test: equal keys keep input order for 10,000 items.
 - Hot path rule applies: no LINQ in the comparison loop.
+
+**Result (branch `p4-04-sort`).** Done: `xsl:sort` in `xsl:for-each` and `xsl:apply-templates`, `xsl:perform-sort`
+(with `select` or content), multiple keys, keys from `select` or content, `data-type` `text` / `number`,
+`order`, `case-order`, `lang`, `collation` and `stable` as AVTs (a literal with an invalid value is
+`XTSE0020`, a computed one `XTDE0030`), empty and NaN keys first (last when descending), typed key
+comparison with `XTDE1030` for incomparable types, `XTTE1020` for a multi-item key, `XTSE1015`, `XTDE1035`
+for an unsupported collation. The sort is a stable merge sort over precomputed keys with no LINQ in the
+comparison. `sort` set 68 of 74 (91.9%); core shard 3,910 → 4,044 (135 fixed, 0
+regressed). A reverse-axis step such as `ancestor::x` returned its nodes nearest-first; the result of a
+step is now in document order (XPath 2.0 §3.2), which sorting by `position()` exposed. The six failing
+`sort` tests are not sort bugs: `sort-052` / `sort-053` fail on `intersect` with more than one item,
+`sort-054` on an `xs:anyURI` parameter, and `sort-063` / `sort-064` / `sort-073` need a sequence constructor
+to keep adjacent text nodes (and top-level attributes) as separate items (P4-19).
 
 ## P4-05 Collations
 
@@ -192,6 +205,19 @@ Registered as an XSLT function (it needs the stylesheet's decimal formats).
   separators, negative numbers, infinity and NaN.
 - `format-number` set ≥ 90% passing; the 178 call-site failures elsewhere drop accordingly.
 
+**Progress (branch `p4-06-format-number`).** Done: `xsl:decimal-format` (named and unnamed, all ten
+attributes, merging of several declarations by import precedence, `XTSE0020`, `XTSE0090`, `XTSE1290`,
+`XTSE1295`, `XTSE1300`) and `format-number` with 2 and 3 arguments (picture grammar and all `XTDE1310`
+conditions, grouping with the repeated-interval rule, percent / per-mille, half-to-even rounding on exact
+digit strings, NaN, infinity, negative zero, custom zero-digit families, `XTDE1280`). About 100 table-driven
+unit cases. Two related fixes: XML output in a non-Unicode encoding now writes unrepresentable characters as
+numeric character references (it wrote `?`), and `xs:double('-0')` / `xs:float('-0')` keep their sign on
+.NET Framework. Core shard 3,720 → 3,824 (104 fixed, 0 regressed); `format-number` set 62 of 70 (88.6%),
+just under the 90% target. The eight left: six use `version="1.0"` backwards-compatibility mode (a
+non-numeric argument becomes NaN; P4-25), one needs a decimal literal with more than 28 digits (`XsdDecimal` is
+backed by `System.Decimal`), and one (`format-number-070`) names an initial template its stylesheet never
+declares. Reaching 90% needs P4-25 or arbitrary-precision decimals.
+
 ## P4-07 `xsl:number` and picture tokens
 
 - [x] Done
@@ -216,7 +242,7 @@ bodies now run with no focus (so `xsl:number` and `current()` raise their errors
 
 ## P4-08 `fn:format-date` / `format-dateTime` / `format-time`
 
-- [ ] Done
+- [x] Done
 
 **Scope.** F&O §9.8: the picture grammar (`[Y0001]`, `[MNn]`, `[FNn]`, widths, presentation
 modifiers), language and calendar arguments (the English `-en` forms first; other languages
@@ -226,6 +252,22 @@ lacks them (check `BuiltInFunctionLibrary` first; QT3 may already cover part of 
 
 **Acceptance.** `format-date`, `format-date-en`, `date` sets ≥ 85% passing; 200 call-site
 failures elsewhere drop accordingly.
+
+**Progress (branch `p4-08-format-dates`).** Done: `format-dateTime`, `format-date` and `format-time` with 2 and
+5 arguments (XSLT 2.0 §16.5, not F&O §9.8, which is the 3.0 numbering): the picture grammar with `[[` / `]]`
+escapes, all component specifiers (`Y M D d F W w H h P m s f Z z C E`), first and second presentation
+modifiers (any `xsl:number` token, `n` / `N` / `Nn` names, `o` ordinals, digit families), width modifiers with
+the Y high-order truncation, `f` rounding and padding rules, English names with conventional abbreviations,
+ISO week numbers, week in month, `XTDE1340`, `XTDE1350`. Unsupported languages and calendars fall back to
+English / the Gregorian calendar and say so with a `[Language: en]` / `[Calendar: AD]` prefix. Supporting
+fixes that the conformance tests exposed: date and time plus a duration now follows F&O Appendix E (it added
+the day of the month twice), the canonical zero `xs:yearMonthDuration` is `P0M`, and `fn:sum`, `fn:avg`,
+`fn:min` and `fn:max` accept durations, dates, times and strings. Core shard 3,824 → 3,910 (86 fixed, 0
+regressed); `format-date` 37 of 37, `format-date-en` 33 of 33, `date` 81 of 98 (82.7%, target 85%). The
+`date` failures left were not formatting: comparison and subtraction of dates with time zones (F&O §10.4,
+§10.7.4), ordering by `xsl:sort` (P4-04), `xs:dateTime` edge cases such as 24:00:00, and one error-code test.
+**Completed in P4-09:** time-zone aware comparison of dates and times and the sorter brought the `date` set to 93 of 98 (94.9%), so the
+85% target is met and the box above is ticked. Five `date` tests remain (subtraction across time zones and `24:00:00`).
 
 ## P4-09 `xsl:for-each-group`, `current-group()`, `current-grouping-key()`
 
@@ -239,6 +281,22 @@ instruction (P4-04). The current group and grouping key are part of the dynamic 
 
 **Acceptance.** `for-each-group` set ≥ 90% passing; a 100,000-item grouping completes in under
 two seconds (hash-based grouping for `group-by`).
+
+**Progress (branch `p4-09-for-each-group`).** Done: `xsl:for-each-group` with `group-by` (hash based; an item can join
+several groups, never the same one twice), `group-adjacent`, `group-starting-with`, `group-ending-with` (the first
+node always starts a group), `collation` (codepoint only), `xsl:sort` over the groups with `current-group()` and
+`current-grouping-key()` available in the keys, nested groups, the group being empty inside a stylesheet function and
+restored afterwards. `XTSE1080`, `XTSE1090`, `XTSE1060`, `XTSE1070`, `XTSE1017`, `XTTE1100`, `XTTE1120`, `XTDE1110`
+(the codes in the task note above were wrong; these follow the spec). A 100,000-item grouping runs well inside the
+two-second budget. Supporting changes the tests exposed: **simplified stylesheets** (§3.7: a literal result element
+root with `xsl:version` is the implicit `match="/"` template, `XTSE0150` without it; about 60 tests use them),
+pattern predicates can use local variables and function parameters, a stylesheet function can construct elements,
+comments and processing instructions (they were dropped), `xs:dateTime` / `xs:date` / `xs:time` compare as instants with
+the implicit time zone taken to be UTC (F&O §10.4), and `fn:deep-equal` treats `xs:untypedAtomic` as `xs:string`.
+Core shard 4,044 → 4,137 (93 fixed, 0 regressed). `for-each-group` set 48 of 55 in scope (87.3%, target 90%). The seven
+left need other tasks: `for-each-group-029` (`document()` with a relative URI, P4-20), `-067` (`xsl:next-match`, P4-12), `-085`
+(sequence-constructor typing, P4-19), `-068` (non-transitive numeric grouping, erratum E25), `-084` (an XPath 3.0 `!`),
+`-086` (a UCA collation URI), and `-081a` (its assertion reads indented output, a harness matter; the result is right).
 
 ## P4-10 XPath regex dialect completion
 
@@ -304,6 +362,22 @@ pass-through, `XTSE0010` and `XTDE0560` cases.
 
 **Acceptance.** `next-match`, `apply-imports` and `import` sets ≥ 85% passing.
 
+**Progress (branch `p4-12-next-match`).** Done: `xsl:next-match` and `xsl:apply-imports` with `xsl:with-param` (and `xsl:fallback`
+ignored), the current template rule kept on the run state and cleared inside `xsl:for-each`, `xsl:for-each-group` and
+stylesheet functions, `XTDE0560`, `XTSE0010` for other content. `xsl:apply-imports` reaches exactly the rules of the
+modules the current rule's module imports (the linker now records each module's import subtree range of
+precedences); `xsl:next-match` takes the next rule in rank order, treating alternatives of one template that share an explicit
+`priority` as one rule. Fixes the tests exposed: `xsl:include` is a textual insert (the included module's top-level elements
+are spliced in at the include's position, so declaration order and "last rule wins" follow the text; nested includes
+were being dropped; the same module can be included twice; a simplified module can be included, and a non-stylesheet
+without `xsl:version` is `XTSE0150`), `match="node()"` no longer matches the document node, `attribute()` and typed
+kind tests (`element(N, T)`, `attribute(*, T)`) are on the right axis with the right priority (0.25 with a name and a type)
+and only match untyped nodes. Core shard 4,137 → 4,269 (132 fixed, 0 regressed). `next-match` 27 of 28 (96.4%);
+`import` 31 of 39 (79.5%, target 85%). The eight left in `import`: `-0001` (namespace nodes, P4-14), `-0701` and `-2201`
+(attribute sets, P4-15), `-1201` (`FORG0001` on a long `xs:integer` list), `-0502b` and `-0902b` (`XTRE0540`; see
+implementation-defined.md: the suite has paired tests that need opposite policies), `-2402` and `-2404` (static errors
+inside an included or imported module, P4-23). `next-match-012` needs `xsl:attribute-set` (P4-15). The `apply-imports` set holds one XSLT 3.0 test and is out of scope.
+
 ## P4-13 System and environment functions
 
 - [ ] Done
@@ -320,6 +394,19 @@ from the reader — see P4-20), `resolve-uri` (two forms), `static-base-uri`, `c
 **Acceptance.** Every function has unit tests for each arity; the corresponding unknown-function
 failures (≈ 330 call sites) drop to zero; values for `xsl:vendor` and friends are recorded in
 `implementation-defined.md`.
+
+**Progress (branch `p4-13-system-functions`).** Done: `generate-id` (0 and 1 argument; unique across
+trees in a run), `system-property`, `function-available` (1 and 2 arguments), `element-available`,
+`type-available`, `unparsed-entity-uri` / `unparsed-entity-public-id` (always `""` until the reader supplies
+DTD data, P4-20), `resolve-uri` (1 and 2 arguments), `static-base-uri`, `current-output-uri` (empty),
+`unparsed-text` / `unparsed-text-available` (1 and 2 arguments). Functions that read a lexical QName
+(`system-property`, `function-available`, `element-available`, `type-available`) are bound to the
+namespaces in scope at the call through the new `FunctionSignature.BindStaticContext`, and the `use-when`
+library shares the same implementations.
+Core shard 3,655 → 3,720
+(65 fixed, 0 regressed). The unknown-function failures that remain are other tasks: `format-number`
+(P4-06), `format-date` / `format-time` / `format-dateTime` (P4-08), `document` with two arguments (P4-20),
+`collection`, `current-group` (P4-05).
 
 ## P4-14 Namespaces: `xsl:namespace`, `xsl:namespace-alias`, namespace fix-up
 
@@ -389,7 +476,7 @@ test asserting the exact code.
 
 ## P4-19 Body forms for `value-of` / `sequence`; `as` attribute and variable typing
 
-- [ ] Done
+- [x] Done
 
 **Scope.** `xsl:value-of` and `xsl:sequence` with a sequence-constructor body instead of
 `select` (the compiler currently rejects both: "body form is deferred"), `separator`.
@@ -405,6 +492,25 @@ sequence-typed variables.
 template `xsl:param` and `xsl:with-param` bodies, applying the `as` type (function conversion rules) to the
 value, and the body forms of `xsl:value-of` / `xsl:sequence`.
 **Acceptance.** `as`, `variable` and `sequence` sets ≥ 85% passing.
+
+**Result (branch `p4-19-sequence-typing`).** Done: the `as` attribute is applied with the XPath 2.0 §3.1.5 function conversion rules
+(atomization, untypedAtomic cast, numeric and anyURI promotion, cardinality, item type) to `xsl:variable` (`XTTE0570`),
+a supplied `xsl:param` / `xsl:with-param` value (`XTTE0590`), a parameter default (`XTTE0600`), a parameter with no default
+whose type rejects the empty sequence (`XTDE0610`), the result of a template (`XTTE0505`), and the arguments and result of a
+stylesheet function (`XTTE0790`, `XTTE0780`). Template `xsl:param` and `xsl:with-param` take a content body (a document node
+without `as`, a sequence with it). `xsl:value-of` takes a content body and an AVT `separator` (default zero-length with content,
+a space with `select`) and applies simple-content rules (zero-length text nodes dropped, `XTSE0870`). Static errors
+`XTSE0620`, `XTSE0580`, `XTSE0760`; `xsl:sequence` keeps requiring `select` (a body is 3.0; the 2.0 tests want `XTSE0010`).
+Sequence building was reworked so typed variables get what they expect: text nodes are separate items (including
+zero-length ones), top-level attributes and document nodes (`xsl:document`, `xsl:copy` of a document) are items, atomic
+values stay atomic through `xsl:copy-of` / `xsl:copy`, and stylesheet functions can build nodes. Other fixes the tests
+exposed: `xs:integer` for `xs:decimal` is subtype substitution (the value keeps its type), an unabbreviated `attribute()`
+step is on the attribute axis, `xsl:with-param` of `xsl:apply-templates` is evaluated in the caller's focus, and a later
+attribute of the same name replaces an earlier one. The XSLT filter now honours inverted `year_component_values`
+dependencies (see D2). Core shard 4,269 → 4,448 (181 fixed; two tests that passed only because `as` was ignored now fail: `as-0201`
+needs tunnel parameters, `xslt-compat-013` needs extension-instruction fallback); `as` 90 of 104 (86.5%), `variable` 89 of
+102 (87.3%), `sequence` 75 of 88 (85.2%). Left in those sets: tunnel parameters (P4-22), the static error catalogue (P4-23),
+`document()` with relative URIs (P4-20), backwards-compatibility mode (P4-25), dateTime range overflow (P4-26).
 
 ## P4-20 Documents, base URIs and entities
 
@@ -431,6 +537,20 @@ semantics from DTD or `xml:id`, `xsl:strip-space` / `xsl:preserve-space` with na
 precedence (`XTSE0270`), whitespace in the input document, and `xml:space` on the source.
 
 **Acceptance.** `key`, `id`, `strip-space` sets ≥ 85% passing.
+
+**Progress (branch `p4-21-strip-space`).** Done: `xsl:strip-space` / `xsl:preserve-space` with the
+whole name-test grammar (`*`, `p:*`, `*:l`, QName, `Q{uri}l`, `Q{uri}*`), import precedence, priority
+(`*` −0.5, `p:*` / `*:l` −0.25, QName 0) and `xml:space` inheritance; applied to the input document and
+to documents loaded by `doc()` / `document()`, not to temporary trees; whitespace-only text is stripped
+however it was written (CDATA, character references). `XTSE0280` for an undeclared prefix; a
+strip / preserve tie is the recoverable `XTRE0270`, resolved by taking the last declaration and
+reported as a compile warning. Keys: several `xsl:key` declarations with the same name are combined
+(only the first was used), `key()` takes its third argument, `key()` results are in document order
+without duplicates, and a prefixed key name is found. Core shard 3,613 → 3,655 (42 fixed, 0
+regressed); `strip-space` 26 of 30. Still open here: `xsl:key` with the value given as content instead
+of `use`, key names resolved with the namespaces of the `key()` call (prefix and local name are matched
+today), collations on keys, and `id()` / `idref()` / `element-with-id()`, which also need DTD
+ID attributes from the reader (P4-20). `generate-id()` (P4-13) blocks about ten `key` tests.
 
 ## P4-22 Template rules and dispatch details
 
@@ -461,6 +581,8 @@ yield a number are decided on the node alone, so flat documents stay linear. Cor
 key patterns never match), `mode="#all"` / `#current`, tunnel parameters, and the `position` / `axes` /
 `tunnel` sets. A positional predicate on a step with very many siblings is evaluated in time linear in
 the sibling count per match.
+**Progress (branch `p4-22-tunnel`).** Tunnel parameters (§10.1.2: `tunnel` on `xsl:param` / `xsl:with-param`, propagation through apply-templates, call-template and built-in rules, cleared inside functions), `mode="#all"`, the call checks XTSE0650 / XTSE0680 / XTSE0690 / XTSE0670 / XTSE0090, required-parameter checks (XTSE0010, XTDE0060) and XTSE0080. The static XTSE0680 (undeclared mode) and XTRE0540 (equal priority) checks are gone: XSLT 2.0 has neither as a static error. Measured on the eight related sets only: tunnel 54/54, call-template 35/35, mode 28/33, param 22/26, match 103/110, apply-templates 28/42 (still below 85%: XTRE0540 pairs and conflict-resolution cases). The full core shard was killed twice for memory, so `xslt-baseline.json` and the known-failures list are not updated yet. Task not ticked.
+
 
 ## P4-23 Static error catalogue (XTSE*)
 

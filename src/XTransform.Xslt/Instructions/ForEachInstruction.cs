@@ -11,15 +11,19 @@ namespace XTransform.Xslt.Instructions;
 internal sealed class ForEachInstruction : XsltInstruction
 {
     /// <summary>Initializes an xsl:for-each instruction.</summary>
-    public ForEachInstruction(BoundExpression select, XsltInstruction body, SourceSpan location)
+    public ForEachInstruction(BoundExpression select, XsltInstruction body, SourceSpan location, IReadOnlyList<SortKey>? sorts = null)
         : base(location)
     {
         Select = select;
         Body = body;
+        Sorts = sorts ?? System.Array.Empty<SortKey>();
     }
 
     /// <summary>The compiled <c>@select</c> expression.</summary>
     public BoundExpression Select { get; }
+
+    /// <summary>The <c>xsl:sort</c> keys (XSLT 2.0 §13); empty when the items are processed in selection order.</summary>
+    public IReadOnlyList<SortKey> Sorts { get; }
 
     /// <summary>The body to run with each item as focus.</summary>
     public XsltInstruction Body { get; }
@@ -42,22 +46,39 @@ internal sealed class ForEachInstruction : XsltInstruction
             }
         }
 
-        int size = items.Count;
-        for (int i = 0; i < size; i++)
+        if (Sorts.Count > 0)
         {
-            // Loop back-edge — give the cancellation token a chance to stop runaway stylesheets.
-            context.CheckCancellation();
+            items = ItemSorter.Sort(items, Sorts, context, run);
+        }
 
-            DynamicContext child = context.WithCurrentItem(items[i], position: i + 1, size: size);
-            int marker = run.VariableScopeMarker;
-            try
+        int size = items.Count;
+
+        // There is no current template rule inside the body of xsl:for-each (XSLT 2.0 §6.7): xsl:next-match and
+        // xsl:apply-imports there are XTDE0560.
+        TemplateRule? savedRule = run.CurrentRule;
+        run.CurrentRule = null;
+        try
+        {
+            for (int i = 0; i < size; i++)
             {
-                Body.Execute(child, receiver, run);
+                // Loop back-edge — give the cancellation token a chance to stop runaway stylesheets.
+                context.CheckCancellation();
+
+                DynamicContext child = context.WithCurrentItem(items[i], position: i + 1, size: size);
+                int marker = run.VariableScopeMarker;
+                try
+                {
+                    Body.Execute(child, receiver, run);
+                }
+                finally
+                {
+                    run.RestoreVariablesTo(marker);
+                }
             }
-            finally
-            {
-                run.RestoreVariablesTo(marker);
-            }
+        }
+        finally
+        {
+            run.CurrentRule = savedRule;
         }
     }
 }

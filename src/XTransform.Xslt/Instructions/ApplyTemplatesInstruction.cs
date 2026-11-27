@@ -30,13 +30,15 @@ internal sealed class ApplyTemplatesInstruction : XsltInstruction
         ApplyTemplatesMode modeSpec,
         QName mode,
         IReadOnlyList<WithParamInstruction> withParams,
-        SourceSpan location)
+        SourceSpan location,
+        IReadOnlyList<SortKey>? sorts = null)
         : base(location)
     {
         Select = select;
         ModeSpec = modeSpec;
         Mode = mode;
         WithParams = withParams;
+        Sorts = sorts ?? System.Array.Empty<SortKey>();
     }
 
     /// <summary>Compiled <c>@select</c> (default: <c>child::node()</c>).</summary>
@@ -47,6 +49,9 @@ internal sealed class ApplyTemplatesInstruction : XsltInstruction
 
     /// <summary>The resolved mode when <see cref="ModeSpec"/> is <see cref="ApplyTemplatesMode.Named"/>.</summary>
     public QName Mode { get; }
+
+    /// <summary>The <c>xsl:sort</c> keys (XSLT 2.0 §13); empty when the items are processed in selection order.</summary>
+    public IReadOnlyList<SortKey> Sorts { get; }
 
     /// <summary>The <c>xsl:with-param</c> bindings.</summary>
     public IReadOnlyList<WithParamInstruction> WithParams { get; }
@@ -63,6 +68,11 @@ internal sealed class ApplyTemplatesInstruction : XsltInstruction
             items.Add(item);
         }
 
+        if (Sorts.Count > 0)
+        {
+            items = ItemSorter.Sort(items, Sorts, context, run);
+        }
+
         QName effectiveMode = ModeSpec switch
         {
             ApplyTemplatesMode.Current => run.CurrentMode,
@@ -71,6 +81,20 @@ internal sealed class ApplyTemplatesInstruction : XsltInstruction
         };
 
         int size = items.Count;
+
+        // The xsl:with-param values are computed once, in the focus of this instruction (XSLT 2.0 §6.5).
+        IReadOnlyList<WithParamInstruction> bound = WithParams;
+        if (WithParams.Count > 0)
+        {
+            List<WithParamInstruction> values = new List<WithParamInstruction>(WithParams.Count);
+            foreach (WithParamInstruction p in WithParams)
+            {
+                values.Add(p.Bind(context, run));
+            }
+
+            bound = values;
+        }
+
         QName savedMode = run.CurrentMode;
         try
         {
@@ -79,7 +103,7 @@ internal sealed class ApplyTemplatesInstruction : XsltInstruction
             {
                 context.CheckCancellation();
                 DynamicContext childCtx = context.WithCurrentItem(items[i], position: i + 1, size: size);
-                ModeDispatcher.Dispatch(childCtx, receiver, run, effectiveMode, WithParams, Location);
+                ModeDispatcher.Dispatch(childCtx, receiver, run, effectiveMode, bound, Location);
             }
         }
         finally
