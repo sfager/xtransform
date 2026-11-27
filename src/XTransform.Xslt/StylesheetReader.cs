@@ -194,8 +194,11 @@ internal static class StylesheetReader
         // XTSE0150 warning inside). XSLT 2.0 §3.7.
         if (element.IsUnknownXsltElement)
         {
+            // Only an effective version above 2.0 is forwards-compatible; a lower one is backwards-compatible and still rejects an
+            // unknown element (XSLT 2.0 §3.9).
             bool forwardsCompatible = !string.IsNullOrEmpty(currentEffective) &&
-                                      !string.Equals(currentEffective, "2.0", System.StringComparison.Ordinal);
+                                      double.TryParse(currentEffective!.Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double numericVersion) &&
+                                      numericVersion > 2.0;
             if (forwardsCompatible)
             {
                 diagnostics.Warning(

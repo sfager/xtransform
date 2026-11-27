@@ -59,6 +59,27 @@ public sealed class StaticErrorIncludeImportTests
         Assert.DoesNotThrow(() => Compile(Wrap(body), files));
     }
 
+    [TestCase("<xsl:include href='ok.xsl' iref='other.xsl'/>", TestName = "IncludeWithAnUnknownAttribute")]
+    [TestCase("<xsl:import href='ok.xsl' iref='other.xsl'/>", TestName = "ImportWithAnUnknownAttribute")]
+    [TestCase("<xsl:include href='ok.xsl' xsl:href='ok.xsl'/>", TestName = "IncludeWithAnXsltNamespaceAttribute")]
+    public void Compile_IncludeOrImportWithAnUndefinedAttribute_RaisesXtse0090(string body)
+    {
+        Dictionary<string, string> files = new Dictionary<string, string> { ["ok.xsl"] = Wrap(string.Empty) };
+
+        XsltStaticException ex = Assert.Throws<XsltStaticException>(() => Compile(Wrap(body), files))!;
+
+        Assert.That(ex.Errors.Select(e => e.Code), Does.Contain(XsltErrors.XTSE0090));
+    }
+
+    [TestCase("<xsl:include href='ok.xsl' use-when='true()' extension-element-prefixes=''/>", "2.0", TestName = "StandardAttributes")]
+    [TestCase("<xsl:include href='ok.xsl' iref='other.xsl'/>", "3.0", TestName = "ForwardsCompatibleVersion")]
+    public void Compile_IncludeWithAllowedAttributes_Compiles(string body, string version)
+    {
+        Dictionary<string, string> files = new Dictionary<string, string> { ["ok.xsl"] = Wrap(string.Empty) };
+        string xsl = $"<xsl:stylesheet version='{version}' xmlns:xsl='{XslNs}'>{body}</xsl:stylesheet>";
+
+        Assert.DoesNotThrow(() => Compile(xsl, files));
+    }
     private static string Wrap(string body) =>
         $"<xsl:stylesheet version='2.0' xmlns:xsl='{XslNs}'>{body}</xsl:stylesheet>";
 

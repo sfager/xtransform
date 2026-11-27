@@ -189,6 +189,7 @@ internal static class StylesheetLinker
                 if (string.Equals(local, "import", StringComparison.Ordinal))
                 {
                     RequireImportFirst(child, seenOtherElement);
+                    RequireKnownAttributes(child, element);
                     RequireEmpty(child);
                     Uri target = ResolveHref(child, currentBase);
                     ModuleNode importedNode = LoadImportTree(target, child.Location);
@@ -198,6 +199,7 @@ internal static class StylesheetLinker
                 else if (string.Equals(local, "include", StringComparison.Ordinal))
                 {
                     seenOtherElement = true;
+                    RequireKnownAttributes(child, element);
                     RequireEmpty(child);
                     Uri target = ResolveHref(child, currentBase);
                     ModuleNode includedNode = LoadImportTree(target, child.Location, requestedByInclude: true);
@@ -247,6 +249,23 @@ internal static class StylesheetLinker
             }
 
             element.ReplaceChildren(expanded);
+        }
+
+        // XSLT 2.0 §3.1 (XTSE0090): xsl:include and xsl:import take only href and the standard attributes. The validators no longer
+        // see them once they are expanded, so the check is made here, unless the module is forwards-compatible (§3.9).
+        private static void RequireKnownAttributes(StylesheetElement directive, StylesheetElement moduleRoot)
+        {
+            if (StylesheetAttributeValidator.IsForwardsCompatible(moduleRoot.DeclaredVersion))
+            {
+                return;
+            }
+
+            DiagnosticBag bag = new DiagnosticBag();
+            StylesheetAttributeValidator.CheckXsltElement(directive, bag);
+            if (bag.HasErrors)
+            {
+                throw new XsltStaticException(bag.ToList());
+            }
         }
 
         // XSLT 2.0 §3.10.2 (XTSE0200): xsl:import children must precede every other element child of the stylesheet element,

@@ -46,6 +46,45 @@ internal static class StylesheetAttributeValidator
         }
     }
 
+    /// <summary>
+    /// Reports XTSE0090 for each attribute of <paramref name="element"/>, an XSLT element, that the element does not define.
+    /// The caller decides whether forwards-compatible processing switches the check off.
+    /// </summary>
+    internal static void CheckXsltElement(StylesheetElement element, DiagnosticBag bag)
+    {
+        if (!s_allowed.TryGetValue(element.Name.LocalName, out HashSet<string>? allowed))
+        {
+            return;
+        }
+
+        foreach (StylesheetAttribute attribute in element.Attributes)
+        {
+            string ns = attribute.Name.NamespaceUri;
+            if (ns.Length == 0)
+            {
+                if (!allowed.Contains(attribute.Name.LocalName))
+                {
+                    bag.Error(
+                        XsltErrors.XTSE0090,
+                        $"xsl:{element.Name.LocalName}: attribute '{attribute.Name.LocalName}' is not allowed",
+                        attribute.Location);
+                }
+            }
+            else if (string.Equals(ns, XsltNamespace.Uri, StringComparison.Ordinal))
+            {
+                bag.Error(
+                    XsltErrors.XTSE0090,
+                    $"xsl:{element.Name.LocalName}: attribute 'xsl:{attribute.Name.LocalName}' is in the XSLT namespace and is not allowed on an XSLT element",
+                    attribute.Location);
+            }
+        }
+    }
+
+    /// <summary>True when an effective version above 2.0 puts the element under forwards-compatible processing (XSLT 2.0 §3.9).</summary>
+    internal static bool IsForwardsCompatible(string? version) =>
+        !string.IsNullOrEmpty(version)
+        && double.TryParse(version!.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out double v)
+        && v > 2.0;
     private static void Visit(StylesheetElement element, string? inheritedVersion, DiagnosticBag bag)
     {
         // An element in the XSLT namespace that XSLT 2.0 does not define is ignored with its content under forwards-compatible
@@ -61,31 +100,10 @@ internal static class StylesheetAttributeValidator
             version = element.DeclaredVersion;
         }
 
-        if (element.IsXsltElement && !IsForwardsCompatible(version) && s_allowed.TryGetValue(element.Name.LocalName, out HashSet<string>? allowed))
+        if (element.IsXsltElement && !IsForwardsCompatible(version))
         {
-            foreach (StylesheetAttribute attribute in element.Attributes)
-            {
-                string ns = attribute.Name.NamespaceUri;
-                if (ns.Length == 0)
-                {
-                    if (!allowed.Contains(attribute.Name.LocalName))
-                    {
-                        bag.Error(
-                            XsltErrors.XTSE0090,
-                            $"xsl:{element.Name.LocalName}: attribute '{attribute.Name.LocalName}' is not allowed",
-                            attribute.Location);
-                    }
-                }
-                else if (string.Equals(ns, XsltNamespace.Uri, StringComparison.Ordinal))
-                {
-                    bag.Error(
-                        XsltErrors.XTSE0090,
-                        $"xsl:{element.Name.LocalName}: attribute 'xsl:{attribute.Name.LocalName}' is in the XSLT namespace and is not allowed on an XSLT element",
-                        attribute.Location);
-                }
-            }
+            CheckXsltElement(element, bag);
         }
-
         else if (!element.IsXsltElement && !IsForwardsCompatible(version))
         {
             // XSLT 2.0 §11.1.1 (XTSE0805): an attribute of a literal result element in the XSLT namespace must be one the
@@ -111,12 +129,6 @@ internal static class StylesheetAttributeValidator
             }
         }
     }
-
-    // XSLT 2.0 §3.9: forwards-compatible processing applies when the effective version is greater than 2.0.
-    private static bool IsForwardsCompatible(string? version) =>
-        !string.IsNullOrEmpty(version)
-        && double.TryParse(version!.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out double v)
-        && v > 2.0;
 
     private static Dictionary<string, HashSet<string>> Build()
     {

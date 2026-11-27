@@ -334,11 +334,11 @@ internal sealed class StylesheetReaderTests
     }
 
     [Test]
-    public void Read_UnknownXsltElement_UnderVersion1_WarnsXtse0150()
+    public void Read_UnknownXsltElement_UnderVersion3_WarnsXtse0150()
     {
-        // Arrange — version="1.0" triggers forwards-compatible mode.
+        // Arrange — a version above 2.0 triggers forwards-compatible mode.
         string xml =
-            $"<xsl:stylesheet version='1.0' xmlns:xsl='{XsltNs}'>" +
+            $"<xsl:stylesheet version='3.0' xmlns:xsl='{XsltNs}'>" +
             "<xsl:not-a-real-instruction/>" +
             "</xsl:stylesheet>";
 
@@ -354,12 +354,28 @@ internal sealed class StylesheetReaderTests
         });
     }
 
+    [TestCase("0.5")]
+    [TestCase("1.0")]
+    [TestCase("2.0")]
+    public void Read_UnknownXsltElement_UnderAVersionOfAtMost2_ThrowsXtse0010(string version)
+    {
+        // Arrange — only a version above 2.0 is forwards-compatible (XSLT 2.0 §3.9).
+        string xml =
+            $"<xsl:stylesheet version='{version}' xmlns:xsl='{XsltNs}'>" +
+            "<xsl:template match='/'><xsl:not-a-real-instruction/></xsl:template>" +
+            "</xsl:stylesheet>";
+
+        // Act + Assert
+        XsltStaticException ex = Assert.Throws<XsltStaticException>(() => ReadInline(xml))!;
+        Assert.That(ex.Errors.Select(e => e.Code), Does.Contain(XsltErrors.XTSE0010));
+    }
+
     [Test]
-    public void Read_UnknownXsltElement_UnderXslVersion1OnLiteralRoot_WarnsXtse0150()
+    public void Read_UnknownXsltElement_UnderXslVersion3OnLiteralRoot_WarnsXtse0150()
     {
         // Arrange — forwards-compat via xsl:version on a literal result element.
         string xml =
-            $"<html xsl:version='1.0' xmlns:xsl='{XsltNs}'>" +
+            $"<html xsl:version='3.0' xmlns:xsl='{XsltNs}'>" +
             "<xsl:unknown/>" +
             "</html>";
 
