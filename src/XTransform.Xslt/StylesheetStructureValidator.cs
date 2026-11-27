@@ -284,7 +284,7 @@ internal static class StylesheetStructureValidator
             inLeading = false;
             if (!s_instructions.Contains(childName))
             {
-                Report(bag, childElement, $"xsl:{childName} is not allowed here (inside {Describe(element)})");
+                bag.Error(MisplacedCode(childElement, XsltErrors.XTSE0010), $"xsl:{childName} is not allowed here (inside {Describe(element)})", childElement.Location);
             }
         }
 
@@ -331,7 +331,7 @@ internal static class StylesheetStructureValidator
 
             if (!childElement.IsXsltElement || Array.IndexOf(allowed, childName) < 0)
             {
-                bag.Error(code, $"{(childElement.IsXsltElement ? "xsl:" + childName : childName)} is not allowed inside {Describe(element)}", childElement.Location);
+                bag.Error(MisplacedCode(childElement, code), $"{(childElement.IsXsltElement ? "xsl:" + childName : childName)} is not allowed inside {Describe(element)}", childElement.Location);
                 continue;
             }
 
@@ -381,6 +381,25 @@ internal static class StylesheetStructureValidator
         {
             Report(bag, element, "xsl:choose requires at least one xsl:when");
         }
+    }
+
+    // XSLT 2.0 §3.10 (XTSE0170, XTSE0190): xsl:include and xsl:import are allowed only as top-level elements.
+    private static QName MisplacedCode(StylesheetElement child, QName fallback)
+    {
+        if (child.IsXsltElement)
+        {
+            if (child.Name.LocalName == "include")
+            {
+                return XsltErrors.XTSE0170;
+            }
+
+            if (child.Name.LocalName == "import")
+            {
+                return XsltErrors.XTSE0190;
+            }
+        }
+
+        return fallback;
     }
 
     private static void Report(DiagnosticBag bag, StylesheetElement at, string message) =>

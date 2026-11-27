@@ -31,6 +31,9 @@ public static class XsltErrors
     /// <summary>It is a static error if the xsl:stylesheet or xsl:transform element has text content other than whitespace. (XSLT 2.0 §3.6)</summary>
     public static readonly QName XTSE0120 = new QName("err", XPathErrors.Namespace, "XTSE0120");
 
+    /// <summary>It is a static error if an xsl:include element is not a top-level element. (XSLT 2.0 §3.10.1)</summary>
+    public static readonly QName XTSE0170 = new QName("err", XPathErrors.Namespace, "XTSE0170");
+
     /// <summary>It is a static error if a stylesheet module directly or indirectly includes itself. (XSLT 2.0 §3.11.1)</summary>
     public static readonly QName XTSE0180 = new QName("err", XPathErrors.Namespace, "XTSE0180");
 
@@ -42,6 +45,12 @@ public static class XsltErrors
 
     /// <summary>It is a static error if a stylesheet module referenced by xsl:include or xsl:import cannot be retrieved or is not a valid stylesheet module. (XSLT 2.0 §3.11)</summary>
     public static readonly QName XTSE0165 = new QName("err", XPathErrors.Namespace, "XTSE0165");
+
+    /// <summary>It is a static error if an xsl:import element is not a top-level element. (XSLT 2.0 §3.10.2)</summary>
+    public static readonly QName XTSE0190 = new QName("err", XPathErrors.Namespace, "XTSE0190");
+
+    /// <summary>It is a static error if an xsl:import child does not precede all other element children of xsl:stylesheet, including xsl:include and user-defined data elements. (XSLT 2.0 §3.10.2)</summary>
+    public static readonly QName XTSE0200 = new QName("err", XPathErrors.Namespace, "XTSE0200");
 
     /// <summary>It is a static error if a stylesheet module directly or indirectly includes or imports itself. (XSLT 2.0 §3.11)</summary>
     public static readonly QName XTSE0210 = new QName("err", XPathErrors.Namespace, "XTSE0210");

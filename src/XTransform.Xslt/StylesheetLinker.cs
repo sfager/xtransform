@@ -174,11 +174,13 @@ internal static class StylesheetLinker
             // top-level elements of the included module, at its position (XSLT 2.0 §3.11.1), so that declaration
             // order, and with it the choice among rules of equal precedence and priority, follows the text.
             List<StylesheetNode> expanded = new List<StylesheetNode>(element.Children.Count);
+            bool seenOtherElement = false;
             for (int i = 0; i < element.Children.Count; i++)
             {
                 StylesheetNode current = element.Children[i];
                 if (current is not StylesheetElement child || !child.IsXsltElement)
                 {
+                    seenOtherElement |= current is StylesheetElement;
                     expanded.Add(current);
                     continue;
                 }
@@ -186,6 +188,7 @@ internal static class StylesheetLinker
                 string local = child.Name.LocalName;
                 if (string.Equals(local, "import", StringComparison.Ordinal))
                 {
+                    RequireImportFirst(child, seenOtherElement);
                     RequireEmpty(child);
                     Uri target = ResolveHref(child, currentBase);
                     ModuleNode importedNode = LoadImportTree(target, child.Location);
@@ -194,6 +197,7 @@ internal static class StylesheetLinker
                 }
                 else if (string.Equals(local, "include", StringComparison.Ordinal))
                 {
+                    seenOtherElement = true;
                     RequireEmpty(child);
                     Uri target = ResolveHref(child, currentBase);
                     ModuleNode includedNode = LoadImportTree(target, child.Location, requestedByInclude: true);
@@ -234,6 +238,7 @@ internal static class StylesheetLinker
                 }
                 else
                 {
+                    seenOtherElement = true;
                     expanded.Add(current);
                 }
 
@@ -242,6 +247,25 @@ internal static class StylesheetLinker
             }
 
             element.ReplaceChildren(expanded);
+        }
+
+        // XSLT 2.0 §3.10.2 (XTSE0200): xsl:import children must precede every other element child of the stylesheet element,
+        // including xsl:include and user-defined data elements. This runs before the import is loaded.
+        private static void RequireImportFirst(StylesheetElement import, bool seenOtherElement)
+        {
+            if (!seenOtherElement)
+            {
+                return;
+            }
+
+            throw new XsltStaticException(new Diagnostic[]
+            {
+                new Diagnostic(
+                    DiagnosticSeverity.Error,
+                    XsltErrors.XTSE0200,
+                    "xsl:import must precede all other element children of xsl:stylesheet",
+                    import.Location),
+            });
         }
 
         // XSLT 2.0 §3.1 (XTSE0260): xsl:include and xsl:import must be empty. The include is replaced by the included module's
