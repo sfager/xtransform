@@ -113,6 +113,7 @@ internal static class StylesheetLinker
     {
         private readonly IResourceResolver _resolver;
         private readonly HashSet<string> _loading = new HashSet<string>(StringComparer.Ordinal);
+        private string? _inputTypeAnnotations;
 
         public LinkerState(IResourceResolver resolver)
         {
@@ -138,6 +139,7 @@ internal static class StylesheetLinker
             {
                 StylesheetModule module = preRead ?? ReadModule(uri, requestLocation);
                 StylesheetModule processed = StylesheetProcessor.Process(module);
+                CheckInputTypeAnnotations(processed.Root, requestLocation);
 
                 ModuleNode node = new ModuleNode(processed, uri);
 
@@ -249,6 +251,38 @@ internal static class StylesheetLinker
             }
 
             element.ReplaceChildren(expanded);
+        }
+
+        // XSLT 2.0 §3.6 (XTSE0265): input-type-annotations may be strip in some modules and unspecified in others, but not
+        // strip in one and preserve in another.
+        private void CheckInputTypeAnnotations(StylesheetElement root, SourceSpan location)
+        {
+            string? value = null;
+            foreach (StylesheetAttribute attribute in root.Attributes)
+            {
+                if (attribute.Name.NamespaceUri.Length == 0 && attribute.Name.LocalName == "input-type-annotations")
+                {
+                    value = attribute.Value.Trim();
+                }
+            }
+
+            if (value != "strip" && value != "preserve")
+            {
+                return;
+            }
+
+            _inputTypeAnnotations ??= value;
+            if (_inputTypeAnnotations != value)
+            {
+                throw new XsltStaticException(new Diagnostic[]
+                {
+                    new Diagnostic(
+                        DiagnosticSeverity.Error,
+                        XsltErrors.XTSE0265,
+                        "input-type-annotations is strip in one stylesheet module and preserve in another",
+                        root.Location),
+                });
+            }
         }
 
         // XSLT 2.0 §3.1 (XTSE0090): xsl:include and xsl:import take only href and the standard attributes. The validators no longer

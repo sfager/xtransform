@@ -1767,6 +1767,14 @@ internal static class XPathParser
                     }
                     else if (Kind == TokenKind.Name)
                     {
+                        // XSLT 2.0 §5.5.2 (XTSE0340): a PI target in a pattern is an NCName, so it has no prefix.
+#pragma warning disable CA2249 // string.Contains(char) is not available on netstandard2.0
+                        if (Current.Text!.IndexOf(':') >= 0)
+#pragma warning restore CA2249
+                        {
+                            throw PatternError("A processing-instruction() test in a pattern takes an NCName, not a prefixed name");
+                        }
+
                         Token piTarget = Consume();
                         piName = new QName("", "", piTarget.Text!);
                     }

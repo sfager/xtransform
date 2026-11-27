@@ -21,6 +21,7 @@ internal static class StylesheetValueValidator
         Enum,
         TemplateMode,
         ApplyMode,
+        Priority,
     }
 
     private sealed class Rule
@@ -52,6 +53,8 @@ internal static class StylesheetValueValidator
         {
             Visit(assembly.Modules[i].Module.Root, null, null, bag);
         }
+
+        CheckAcrossDeclarations(assembly, bag);
     }
 
     private static void Visit(StylesheetElement element, StylesheetElement? parent, string? inheritedVersion, DiagnosticBag bag)
@@ -69,6 +72,8 @@ internal static class StylesheetValueValidator
         if (element.IsXsltElement)
         {
             string name = element.Name.LocalName;
+            CheckVersion(element, bag);
+            CheckCollations(element, name, bag);
             if (s_rules.TryGetValue(name, out Dictionary<string, Rule>? rules))
             {
                 foreach (StylesheetAttribute attribute in element.Attributes)
@@ -100,6 +105,77 @@ internal static class StylesheetValueValidator
         }
     }
 
+    // XSLT 2.0 §3.6.1 (XTSE0125): a default-collation list must contain a recognised URI; §16.3 (XTSE1210): so must a key's collation.
+    private static void CheckCollations(StylesheetElement element, string name, DiagnosticBag bag)
+    {
+        string? defaults = GetAttribute(element, "default-collation");
+        if (defaults is not null)
+        {
+            bool any = false;
+            foreach (string uri in defaults.Split(s_whitespace, StringSplitOptions.RemoveEmptyEntries))
+            {
+                any |= CollationUris.IsRecognised(uri);
+            }
+
+            if (!any)
+            {
+                bag.Error(XsltErrors.XTSE0125, $"None of the collations in default-collation='{defaults}' is recognised", element.Location);
+            }
+        }
+
+        string? collation = name == "key" ? GetAttribute(element, "collation") : null;
+        if (collation is not null && !CollationUris.IsRecognised(collation))
+        {
+            bag.Error(XsltErrors.XTSE1210, $"The collation '{collation}' of xsl:key is not recognised", element.Location);
+        }
+    }
+
+    // XSLT 2.0 §16.3 (XTSE1220): xsl:key declarations with one name must agree on the collation.
+    private static void CheckAcrossDeclarations(StylesheetAssembly assembly, DiagnosticBag bag)
+    {
+        Dictionary<QName, string> keyCollations = new Dictionary<QName, string>();
+        HashSet<StylesheetElement> seen = new HashSet<StylesheetElement>();
+        for (int i = 0; i < assembly.Modules.Count; i++)
+        {
+            StylesheetElement root = assembly.Modules[i].Module.Root;
+            foreach (StylesheetNode child in root.Children)
+            {
+                if (child is StylesheetElement key
+                    && key.IsXsltElement
+                    && key.Name.LocalName == "key"
+                    && seen.Add(key)
+                    && GetAttribute(key, "name") is string keyName
+                    && LexicalQNameParser.TryResolve(keyName.Trim(), key.InScopeNamespaces, out QName qname, out _))
+                {
+                    string collation = GetAttribute(key, "collation")?.Trim() ?? CollationUris.Codepoint;
+                    if (keyCollations.TryGetValue(qname, out string? existing))
+                    {
+                        if (existing != collation)
+                        {
+                            bag.Error(XsltErrors.XTSE1220, $"The xsl:key declarations named '{keyName}' have different collations", key.Location);
+                        }
+                    }
+                    else
+                    {
+                        keyCollations[qname] = collation;
+                    }
+                }
+            }
+        }
+    }
+
+    // XSLT 2.0 §3.6 (XTSE0110): the version attribute is an xs:decimal; on a literal result element it is xsl:version.
+    private static void CheckVersion(StylesheetElement element, DiagnosticBag bag)
+    {
+        foreach (StylesheetAttribute attribute in element.Attributes)
+        {
+            if (attribute.Name.LocalName == "version" && attribute.Name.NamespaceUri.Length == 0 && !IsDecimal(attribute.Value.Trim()))
+            {
+                bag.Error(XsltErrors.XTSE0110, $"'{attribute.Value}' is not a valid version number", attribute.Location);
+            }
+        }
+    }
+
     private static void CheckValue(StylesheetElement element, StylesheetAttribute attribute, Rule rule, bool forwards, DiagnosticBag bag)
     {
         string value = attribute.Value.Trim();
@@ -115,6 +191,7 @@ internal static class StylesheetValueValidator
             Kind.Enum => Array.IndexOf(rule.Values, value) >= 0,
             Kind.TemplateMode => IsTemplateMode(value),
             Kind.ApplyMode => value == "#default" || value == "#current" || IsQName(value),
+            Kind.Priority => IsDecimal(value),
             _ => true,
         };
 
@@ -125,7 +202,7 @@ internal static class StylesheetValueValidator
         }
 
         bag.Error(
-            rule.Kind == Kind.TemplateMode ? XsltErrors.XTSE0550 : XsltErrors.XTSE0020,
+            rule.Kind == Kind.TemplateMode ? XsltErrors.XTSE0550 : rule.Kind == Kind.Priority ? XsltErrors.XTSE0530 : XsltErrors.XTSE0020,
             $"xsl:{element.Name.LocalName}: '{attribute.Value}' is not a valid value for the attribute '{attribute.Name.LocalName}'",
             attribute.Location);
     }
@@ -156,6 +233,31 @@ internal static class StylesheetValueValidator
             }
         }
     }
+    // xs:decimal lexical form: an optional sign and digits with at most one decimal point, no exponent.
+    private static bool IsDecimal(string value)
+    {
+        int i = value.Length > 0 && (value[0] == '+' || value[0] == '-') ? 1 : 0;
+        int digits = 0;
+        bool point = false;
+        for (; i < value.Length; i++)
+        {
+            if (value[i] >= '0' && value[i] <= '9')
+            {
+                digits++;
+            }
+            else if (value[i] == '.' && !point)
+            {
+                point = true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        return digits > 0;
+    }
+
     private static bool IsQName(string value) => LexicalNames.IsQName(value);
 
     private static bool IsNCName(string value) => LexicalNames.IsNCName(value);
@@ -233,6 +335,7 @@ internal static class StylesheetValueValidator
         Add("attribute-set key template call-template variable param with-param function decimal-format character-map output", "name", new Rule(Kind.QName));
         Add("template", "mode", new Rule(Kind.TemplateMode));
         Add("apply-templates", "mode", new Rule(Kind.ApplyMode));
+        Add("template", "priority", new Rule(Kind.Priority));
 
         // Flags (yes | no).
         Add("param with-param", "tunnel", new Rule(Kind.YesNo));

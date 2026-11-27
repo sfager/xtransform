@@ -198,6 +198,7 @@ internal static class StylesheetStructureValidator
     private static void CheckXsltContent(StylesheetElement element, DiagnosticBag bag)
     {
         string name = element.Name.LocalName;
+        CheckSelectAndContent(element, name, bag);
 
         if (name == "stylesheet" || name == "transform")
         {
@@ -220,6 +221,38 @@ internal static class StylesheetStructureValidator
         else if (s_elementOnly.TryGetValue(name, out string[]? allowed))
         {
             CheckElementOnly(element, allowed, bag);
+        }
+    }
+
+    // XSLT 2.0 §11.3.1, §11.5, §11.6, §13.1.1 (XTSE0840, XTSE0880, XTSE0940, XTSE1040): a select attribute and content exclude each other.
+    private static void CheckSelectAndContent(StylesheetElement element, string name, DiagnosticBag bag)
+    {
+        QName? code = name switch
+        {
+            "attribute" => XsltErrors.XTSE0840,
+            "processing-instruction" => XsltErrors.XTSE0880,
+            "comment" => XsltErrors.XTSE0940,
+            "perform-sort" => XsltErrors.XTSE1040,
+            _ => null,
+        };
+        if (code is null || !HasAttribute(element, "select"))
+        {
+            return;
+        }
+
+        foreach (StylesheetNode child in element.Children)
+        {
+            // xsl:perform-sort keeps its xsl:sort children (and xsl:fallback) next to a select.
+            bool allowed = name == "perform-sort"
+                && child is StylesheetElement e
+                && e.IsXsltElement
+                && (e.Name.LocalName == "sort" || e.Name.LocalName == "fallback");
+            bool content = child is StylesheetElement || (child is StylesheetText text && !text.IsWhitespaceOnly);
+            if (content && !allowed)
+            {
+                bag.Error(code.Value, $"xsl:{name} has a select attribute and content", element.Location);
+                return;
+            }
         }
     }
 
