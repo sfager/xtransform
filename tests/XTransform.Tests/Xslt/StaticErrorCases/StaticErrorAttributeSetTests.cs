@@ -35,7 +35,6 @@ public sealed class StaticErrorAttributeSetTests
     [TestCase("<xsl:attribute-set name='a' use-attribute-sets='b'/><xsl:attribute-set name='b'/>", TestName = "Chain")]
     [TestCase("<xsl:attribute-set name='a' use-attribute-sets='b c'/><xsl:attribute-set name='b' use-attribute-sets='c'/><xsl:attribute-set name='c'/>", TestName = "Diamond")]
     [TestCase("<xsl:attribute-set name='p:a'/><xsl:attribute-set name='q:a' use-attribute-sets='p:a'/>", TestName = "SameLocalNameDifferentNamespace")]
-    [TestCase("<xsl:attribute-set name='a' use-attribute-sets='not-declared'/>", TestName = "ReferenceToAnUndeclaredSet")]
     [TestCase("<xsl:attribute-set name='a'><xsl:attribute name='x'><xsl:element name='e' use-attribute-sets='b'/></xsl:attribute></xsl:attribute-set><xsl:attribute-set name='b'/>", TestName = "BodyUsesAnotherSet")]
     public void Compile_AttributeSetsWithoutACycle_Compiles(string body)
     {

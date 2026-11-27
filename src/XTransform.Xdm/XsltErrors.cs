@@ -55,6 +55,9 @@ public static class XsltErrors
     /// <summary>It is a static error if a stylesheet contains an xsl:apply-templates whose mode attribute refers to a mode that is not used by any template rule. (XSLT 2.0 §6.4)</summary>
     public static readonly QName XTSE0680 = new QName("err", XPathErrors.Namespace, "XTSE0680");
 
+    /// <summary>It is a static error if a name in a use-attribute-sets attribute is not the name of an xsl:attribute-set declared in the stylesheet. (XSLT 2.0 §10.2)</summary>
+    public static readonly QName XTSE0710 = new QName("err", XPathErrors.Namespace, "XTSE0710");
+
     /// <summary>It is a static error if an xsl:attribute-set directly or indirectly references itself through its use-attribute-sets attribute. (XSLT 2.0 §10.2)</summary>
     public static readonly QName XTSE0720 = new QName("err", XPathErrors.Namespace, "XTSE0720");
 
