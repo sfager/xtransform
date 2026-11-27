@@ -217,6 +217,24 @@ internal sealed class XsltTunnelAndModeTests
         Assert.That(ex.ErrorCode, Is.EqualTo(XsltErrors.XTTE0510));
     }
 
+    [Test]
+    public void Mode_Current_InAStylesheetFunctionIsTheDefaultMode()
+    {
+        // Arrange (XSLT 2.0 §6.5, erratum XT.E19)
+        const string body =
+            "<xsl:template match='/'><xsl:apply-templates select='d' mode='m'/></xsl:template>" +
+            "<xsl:template match='d' mode='m'><xsl:value-of select='f:go(e)'/>|<xsl:apply-templates select='e' mode='#current'/></xsl:template>" +
+            "<xsl:template match='e' mode='m'>[m]</xsl:template>" +
+            "<xsl:template match='e'>[default]</xsl:template>" +
+            "<xsl:function name='f:go'><xsl:param name='n'/><xsl:apply-templates select='$n' mode='#current'/></xsl:function>";
+
+        // Act
+        string result = Eval(body, "<d><e/></d>");
+
+        // Assert: the function sees the default mode; the template, outside the call, is still in mode m.
+        Assert.That(result, Is.EqualTo("[default]|[m]"));
+    }
+
     private static string Eval(string body, string input = "<d/>")
     {
         string xsl =
