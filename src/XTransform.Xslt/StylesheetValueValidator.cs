@@ -41,6 +41,8 @@ internal static class StylesheetValueValidator
 
     private static readonly char[] s_braces = { '{', '}' };
 
+    private static readonly char[] s_whitespace = { ' ', '\t', '\r', '\n' };
+
     private static readonly Dictionary<string, Dictionary<string, Rule>> s_rules = Build();
 
     /// <summary>Reports XTSE0020 for each attribute value that is not valid for its type.</summary>
@@ -116,15 +118,44 @@ internal static class StylesheetValueValidator
             _ => true,
         };
 
-        if (!valid)
+        if (valid)
         {
-            bag.Error(
-                rule.Kind == Kind.TemplateMode ? XsltErrors.XTSE0550 : XsltErrors.XTSE0020,
-                $"xsl:{element.Name.LocalName}: '{attribute.Value}' is not a valid value for the attribute '{attribute.Name.LocalName}'",
-                attribute.Location);
+            CheckPrefixes(element, attribute, value, rule, bag);
+            return;
         }
+
+        bag.Error(
+            rule.Kind == Kind.TemplateMode ? XsltErrors.XTSE0550 : XsltErrors.XTSE0020,
+            $"xsl:{element.Name.LocalName}: '{attribute.Value}' is not a valid value for the attribute '{attribute.Name.LocalName}'",
+            attribute.Location);
     }
 
+    // XSLT 2.0 §5.1.1 (XTSE0280): the prefix of a lexical QName in an attribute must be declared on the element or an ancestor.
+    private static void CheckPrefixes(StylesheetElement element, StylesheetAttribute attribute, string value, Rule rule, DiagnosticBag bag)
+    {
+        if (rule.Kind == Kind.Enum || rule.Kind == Kind.YesNo)
+        {
+            return;
+        }
+
+        foreach (string token in value.Split(s_whitespace, StringSplitOptions.RemoveEmptyEntries))
+        {
+            int colon = token.IndexOf(':');
+            if (token[0] == '#' || colon <= 0)
+            {
+                continue;
+            }
+
+            string prefix = token.Substring(0, colon);
+            if (element.InScopeNamespaces.Resolve(prefix) is null)
+            {
+                bag.Error(
+                    XsltErrors.XTSE0280,
+                    $"xsl:{element.Name.LocalName}: the prefix '{prefix}' in the attribute '{attribute.Name.LocalName}' is not declared",
+                    attribute.Location);
+            }
+        }
+    }
     private static bool IsQName(string value)
     {
         int colon = value.IndexOf(':');

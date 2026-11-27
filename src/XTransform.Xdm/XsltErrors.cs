@@ -105,7 +105,7 @@ public static class XsltErrors
     public static readonly QName XTDE1150 = new QName("err", XPathErrors.Namespace, "XTDE1150");
     /// <summary>XTSE1130: xsl:analyze-string has neither xsl:matching-substring nor xsl:non-matching-substring. (XSLT 2.0 §15.1)</summary>
     public static readonly QName XTSE1130 = new QName("err", XPathErrors.Namespace, "XTSE1130");
-    /// <summary>XTSE0280: a name test in xsl:strip-space / xsl:preserve-space uses an undeclared prefix. (XSLT 2.0 §4.3)</summary>
+    /// <summary>XTSE0280: a prefixed lexical QName in an attribute (or a name test in xsl:strip-space / xsl:preserve-space) uses a prefix with no namespace declaration in scope. (XSLT 2.0 §5.1.1)</summary>
     public static readonly QName XTSE0280 = new QName("err", XPathErrors.Namespace, "XTSE0280");
     /// <summary>XTRE0270: an element matches conflicting xsl:strip-space and xsl:preserve-space declarations. Recoverable. (XSLT 2.0 §4.4)</summary>
     public static readonly QName XTRE0270 = new QName("err", XPathErrors.Namespace, "XTRE0270");
