@@ -699,8 +699,8 @@ lre/lre-022  # [Compare] expected error XTDE0820 but the transformation succeede
 lre/lre-027  # [Compare] assert was false: /out/namespace::four="http://four.com"
 lre/lre-028  # [Compare] assert was false: /out/namespace::one="http://eins.com"
 match/match-036  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
-match/match-248  # [Compile] expected a result but got XPST0003: Unexpected character '!' at offset 44
-match/match-254  # [Compile] expected a result but got XPST0003: Unexpected character '!' at offset 44
+match/match-248  # [Compile] XPath 3.0 syntax (the ! simple-map operator), out of scope for v1; the suite tags it XSLT20+
+match/match-254  # [Compile] XPath 3.0 syntax (the ! simple-map operator), out of scope for v1; the suite tags it XSLT20+
 math/math-1701  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
 math/math-1801  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
 math/math-2509  # [Compare] assert was false: /out='false'
