@@ -71,19 +71,16 @@ internal sealed class XsltConstructorTests
     }
 
     [Test]
-    public void Attribute_AfterContent_IsDroppedWithXtde0410()
+    public void Attribute_AfterContent_RaisesXtde0410()
     {
         string xsl = Wrap(
             "<xsl:template match='/'>" +
             "<out><child/><xsl:attribute name='late' select='&quot;val&quot;'/></out>" +
             "</xsl:template>");
 
-        string output = Transform(xsl, "<doc/>", out IReadOnlyList<Diagnostic> diagnostics);
-        Assert.Multiple(() =>
-        {
-            Assert.That(output, Is.EqualTo("<out><child /></out>"));
-            Assert.That(diagnostics.Any(d => d.Code == XsltErrors.XTDE0410), Is.True);
-        });
+        XsltDynamicException ex = Assert.Throws<XsltDynamicException>(() => Transform(xsl, "<doc/>", out _))!;
+
+        Assert.That(ex.ErrorCode, Is.EqualTo(XsltErrors.XTDE0410));
     }
 
     // ── xsl:comment ─────────────────────────────────────────────────────────

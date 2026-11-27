@@ -88,9 +88,9 @@ internal sealed class SequenceNormalizerTests
     }
 
     [Test]
-    public void Attribute_AfterChildElement_DroppedWithXtde0410Warning()
+    public void Attribute_AfterChildElement_RaisesXtde0410()
     {
-        // Arrange
+        // Arrange (XSLT 2.0 §5.7.1: a late attribute node is a non-recoverable error)
         Recorder sink = new Recorder();
         SequenceNormalizer n = new SequenceNormalizer(sink);
         n.StartElement(1, SourceSpan.None);
@@ -98,14 +98,13 @@ internal sealed class SequenceNormalizerTests
         n.EndElement();
 
         // Act
-        n.Attribute(3, "late", SourceSpan.None);
+        XsltDynamicException ex = Assert.Throws<XsltDynamicException>(() => n.Attribute(3, "late", SourceSpan.None))!;
 
         // Assert
         Assert.Multiple(() =>
         {
+            Assert.That(ex.ErrorCode, Is.EqualTo(XsltErrors.XTDE0410));
             Assert.That(sink.Events, Does.Not.Contain("Attribute(3=late)"));
-            Assert.That(n.Diagnostics, Has.Count.EqualTo(1));
-            Assert.That(n.Diagnostics[0].Code, Is.EqualTo(XsltErrors.XTDE0410));
         });
     }
 
