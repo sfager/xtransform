@@ -217,6 +217,37 @@ internal sealed class XsltTunnelAndModeTests
         Assert.That(ex.ErrorCode, Is.EqualTo(XsltErrors.XTTE0510));
     }
 
+    [TestCase("child::document-node()", "[other]")]
+    [TestCase("document-node()", "[doc]")]
+    public void Pattern_DocumentNodeTest_MatchesOnlyWithoutAnExplicitChildAxis(string pattern, string expected)
+    {
+        // Arrange (XSLT 2.0 §5.5.2; the document node is nobody's child)
+        string body =
+            $"<xsl:template match='{pattern}'>[doc]</xsl:template><xsl:template match='*'>[other]</xsl:template>";
+
+        // Act
+        string result = Eval(body);
+
+        // Assert
+        Assert.That(result, Is.EqualTo(expected));
+    }
+
+    [Test]
+    public void Pattern_ChildAxisWithAttributeTest_NeverMatchesAnAttribute()
+    {
+        // Arrange (XPath 2.0 §3.2.1.1: only the abbreviated attribute() is on the attribute axis)
+        const string body =
+            "<xsl:template match='child::attribute()'>[wrong]</xsl:template>" +
+            "<xsl:template match='attribute()'>[attr]</xsl:template>" +
+            "<xsl:template match='/'><xsl:apply-templates select='d/@a'/></xsl:template>";
+
+        // Act
+        string result = Eval(body, "<d a='1'/>");
+
+        // Assert
+        Assert.That(result, Is.EqualTo("[attr]"));
+    }
+
     [Test]
     public void Mode_Current_InAStylesheetFunctionIsTheDefaultMode()
     {

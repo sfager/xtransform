@@ -1625,7 +1625,10 @@ internal static class XPathParser
                     ImmutableArray<XPathAst> childPreds = ParsePatternPredicateList();
                     return new StepPatternAst(
                         _baseSpan.WithRange(start, Current.Start - start),
-                        Axis.Child, childTest, childPreds, combinator);
+                        Axis.Child, childTest, childPreds, combinator)
+                    {
+                        ExplicitChildAxis = true,
+                    };
                 }
                 else if (string.Equals(axisName, "attribute", StringComparison.Ordinal))
                 {

@@ -165,6 +165,13 @@ internal sealed record StepPatternAst(
     StepCombinator Combinator                // how this step connects to the previous
 ) : PatternAst(Span)
 {
+    /// <summary>
+    /// True when the step was written <c>child::</c>. Such a step stays on the child axis even with an
+    /// <c>attribute()</c> test (which then never matches), whereas the abbreviated <c>attribute()</c> is on the
+    /// attribute axis (XPath 2.0 §3.2.1.1); the document node is nobody's child, so it never matches either.
+    /// </summary>
+    public bool ExplicitChildAxis { get; init; }
+
     /// <inheritdoc/>
     /// <remarks>
     /// This is only the per-step priority for a single-step, no-predicate, relative pattern.

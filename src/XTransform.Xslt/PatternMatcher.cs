@@ -152,7 +152,7 @@ internal static class PatternMatcher
 
     // A step is on the attribute axis when it says so (@x) or when its test is an attribute kind test: attribute(), attribute(n).
     private static bool UsesAttributeAxis(StepPatternAst step) =>
-        step.Axis == Axis.Attribute || step.Test is KindTestAst { Kind: XdmNodeKind.Attribute };
+        step.Axis == Axis.Attribute || (!step.ExplicitChildAxis && step.Test is KindTestAst { Kind: XdmNodeKind.Attribute });
 
     private static bool MatchStep(StepPatternAst step, XdmNode node, DynamicContext context)
     {
@@ -166,7 +166,8 @@ internal static class PatternMatcher
 
         // A step without an axis is on the child axis, and the document node is nobody's child: match="node()" does
         // not match it (XSLT 2.0 §5.5.2).
-        if (!wantAttribute && step.Test is AnyKindTestAst && node.NodeKind == XdmNodeKind.Document)
+        // An explicit child:: step never matches it, whatever the test (child::document-node() is legal but matches nothing).
+        if (!wantAttribute && node.NodeKind == XdmNodeKind.Document && (step.ExplicitChildAxis || step.Test is AnyKindTestAst))
         {
             return false;
         }
