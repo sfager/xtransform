@@ -282,6 +282,21 @@ internal sealed class XsltTunnelAndModeTests
         Assert.That(result, Is.EqualTo("[3]"));
     }
 
+    [TestCase("count(//c/@*/descendant::node())", "0")]
+    [TestCase("count(//c/@*/descendant-or-self::node())", "2")]
+    [TestCase("count(//c/@a/descendant-or-self::attribute(b))", "0")]
+    public void Axis_DescendantFromAnAttribute_HasNoDescendants(string expression, string expected)
+    {
+        // Arrange (XPath 2.0 §3.2.1.1: an attribute has no children; descendant-or-self is the node itself)
+        string body = $"<xsl:template match='/'><xsl:value-of select='{expression}'/></xsl:template>";
+
+        // Act
+        string result = Eval(body, "<d><c a='1' b='2'/></d>");
+
+        // Assert
+        Assert.That(result, Is.EqualTo(expected));
+    }
+
     [Test]
     public void Mode_Current_InAStylesheetFunctionIsTheDefaultMode()
     {
