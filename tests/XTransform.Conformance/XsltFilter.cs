@@ -46,6 +46,13 @@ internal static class XsltFilter
                 return false;
             }
 
+            // on-multiple-match="error" describes a processor configured to raise XTRE0540. XTransform recovers (the last rule wins;
+            // docs/implementation-defined.md), so those tests do not apply; the matching "recover" tests do.
+            if (dep.Satisfied && dep.Type == "on-multiple-match" && dep.Value.Trim() == "error")
+            {
+                return false;
+            }
+
             if (dep.Type == "feature" && dep.Satisfied && s_excludedFeatures.Contains(dep.Value.Trim()))
             {
                 return false;
