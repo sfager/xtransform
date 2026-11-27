@@ -134,6 +134,9 @@ public static class XsltErrors
     /// <summary>XTSE0760: an xsl:param of an xsl:function has a default value. (XSLT 2.0 §10.3)</summary>
     public static readonly QName XTSE0760 = new QName("err", XPathErrors.Namespace, "XTSE0760");
 
+    /// <summary>XTSE0550: the mode list of an xsl:template is empty, repeats a token, contains an invalid token, or combines #all with another value. (XSLT 2.0 §6.5)</summary>
+    public static readonly QName XTSE0550 = new QName("err", XPathErrors.Namespace, "XTSE0550");
+
     /// <summary>XTSE0580: two parameters of one template or function have the same name. (XSLT 2.0 §9.2)</summary>
     public static readonly QName XTSE0580 = new QName("err", XPathErrors.Namespace, "XTSE0580");
 

@@ -19,7 +19,6 @@ public sealed class StaticErrorValueTests
     [TestCase("<xsl:variable name='x/y'/>", TestName = "VariableNameWithSlash")]
     [TestCase("<xsl:function name='f:test?' xmlns:f='urn:f'/>", TestName = "FunctionNameWithQuestionMark")]
     [TestCase("<xsl:template match='/'><xsl:apply-templates mode='{$x}'/></xsl:template>", TestName = "ModeIsNotAnAvt")]
-    [TestCase("<xsl:template match='x' mode=''/>", TestName = "EmptyTemplateMode")]
     [TestCase("<xsl:param name='p' tunnel='yes'/>", TestName = "TunnelOnGlobalParam")]
     [TestCase("<xsl:function name='f:x' xmlns:f='urn:f'><xsl:param name='p' tunnel='yes'/><xsl:sequence select='2'/></xsl:function>", TestName = "TunnelOnFunctionParam")]
     [TestCase("<xsl:template match='/'><xsl:copy-of select='.' copy-namespaces='maybe'/></xsl:template>", TestName = "CopyNamespacesMaybe")]

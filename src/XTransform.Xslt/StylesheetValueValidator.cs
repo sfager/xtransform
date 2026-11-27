@@ -119,7 +119,7 @@ internal static class StylesheetValueValidator
         if (!valid)
         {
             bag.Error(
-                XsltErrors.XTSE0020,
+                rule.Kind == Kind.TemplateMode ? XsltErrors.XTSE0550 : XsltErrors.XTSE0020,
                 $"xsl:{element.Name.LocalName}: '{attribute.Value}' is not a valid value for the attribute '{attribute.Name.LocalName}'",
                 attribute.Location);
         }
@@ -154,7 +154,7 @@ internal static class StylesheetValueValidator
         return true;
     }
 
-    // XSLT 2.0 §6.5: "#all", or a whitespace-separated list of QNames and "#default".
+    // XSLT 2.0 §6.5 (XTSE0550): "#all" alone, or a non-empty whitespace-separated list of distinct QNames and "#default".
     private static bool IsTemplateMode(string value)
     {
         string[] tokens = value.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
@@ -163,15 +163,16 @@ internal static class StylesheetValueValidator
             return false;
         }
 
+        HashSet<string> seen = new HashSet<string>(StringComparer.Ordinal);
         foreach (string token in tokens)
         {
-            if (token != "#all" && token != "#default" && !IsQName(token))
+            if ((token != "#all" && token != "#default" && !IsQName(token)) || !seen.Add(token))
             {
                 return false;
             }
         }
 
-        return true;
+        return !seen.Contains("#all") || tokens.Length == 1;
     }
 
     private static bool IsYesNo(string value, bool forwards) =>
