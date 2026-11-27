@@ -16,6 +16,12 @@ public static class XsltErrors
     /// <summary>It is a static error if two xsl:output declarations with the same name and import precedence specify different values for the same attribute. (XSLT 2.0 §20)</summary>
     public static readonly QName XTSE1560 = new QName("err", XPathErrors.Namespace, "XTSE1560");
 
+    /// <summary>It is a static error if a basic (non-schema-aware) processor encounters xsl:import-schema. (XSLT 2.0 §3.12)</summary>
+    public static readonly QName XTSE1650 = new QName("err", XPathErrors.Namespace, "XTSE1650");
+
+    /// <summary>It is a static error if a basic (non-schema-aware) processor encounters a type attribute, or a validation or default-validation attribute other than strip. (XSLT 2.0 §3.12)</summary>
+    public static readonly QName XTSE1660 = new QName("err", XPathErrors.Namespace, "XTSE1660");
+
     /// <summary>Serialization error: the requested output encoding is not supported. (Serialization 1.0 §3)</summary>
     public static readonly QName SESU0007 = new QName("err", XPathErrors.Namespace, "SESU0007");
 
