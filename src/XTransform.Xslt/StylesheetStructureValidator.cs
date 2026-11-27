@@ -279,6 +279,10 @@ internal static class StylesheetStructureValidator
     private static void CheckElementOnly(StylesheetElement element, string[] allowed, DiagnosticBag bag)
     {
         string name = element.Name.LocalName;
+        // XSLT 2.0 §3.1 (XTSE0260): an element that must be empty takes no content but comments and processing instructions;
+        // whitespace that survived stripping (xml:space="preserve") counts.
+        bool empty = allowed.Length == 0;
+        QName code = empty ? XsltErrors.XTSE0260 : XsltErrors.XTSE0010;
         int whens = 0;
         bool otherwiseSeen = false;
         bool matching = false;
@@ -288,9 +292,9 @@ internal static class StylesheetStructureValidator
         {
             if (child is StylesheetText text)
             {
-                if (!text.IsWhitespaceOnly)
+                if (empty || !text.IsWhitespaceOnly)
                 {
-                    Report(bag, element, $"Text is not allowed inside {Describe(element)}");
+                    bag.Error(code, $"Text is not allowed inside {Describe(element)}", element.Location);
                 }
 
                 continue;
@@ -309,7 +313,7 @@ internal static class StylesheetStructureValidator
 
             if (!childElement.IsXsltElement || Array.IndexOf(allowed, childName) < 0)
             {
-                Report(bag, childElement, $"{(childElement.IsXsltElement ? "xsl:" + childName : childName)} is not allowed inside {Describe(element)}");
+                bag.Error(code, $"{(childElement.IsXsltElement ? "xsl:" + childName : childName)} is not allowed inside {Describe(element)}", childElement.Location);
                 continue;
             }
 

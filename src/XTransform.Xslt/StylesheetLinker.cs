@@ -186,6 +186,7 @@ internal static class StylesheetLinker
                 string local = child.Name.LocalName;
                 if (string.Equals(local, "import", StringComparison.Ordinal))
                 {
+                    RequireEmpty(child);
                     Uri target = ResolveHref(child, currentBase);
                     ModuleNode importedNode = LoadImportTree(target, child.Location);
                     node.Imports.Add(importedNode);
@@ -193,6 +194,7 @@ internal static class StylesheetLinker
                 }
                 else if (string.Equals(local, "include", StringComparison.Ordinal))
                 {
+                    RequireEmpty(child);
                     Uri target = ResolveHref(child, currentBase);
                     ModuleNode includedNode = LoadImportTree(target, child.Location, requestedByInclude: true);
 
@@ -240,6 +242,25 @@ internal static class StylesheetLinker
             }
 
             element.ReplaceChildren(expanded);
+        }
+
+        // XSLT 2.0 §3.1 (XTSE0260): xsl:include and xsl:import must be empty. The include is replaced by the included module's
+        // declarations below, so this is the last point at which its content is visible.
+        private static void RequireEmpty(StylesheetElement element)
+        {
+            if (element.Children.Count == 0)
+            {
+                return;
+            }
+
+            throw new XsltStaticException(new Diagnostic[]
+            {
+                new Diagnostic(
+                    DiagnosticSeverity.Error,
+                    XsltErrors.XTSE0260,
+                    $"xsl:{element.Name.LocalName} must be empty",
+                    element.Location),
+            });
         }
 
         private static Uri ResolveHref(StylesheetElement element, Uri currentBase)
