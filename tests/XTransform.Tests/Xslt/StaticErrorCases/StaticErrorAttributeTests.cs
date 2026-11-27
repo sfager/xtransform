@@ -35,6 +35,34 @@ public sealed class StaticErrorAttributeTests
         Assert.That(ex.Errors.Select(e => e.Code), Does.Contain(XsltErrors.XTSE0090));
     }
 
+    [TestCase("<xsl:template match='/'><out xsl:banana='3'/></xsl:template>", TestName = "UnknownName")]
+    [TestCase("<xsl:template match='/'><out xsl:if='my if' english='to leave'/></xsl:template>", TestName = "InstructionNameAsAttribute")]
+    [TestCase("<xsl:template match='/'><out><elem xsl:use-when='true()' xsl:if='See what happens!'>error</elem></out></xsl:template>", TestName = "NestedWithUseWhen")]
+    [TestCase("<xsl:template match='/'><out xsl:select='1'/></xsl:template>", TestName = "InstructionAttributeName")]
+    public void Compile_UndefinedXsltAttributeOnLiteralResultElement_RaisesXtse0805(string body)
+    {
+        // Arrange
+        string xsl = Wrap(body);
+
+        // Act
+        XsltStaticException ex = Assert.Throws<XsltStaticException>(() => Compile(xsl))!;
+
+        // Assert
+        Assert.That(ex.Errors.Select(e => e.Code), Does.Contain(XsltErrors.XTSE0805));
+    }
+
+    [TestCase("<xsl:template match='/'><out xsl:use-attribute-sets='' xsl:inherit-namespaces='no' xsl:version='2.0'/></xsl:template>", TestName = "DefinedAttributes")]
+    [TestCase("<xsl:template match='/'><out xsl:exclude-result-prefixes='#all' xsl:xpath-default-namespace='' xsl:default-collation='http://www.w3.org/2005/xpath-functions/collation/codepoint' xsl:extension-element-prefixes='' xsl:use-when='true()'/></xsl:template>", TestName = "StandardAttributes")]
+    [TestCase("<xsl:template match='/'><out xmlns:e='urn:e' e:banana='3' plain='1'/></xsl:template>", TestName = "AttributesInOtherNamespaces")]
+    [TestCase("<xsl:template match='/' version='3.0'><out xsl:banana='3'/></xsl:template>", TestName = "ForwardsCompatible")]
+    public void Compile_DefinedAttributesOnLiteralResultElement_Compiles(string body)
+    {
+        // Arrange
+        string xsl = Wrap(body);
+
+        // Act / Assert
+        Assert.DoesNotThrow(() => Compile(xsl));
+    }
     [Test]
     public void Compile_AttributeOnTheStylesheetElement_RaisesXtse0090()
     {

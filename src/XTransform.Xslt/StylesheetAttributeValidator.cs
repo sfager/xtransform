@@ -28,6 +28,12 @@ internal static class StylesheetAttributeValidator
 
     private static readonly char[] s_space = { ' ' };
 
+    // The XSLT-namespace attributes a literal result element may carry: the standard attributes and four more (§3.5, §11.1.1).
+    private static readonly HashSet<string> s_literalResultElement = new HashSet<string>(s_standard, StringComparer.Ordinal)
+    {
+        "use-attribute-sets", "type", "validation", "inherit-namespaces",
+    };
+
     private static readonly Dictionary<string, HashSet<string>> s_allowed = Build();
 
     /// <summary>Reports XTSE0090 for each attribute of an XSLT element that the element does not define.</summary>
@@ -75,6 +81,23 @@ internal static class StylesheetAttributeValidator
                     bag.Error(
                         XsltErrors.XTSE0090,
                         $"xsl:{element.Name.LocalName}: attribute 'xsl:{attribute.Name.LocalName}' is in the XSLT namespace and is not allowed on an XSLT element",
+                        attribute.Location);
+                }
+            }
+        }
+
+        else if (!element.IsXsltElement && !IsForwardsCompatible(version))
+        {
+            // XSLT 2.0 §11.1.1 (XTSE0805): an attribute of a literal result element in the XSLT namespace must be one the
+            // specification defines.
+            foreach (StylesheetAttribute attribute in element.Attributes)
+            {
+                if (string.Equals(attribute.Name.NamespaceUri, XsltNamespace.Uri, StringComparison.Ordinal)
+                    && !s_literalResultElement.Contains(attribute.Name.LocalName))
+                {
+                    bag.Error(
+                        XsltErrors.XTSE0805,
+                        $"<{element.Name.LocalName}>: attribute 'xsl:{attribute.Name.LocalName}' is not defined for a literal result element",
                         attribute.Location);
                 }
             }
