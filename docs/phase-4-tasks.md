@@ -588,7 +588,7 @@ the sibling count per match.
 
 ## P4-23 Static error catalogue (XTSE*)
 
-- [ ] Done
+- [x] Done
 
 **Scope.** 311 `error` tests and many in other sets expect a compile-time error code that the
 compiler does not raise because it accepts the stylesheet. Work through the missed codes in
@@ -600,6 +600,8 @@ reader / processor / compiler layer that owns the rule. Cite the spec section fo
 - One table-driven test per batch (`tests/XTransform.Tests/Xslt/StaticErrorCases/`) asserting
   the exact error code and that **all** errors in a stylesheet are reported together.
 - No valid stylesheet starts failing: the pass count and the real-world corpus do not drop.
+
+**Result (branch `p4-23-static-errors`).** Core shard (everything except `unicode-90`, run in groups of sets): **4,729 of 6,010** in scope pass, up from 4,569 (160 more; no test that passed before fails now, checked by comparing the failing lists run by run after every batch). The real-world corpus is byte for byte unchanged. Static errors are now raised by validators that run over every module after linking and report all their errors together: `StylesheetAttributeValidator` (XTSE0090, XTSE0805), `StylesheetStructureValidator` (XTSE0010, XTSE0120, XTSE0170, XTSE0190, XTSE0260, XTSE0500), `StylesheetValueValidator` (XTSE0020, XTSE0280, XTSE0550), `SchemaFeatureValidator` (XTSE1650, XTSE1660: XTransform is a basic processor), `AttributeSetCycleValidator` (XTSE0720) and `AttributeSetReferenceValidator` (XTSE0710). The linker checks what it consumes before expanding it: XTSE0180 (include cycle; XTSE0210 stays for imports), XTSE0200 (xsl:import must come first), XTSE0260 and XTSE0090 on `xsl:include` / `xsl:import`, which throw at once instead of being collected. One test class per batch is in `tests/XTransform.Tests/Xslt/StaticErrorCases/`. Behaviour changes worth knowing: an unknown `xsl:` element is XTSE0010 (it was XTSE0805), and only a version above 2.0 is forwards-compatible (version 0.5 or 1.0 used to be); flags must be `yes` / `no`; `type`, `validation="strict|lax|preserve"` and `xsl:import-schema` do not compile. **Left over in the `error` set** (294 of 396 in scope pass): 31 tests that expect a static error and fail, nearly all single cases (`XTSE0110`, `0125`, `0265`, `0340`, `0350`, `0530`, `0770`, `0808`, ...), plus `error-0010bb` and `character-map-901`, which expect a static error where forwards-compatible processing of a version above 2.0 applies or use XSLT 3.0 constructs; the other failures there are dynamic or type errors (P4-24). `eng/check-xslt-baseline.sh` was not run, because the run is split into groups; `xslt-baseline.json` (core floor 4,569 → 4,729 passed of 6,010) and `known-failures/xslt-g3.txt` are updated, and the `unicode-90` figures and entries are unchanged and not re-measured.
 
 ## P4-24 Dynamic and type error catalogue (XTDE*, XTTE*, XTRE*)
 
