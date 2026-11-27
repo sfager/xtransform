@@ -39,7 +39,7 @@ internal sealed class XsltOutputTests
     public void XslOutput_AttributesAreParsed()
     {
         XsltOutputSettings s = CompileSingle(Wrap(
-            "<xsl:output method='text' encoding='utf-16' indent='yes' omit-xml-declaration='true' " +
+            "<xsl:output method='text' encoding='utf-16' indent='yes' omit-xml-declaration='yes' " +
             "standalone='yes' doctype-system='a.dtd' byte-order-mark='no'/>" +
             "<xsl:template match='/'/>")).PrincipalOutput;
 

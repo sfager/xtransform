@@ -42,6 +42,13 @@ internal static class StylesheetAttributeValidator
 
     private static void Visit(StylesheetElement element, string? inheritedVersion, DiagnosticBag bag)
     {
+        // An element in the XSLT namespace that XSLT 2.0 does not define is ignored with its content under forwards-compatible
+        // processing (§3.9); the reader reports it otherwise.
+        if (element.IsUnknownXsltElement)
+        {
+            return;
+        }
+
         string? version = inheritedVersion;
         if (element.DeclaredVersion.Length != 0)
         {
