@@ -48,6 +48,7 @@ internal static class StylesheetCompiler
             }
         }
 
+        StylesheetAttributeValidator.Validate(assembly, bag);
         DeclarationTable declarations = DeclarationCollector.Collect(assembly, bag);
         NameBindingValidator.Validate(declarations, bag);
 
