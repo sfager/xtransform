@@ -31,6 +31,9 @@ public static class XsltErrors
     /// <summary>It is a static error if the xsl:stylesheet or xsl:transform element has text content other than whitespace. (XSLT 2.0 §3.6)</summary>
     public static readonly QName XTSE0120 = new QName("err", XPathErrors.Namespace, "XTSE0120");
 
+    /// <summary>It is a static error if a stylesheet module directly or indirectly includes itself. (XSLT 2.0 §3.11.1)</summary>
+    public static readonly QName XTSE0180 = new QName("err", XPathErrors.Namespace, "XTSE0180");
+
     /// <summary>It is a static error if a child element of xsl:stylesheet/xsl:transform is in a null namespace. (XSLT 2.0 §3.6)</summary>
     public static readonly QName XTSE0130 = new QName("err", XPathErrors.Namespace, "XTSE0130");
 

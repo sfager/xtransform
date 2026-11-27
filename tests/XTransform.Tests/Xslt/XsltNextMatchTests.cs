@@ -322,7 +322,7 @@ internal sealed class XsltNextMatchTests
     }
 
     [Test]
-    public void Include_AModuleThatIncludesItself_RaisesXtse0210()
+    public void Include_AModuleThatIncludesItself_RaisesXtse0180()
     {
         Dictionary<string, string> files = new Dictionary<string, string>
         {
@@ -331,7 +331,7 @@ internal sealed class XsltNextMatchTests
 
         XsltStaticException ex = Assert.Throws<XsltStaticException>(() => RunFiles(files))!;
 
-        Assert.That(ex.ErrorCode, Is.EqualTo(XsltErrors.XTSE0210));
+        Assert.That(ex.ErrorCode, Is.EqualTo(XsltErrors.XTSE0180));
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────

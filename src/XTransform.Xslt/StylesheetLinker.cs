@@ -123,13 +123,14 @@ internal static class StylesheetLinker
         /// Loads <paramref name="uri"/> and its xsl:include / xsl:import graph, returning the
         /// tree node that represents this module.
         /// </summary>
-        public ModuleNode LoadImportTree(Uri uri, SourceSpan requestLocation, StylesheetModule? preRead = null)
+        public ModuleNode LoadImportTree(Uri uri, SourceSpan requestLocation, StylesheetModule? preRead = null, bool requestedByInclude = false)
         {
             string key = uri.OriginalString;
 
             if (_loading.Contains(key))
             {
-                throw Xtse0210(requestLocation, uri);
+                // XSLT 2.0 §3.11.1: a module that includes itself is XTSE0180; §3.11.2: one that imports itself is XTSE0210.
+                throw requestedByInclude ? Xtse0180(requestLocation, uri) : Xtse0210(requestLocation, uri);
             }
 
             _loading.Add(key);
@@ -193,7 +194,7 @@ internal static class StylesheetLinker
                 else if (string.Equals(local, "include", StringComparison.Ordinal))
                 {
                     Uri target = ResolveHref(child, currentBase);
-                    ModuleNode includedNode = LoadImportTree(target, child.Location);
+                    ModuleNode includedNode = LoadImportTree(target, child.Location, requestedByInclude: true);
 
                     // Any xsl:import under the included module contributes to this module's import tree.
                     for (int j = 0; j < includedNode.Imports.Count; j++)
@@ -309,6 +310,18 @@ internal static class StylesheetLinker
                     DiagnosticSeverity.Error,
                     XsltErrors.XTSE0165,
                     $"Cannot retrieve stylesheet module at {uri}: {reason}",
+                    location),
+            });
+        }
+
+        private static XsltStaticException Xtse0180(SourceSpan location, Uri uri)
+        {
+            return new XsltStaticException(new Diagnostic[]
+            {
+                new Diagnostic(
+                    DiagnosticSeverity.Error,
+                    XsltErrors.XTSE0180,
+                    $"Circular reference: stylesheet module {uri} includes itself, directly or indirectly",
                     location),
             });
         }
