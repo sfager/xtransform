@@ -248,6 +248,40 @@ internal sealed class XsltTunnelAndModeTests
         Assert.That(result, Is.EqualTo("[attr]"));
     }
 
+    [TestCase("<xsl:param name='x'><xsl:value-of select='$z'/></xsl:param><xsl:param name='z'>foo</xsl:param>")]
+    [TestCase("<xsl:param name='x'><xsl:value-of select='f:a()'/></xsl:param><xsl:param name='z'>foo</xsl:param>")]
+    [TestCase("<xsl:param name='y'><xsl:value-of select='f:a()'/></xsl:param><xsl:param name='x'><xsl:value-of select='$y'/></xsl:param><xsl:param name='z'>foo</xsl:param>")]
+    [TestCase("<xsl:variable name='x'><xsl:value-of select='f:a()'/></xsl:variable><xsl:variable name='z'>foo</xsl:variable>")]
+    public void GlobalParam_ContentBodyReferencingALaterDeclaration_IsEvaluated(string globals)
+    {
+        // Arrange (XSLT 2.0 §9.5: global declarations may be referenced before they are declared)
+        string body =
+            globals + "<xsl:function name='f:a'><xsl:value-of select='$z'/></xsl:function>" +
+            "<xsl:template match='/'>[<xsl:value-of select='$x'/>]</xsl:template>";
+
+        // Act
+        string result = Eval(body);
+
+        // Assert
+        Assert.That(result, Is.EqualTo("[foo]"));
+    }
+
+    [Test]
+    public void GlobalVariable_FunctionMentioningItWithoutEvaluatingIt_IsNotCircular()
+    {
+        // Arrange (a function's unused local variable that names the global being evaluated)
+        const string body =
+            "<xsl:variable name='x' select='f:a(1)'/>" +
+            "<xsl:function name='f:a'><xsl:param name='p'/><xsl:variable name='b' select='$x'/><xsl:sequence select='$p + 2'/></xsl:function>" +
+            "<xsl:template match='/'>[<xsl:value-of select='$x'/>]</xsl:template>";
+
+        // Act
+        string result = Eval(body);
+
+        // Assert
+        Assert.That(result, Is.EqualTo("[3]"));
+    }
+
     [Test]
     public void Mode_Current_InAStylesheetFunctionIsTheDefaultMode()
     {
