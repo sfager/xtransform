@@ -160,6 +160,11 @@ internal static class StylesheetStructureValidator
 
     private static void CheckRequiredAttributes(StylesheetElement element, DiagnosticBag bag)
     {
+        if (element.Name.LocalName == "template")
+        {
+            CheckTemplateAttributes(element, bag);
+        }
+
         if (!s_required.TryGetValue(element.Name.LocalName, out string[]? required))
         {
             return;
@@ -177,6 +182,19 @@ internal static class StylesheetStructureValidator
         }
     }
 
+    // XSLT 2.0 §6 (XTSE0500): an xsl:template needs a match or a name, and mode and priority go with a match.
+    private static void CheckTemplateAttributes(StylesheetElement element, DiagnosticBag bag)
+    {
+        bool match = HasAttribute(element, "match");
+        if (!match && !HasAttribute(element, "name"))
+        {
+            bag.Error(XsltErrors.XTSE0500, "xsl:template must have a match attribute, a name attribute, or both", element.Location);
+        }
+        else if (!match && (HasAttribute(element, "mode") || HasAttribute(element, "priority")))
+        {
+            bag.Error(XsltErrors.XTSE0500, "xsl:template has a mode or priority attribute but no match attribute", element.Location);
+        }
+    }
     private static void CheckXsltContent(StylesheetElement element, DiagnosticBag bag)
     {
         string name = element.Name.LocalName;
