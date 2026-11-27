@@ -31,7 +31,8 @@ internal sealed class ApplyTemplatesInstruction : XsltInstruction
         QName mode,
         IReadOnlyList<WithParamInstruction> withParams,
         SourceSpan location,
-        IReadOnlyList<SortKey>? sorts = null)
+        IReadOnlyList<SortKey>? sorts = null,
+        bool selectIsDefault = false)
         : base(location)
     {
         Select = select;
@@ -39,9 +40,12 @@ internal sealed class ApplyTemplatesInstruction : XsltInstruction
         Mode = mode;
         WithParams = withParams;
         Sorts = sorts ?? System.Array.Empty<SortKey>();
+        _selectIsDefault = selectIsDefault;
     }
 
     /// <summary>Compiled <c>@select</c> (default: <c>child::node()</c>).</summary>
+    private readonly bool _selectIsDefault;
+
     public BoundExpression Select { get; }
 
     /// <summary>How the mode was declared.</summary>
@@ -61,10 +65,21 @@ internal sealed class ApplyTemplatesInstruction : XsltInstruction
     {
         // Materialise the selection to drive focus/position/size through the loop.
         List<XdmItem> items = new List<XdmItem>();
+        // The default select (child::node()) needs a node as the context item (XSLT 2.0 §6.1).
+        if (_selectIsDefault && context.ContextItem is not XdmNode)
+        {
+            throw new XsltDynamicException(XsltErrors.XTTE0510, "xsl:apply-templates without select requires the context item to be a node", Location);
+        }
+
         IXdmIterator iter = Select.Iterate(context, run);
         XdmItem? item;
         while ((item = iter.Next()) is not null)
         {
+            if (item is not XdmNode)
+            {
+                throw new XsltDynamicException(XsltErrors.XTTE0510, "The sequence selected by xsl:apply-templates must contain only nodes", Location);
+            }
+
             items.Add(item);
         }
 

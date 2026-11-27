@@ -136,6 +136,87 @@ internal sealed class XsltTunnelAndModeTests
         Assert.That(Eval(body, "<d>text</d>"), Is.EqualTo("text"));
     }
 
+    // ── Patterns: key(), id($var), current(), priorities, xpath-default-namespace ──
+
+    [Test]
+    public void Pattern_KeyWithVariableValue_MatchesTheKeyedNodes()
+    {
+        const string body =
+            "<xsl:variable name='v' select=\"'b'\"/>" +
+            "<xsl:key name='k' match='e' use='@id'/>" +
+            "<xsl:template match='/'><xsl:apply-templates select='d/e'/></xsl:template>" +
+            "<xsl:template match='e'>-</xsl:template>" +
+            "<xsl:template match=\"key('k', $v)\">[<xsl:value-of select='@id'/>]</xsl:template>";
+
+        Assert.That(Eval(body, "<d><e id='a'/><e id='b'/><e id='c'/></d>"), Is.EqualTo("-[b]-"));
+    }
+
+    [Test]
+    public void Pattern_IdWithVariableValue_MatchesElementsWithThatId()
+    {
+        const string body =
+            "<xsl:variable name='v' select=\"'x'\"/>" +
+            "<xsl:template match='/'><xsl:apply-templates select='d/e'/></xsl:template>" +
+            "<xsl:template match='e'>-</xsl:template>" +
+            "<xsl:template match='id($v)'>[<xsl:value-of select='@id'/>]</xsl:template>";
+
+        Assert.That(Eval(body, "<d><e id='w'/><e id='x'/></d>"), Is.EqualTo("-[x]"));
+    }
+
+    [Test]
+    public void Pattern_CurrentInAnEarlierStep_IsTheNodeBeingMatched()
+    {
+        const string body =
+            "<xsl:template match='*'><xsl:apply-templates/></xsl:template>" +
+            "<xsl:template match='*[name() = name(current())]/*'>Y</xsl:template>";
+
+        // The child <a> of <a> matches; the child <b> of <a> does not.
+        Assert.That(Eval(body, "<a><a/><b>text</b></a>"), Is.EqualTo("Ytext"));
+    }
+
+    [Test]
+    public void Pattern_SlashAlone_HasPriorityOfNodeTests()
+    {
+        const string body =
+            "<xsl:template match='/' priority='-0.4'>high</xsl:template>" +
+            "<xsl:template match='/'>low</xsl:template>";
+
+        Assert.That(Eval(body), Is.EqualTo("high"));
+    }
+
+    [Test]
+    public void XPathDefaultNamespace_AppliesToSelectAndPatterns()
+    {
+        const string body =
+            "<xsl:template match='/' xpath-default-namespace='urn:p'><xsl:apply-templates select='d/e'/></xsl:template>" +
+            "<xsl:template match='p:e' xmlns:p='urn:p'>found</xsl:template>";
+
+        Assert.That(Eval(body, "<d xmlns='urn:p'><e/></d>"), Is.EqualTo("found"));
+    }
+
+    [Test]
+    public void XPathDefaultNamespace_IsInheritedAndOverridden()
+    {
+        const string body =
+            "<xsl:template match='/' xpath-default-namespace='urn:p'>" +
+            "<xsl:value-of select='count(d)'/>" +
+            "<xsl:for-each select='.' xpath-default-namespace=''><xsl:value-of select='count(d)'/></xsl:for-each>" +
+            "</xsl:template>";
+
+        Assert.That(Eval(body, "<d xmlns='urn:p'/>"), Is.EqualTo("10"));
+    }
+
+    [Test]
+    public void ApplyTemplates_WithoutSelectOnAnAtomicContextItem_RaisesXtte0510()
+    {
+        const string body =
+            "<xsl:template match='/'><xsl:for-each select='1 to 2'><xsl:apply-templates/></xsl:for-each></xsl:template>";
+
+        XsltDynamicException ex = Assert.Throws<XsltDynamicException>(() => Eval(body))!;
+
+        Assert.That(ex.ErrorCode, Is.EqualTo(XsltErrors.XTTE0510));
+    }
+
     private static string Eval(string body, string input = "<d/>")
     {
         string xsl =

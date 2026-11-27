@@ -239,7 +239,7 @@ internal sealed class XsltFunctionLibrary : FunctionLibrary
         return KeyLookup(context, args, top);
     }
 
-    private static IXdmIterator KeyLookup(DynamicContext context, XdmSequence[] args, XdmNode? top)
+    internal static IXdmIterator KeyLookup(DynamicContext context, XdmSequence[] args, XdmNode? top)
     {
         XsltRunState run = GetRun(context);
         string keyName = args[0].FirstOrNull()?.GetStringValue() ?? string.Empty;

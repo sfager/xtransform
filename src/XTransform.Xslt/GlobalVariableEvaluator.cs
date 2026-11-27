@@ -88,7 +88,7 @@ internal static class GlobalVariableEvaluator
             {
                 NamespaceBindingsResolver resolver = new NamespaceBindingsResolver(
                     decl.Element.InScopeNamespaces,
-                    defaultElementNamespace: string.Empty,
+                    defaultElementNamespace: decl.Element.XPathDefaultNamespace,
                     defaultFunctionNamespace: BuiltInFunctionLibrary.FnNamespace);
 
                 Dictionary<QName, SequenceType> externals = new Dictionary<QName, SequenceType>();

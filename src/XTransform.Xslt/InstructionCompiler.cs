@@ -519,7 +519,7 @@ internal static class InstructionCompiler
         {
             NamespaceBindingsResolver resolver = new NamespaceBindingsResolver(
                 element.InScopeNamespaces,
-                defaultElementNamespace: string.Empty,
+                defaultElementNamespace: element.XPathDefaultNamespace,
                 defaultFunctionNamespace: BuiltInFunctionLibrary.FnNamespace);
             pattern = XPathParser.ParsePattern(text, element.Location, resolver);
             s_patterns?.Register(pattern, resolver, s_functions ?? BuiltInFunctionLibrary.Instance, element.Location, bag, scope?.Names);
@@ -1408,7 +1408,7 @@ internal static class InstructionCompiler
         }
 
         List<WithParamInstruction> withParams = CollectWithParams(element, scope, bag);
-        return new ApplyTemplatesInstruction(select!, modeSpec, mode, withParams, element.Location, CompileSortKeys(element, scope, bag));
+        return new ApplyTemplatesInstruction(select!, modeSpec, mode, withParams, element.Location, CompileSortKeys(element, scope, bag), GetAttribute(element, "select") is null);
     }
 
     private static XsltInstruction? CompileCallTemplate(StylesheetElement element, XsltCompileScope scope, DiagnosticBag bag)
@@ -1570,7 +1570,7 @@ internal static class InstructionCompiler
         {
             NamespaceBindingsResolver resolver = new NamespaceBindingsResolver(
                 scopeElement.InScopeNamespaces,
-                defaultElementNamespace: string.Empty,
+                defaultElementNamespace: scopeElement.XPathDefaultNamespace,
                 defaultFunctionNamespace: BuiltInFunctionLibrary.FnNamespace);
 
             Dictionary<QName, SequenceType> externals = scope.AsExternalVariables();

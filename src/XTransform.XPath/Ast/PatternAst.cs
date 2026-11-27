@@ -113,6 +113,9 @@ internal sealed record PathPatternAst(
     {
         get
         {
+            // The pattern "/" alone matches any document node and has the priority of node tests: -0.5 (conformance: conflict-resolution-1601).
+            if (Anchor == PatternAnchor.Root && Steps.IsEmpty) { return -0.5; }
+
             // Rooted pattern → 0.5
             if (Anchor != PatternAnchor.Relative) { return 0.5; }
 

@@ -101,6 +101,9 @@ public static class XsltErrors
     /// <summary>XTRE0270: an element matches conflicting xsl:strip-space and xsl:preserve-space declarations. Recoverable. (XSLT 2.0 §4.4)</summary>
     public static readonly QName XTRE0270 = new QName("err", XPathErrors.Namespace, "XTRE0270");
 
+    /// <summary>XTTE0510: xsl:apply-templates selects an item that is not a node, or has no select and a non-node context item. (XSLT 2.0 §6.1)</summary>
+    public static readonly QName XTTE0510 = new QName("err", XPathErrors.Namespace, "XTTE0510");
+
     /// <summary>XTSE0080: a name in a reserved namespace is used for a user-defined component. (XSLT 2.0 §3.5)</summary>
     public static readonly QName XTSE0080 = new QName("err", XPathErrors.Namespace, "XTSE0080");
 
