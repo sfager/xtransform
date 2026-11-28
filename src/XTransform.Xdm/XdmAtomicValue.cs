@@ -1005,6 +1005,12 @@ public sealed class XdmAtomicValue : XdmItem, IEquatable<XdmAtomicValue>
             return false;
         }
 
+        // .NET Framework parses "-0" as positive zero; XML Schema says it is negative zero.
+        if (d == 0 && s.Length > 0 && s[0] == '-')
+        {
+            d = -0.0;
+        }
+
         value = new XdmAtomicValue(XdmTypeCode.Double, d);
         return true;
     }
@@ -1033,6 +1039,11 @@ public sealed class XdmAtomicValue : XdmItem, IEquatable<XdmAtomicValue>
         if (!float.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out float f))
         {
             return false;
+        }
+
+        if (f == 0 && s.Length > 0 && s[0] == '-')
+        {
+            f = -0.0f;
         }
 
         value = new XdmAtomicValue(XdmTypeCode.Float, f);

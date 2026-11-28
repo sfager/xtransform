@@ -356,7 +356,7 @@ character-map/character-map-003  # [Compare] output does not match /value=['"]ab
 character-map/character-map-004  # [Compare] output does not match /value=['"]ab\[C\]de['"]/: <?xml version="1.0" encoding="UTF-8"?><doc><a value...
 character-map/character-map-005  # [Compare] output does not match /value=['"]\[A\]b\{C\}de['"]/: <?xml version="1.0" encoding="UTF-8"?><doc><a v...
 character-map/character-map-006  # [Compare] output does not match /<jjj>wxy</jjj>/: <?xml version="1.0" encoding="UTF-8"?><doc><a value="abcde">...
-character-map/character-map-007  # [Compare] output does not match /\[\[\[#####\]\]\]/: <?xml version="1.0" encoding="ISO-8859-1"?><v>[[[??]]]</v...
+character-map/character-map-007  # [Compare] output does not match /\[\[\[#####\]\]\]/: <?xml version="1.0" encoding="ISO-8859-1"?><v>[[[&#327680...
 character-map/character-map-008  # [Compare] output does not match /value=['"]\[A\]\[B\]cde['"]/: <?xml version="1.0" encoding="UTF-8"?><doc><a v...
 character-map/character-map-010  # [Compare] output does not match /att2=['"]&amp;\[<\]&amp;\[>\]&amp;['"]/: <?xml version="1.0" encoding="ISO-88...
 character-map/character-map-011  # [Compare] output does not match /<x>b</x>/: <?xml version="1.0" encoding="ISO-8859-1"?><x>a</x>
@@ -460,17 +460,6 @@ copy/copy-4702  # [Compare] expected error XTDE0410 but the transformation succe
 copy/copy-4901  # [Compare] assert was false: //*:SomeContext[name()='ns9:SomeContext' and namespace-uri()='some9']
 core-function/core-function-081  # [Compare] XML differs. Expected: <out>-0</out> Actual: <?xml version="1.0" encoding="UTF-8"?><out>0</out>
 core-function/core-function-082  # [Compare] XML differs. Expected: <out>-0</out> Actual: <?xml version="1.0" encoding="UTF-8"?><out>0</out>
-data-manipulation/data-manipulation-009  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
-data-manipulation/data-manipulation-010  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
-data-manipulation/data-manipulation-011  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
-data-manipulation/data-manipulation-012  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
-data-manipulation/data-manipulation-013  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
-data-manipulation/data-manipulation-014  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
-data-manipulation/data-manipulation-015  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
-data-manipulation/data-manipulation-016  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
-data-manipulation/data-manipulation-017  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
-data-manipulation/data-manipulation-018  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
-data-manipulation/data-manipulation-019  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
 date/date-009  # [Compare] XML differs. Expected: <out>true</out> Actual: <?xml version="1.0" encoding="UTF-8"?><out>false</out...
 date/date-014  # [Compare] XML differs. Expected: <out>true</out> Actual: <?xml version="1.0" encoding="UTF-8"?><out>false</out...
 date/date-019  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><A>1995-12-23T13:29:00.2+03:00;
@@ -606,7 +595,7 @@ error/error-0010l  # [Compare] expected error XTSE0010 but the transformation su
 error/error-0010m  # [Compare] expected error XTSE0010 but the transformation succeeded
 error/error-0010n  # [Compare] expected error XTSE0010 but the transformation succeeded
 error/error-0010o  # [Compare] expected error XTSE0010 but the transformation succeeded
-error/error-0010p  # [Compile] expected error XTSE0010, got XPST0017: Unknown function 'format-number' with arity 3
+error/error-0010p  # [Compare] expected error XTSE0010 but the transformation succeeded
 error/error-0010q  # [Compare] expected error XTSE0010 but the transformation succeeded
 error/error-0010r  # [Compare] expected error XTSE0010 but the transformation succeeded
 error/error-0010s  # [Compare] expected error XTSE0010 but the transformation succeeded
@@ -614,8 +603,7 @@ error/error-0010t  # [Compare] expected error XTSE0010 but the transformation su
 error/error-0010v  # [Compare] expected error XTSE0010 but the transformation succeeded
 error/error-0010x  # [Compare] any-of: expected error XTSE0010 but the transformation succeeded | expected error XTSE0170 but the t...
 error/error-0010z  # [Compare] any-of: expected error XTSE0010 but the transformation succeeded | expected error XTSE0190 but the t...
-error/error-0020a  # [Compile] expected error XTSE0020, got XPST0017: Unknown function 'format-number' with arity 3
-error/error-0020b  # [Compile] expected error XTSE0020, got XPST0017: Unknown function 'format-number' with arity 3
+error/error-0020b  # [Compare] expected error XTSE0020 but the transformation succeeded
 error/error-0020c  # [Compare] expected error XTSE0020 but the transformation succeeded
 error/error-0020d  # [Compile] expected error XTSE0020, got XTSE0010: Invalid key name 'foo::bar': undeclared prefix 'foo'
 error/error-0020e  # [Compare] expected error XTSE0020 but the transformation succeeded
@@ -796,25 +784,6 @@ error/error-1260f  # [Compare] expected error XTDE1260 but the transformation su
 error/error-1270a  # [Compare] expected error XTDE1270 but the transformation succeeded
 error/error-1270b  # [Compare] expected error XTDE1270 but the transformation succeeded
 error/error-1270c  # [Compare] expected error XTDE1270 but the transformation succeeded
-error/error-1280a-20  # [Compile] expected error XTDE1280, got XPST0017: Unknown function 'format-number' with arity 3
-error/error-1280b-20  # [Compile] expected error XTDE1280, got XPST0017: Unknown function 'format-number' with arity 3
-error/error-1280c-20  # [Compile] expected error XTDE1280, got XPST0017: Unknown function 'format-number' with arity 3
-error/error-1290a  # [Compile] expected error XTSE1290, got XPST0017: Unknown function 'format-number' with arity 3
-error/error-1290b  # [Compile] expected error XTSE1290, got XPST0017: Unknown function 'format-number' with arity 3
-error/error-1295a  # [Compile] expected error XTSE1295, got XPST0017: Unknown function 'format-number' with arity 3
-error/error-1295b  # [Compile] expected error XTSE1295, got XPST0017: Unknown function 'format-number' with arity 3
-error/error-1300a  # [Compile] expected error XTSE1300, got XPST0017: Unknown function 'format-number' with arity 3
-error/error-1300b  # [Compile] expected error XTSE1300, got XPST0017: Unknown function 'format-number' with arity 3
-error/error-1300c  # [Compile] expected error XTSE1300, got XPST0017: Unknown function 'format-number' with arity 3
-error/error-1310a-20  # [Compile] expected error XTDE1310, got XPST0017: Unknown function 'format-number' with arity 3
-error/error-1310b-20  # [Compile] expected error XTDE1310, got XPST0017: Unknown function 'format-number' with arity 3
-error/error-1310c-20  # [Compile] expected error XTDE1310, got XPST0017: Unknown function 'format-number' with arity 3
-error/error-1310d-20  # [Compile] expected error XTDE1310, got XPST0017: Unknown function 'format-number' with arity 3
-error/error-1310e-20  # [Compile] expected error XTDE1310, got XPST0017: Unknown function 'format-number' with arity 3
-error/error-1310f-20  # [Compile] expected error XTDE1310, got XPST0017: Unknown function 'format-number' with arity 3
-error/error-1310g-20  # [Compile] expected error XTDE1310, got XPST0017: Unknown function 'format-number' with arity 3
-error/error-1310h-20  # [Compile] expected error XTDE1310, got XPST0017: Unknown function 'format-number' with arity 3
-error/error-1310i-20  # [Compile] expected error XTDE1310, got XPST0017: Unknown function 'format-number' with arity 3
 error/error-1370a  # [Compare] expected error XTDE1370 but the transformation succeeded
 error/error-1370b  # [Compare] expected error XTDE1370 but the transformation succeeded
 error/error-1380a  # [Compare] expected error XTDE1380 but the transformation succeeded
@@ -918,7 +887,6 @@ for-each-group/for-each-group-084  # [Compare] assert was false: /result/local/v
 for-each-group/for-each-group-085  # [Compare] XML differs. Expected: <out><t n="T"><tt n="U"/><tt n="U"/></t><t n="U"><tt n="U"/><tt n="U"/></t><t...
 for-each-group/for-each-group-086  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><r><p>1</p><v>English</v><l>6</l><p>2</...
 for-each-group/for-each-group-088  # [Compare] assert was false: /table/pop[@value='5']/deep-equal(data(city/@name), ('milan', 'bristol', 'sheffiel...
-for/for-004  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
 format-date-en/format-date-en-001  # [Compile] expected a result but got XPST0017: Unknown function 'format-date' with arity 5
 format-date-en/format-date-en-002  # [Compile] expected a result but got XPST0017: Unknown function 'format-date' with arity 5
 format-date-en/format-date-en-003  # [Compile] expected a result but got XPST0017: Unknown function 'format-date' with arity 5
@@ -989,81 +957,18 @@ format-date/format-date-034  # [Compile] any-of: expected error XTDE1350, got XP
 format-date/format-date-035  # [Compile] any-of: expected error XTDE1340, got XPST0017: Unknown function 'format-dateTime' with arity 5 | exp...
 format-date/format-date-036  # [Compile] expected a result but got XPST0017: Unknown function 'format-date' with arity 2; XPST0017: Unknown f...
 format-date/format-date-037  # [Compile] expected a result but got XPST0017: Unknown function 'format-date' with arity 5
-format-number/format-number-001  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
-format-number/format-number-002  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
-format-number/format-number-003  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
-format-number/format-number-004  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
-format-number/format-number-005  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
-format-number/format-number-006  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
-format-number/format-number-007  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
-format-number/format-number-008  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
-format-number/format-number-009  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
-format-number/format-number-010  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
-format-number/format-number-011  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
-format-number/format-number-012  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
-format-number/format-number-013  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
-format-number/format-number-014  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
-format-number/format-number-015  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
-format-number/format-number-016  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
-format-number/format-number-017  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
-format-number/format-number-018  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 3; XPST0017: Unknown...
-format-number/format-number-019  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 3
-format-number/format-number-020  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 3; XPST0017: Unknown...
-format-number/format-number-021  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 3; XPST0017: Unknown...
-format-number/format-number-022  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 3; XPST0017: Unknown...
-format-number/format-number-023  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 3; XPST0017: Unknown...
-format-number/format-number-024  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
-format-number/format-number-025  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 3; XPST0017: Unknown...
-format-number/format-number-026  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
-format-number/format-number-027  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
-format-number/format-number-028  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2; XPST0017: Unknown...
-format-number/format-number-029  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
-format-number/format-number-030  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
-format-number/format-number-031  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
-format-number/format-number-032  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
-format-number/format-number-033  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
-format-number/format-number-034  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
-format-number/format-number-035  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
-format-number/format-number-036  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
-format-number/format-number-037  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
-format-number/format-number-038  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 3; XPST0017: Unknown...
-format-number/format-number-039  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 3; XPST0017: Unknown...
-format-number/format-number-040  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 3; XPST0017: Unknown...
-format-number/format-number-041  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 3; XPST0017: Unknown...
-format-number/format-number-042  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2; XPST0017: Unknown...
-format-number/format-number-043  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2; XPST0017: Unknown...
-format-number/format-number-044  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2; XPST0017: Unknown...
-format-number/format-number-045  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
-format-number/format-number-046  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 3; XPST0017: Unknown...
+format-number/format-number-014  # [Run] expected a result but got XPTY0004: format-number: the first argument must be numeric
+format-number/format-number-035  # [Run] expected a result but got XPTY0004: format-number: the first argument must be numeric
+format-number/format-number-038  # [Run] expected a result but got XPTY0004: format-number: the first argument must be numeric
+format-number/format-number-039  # [Run] expected a result but got XPTY0004: format-number: the first argument must be numeric
+format-number/format-number-040  # [Run] expected a result but got XPTY0004: format-number: the first argument must be numeric
+format-number/format-number-041  # [Run] expected a result but got XPTY0004: format-number: the first argument must be numeric
 format-number/format-number-047  # [Compile] expected a result but got XPST0003: Invalid decimal literal: 000123456789012345678901234567890.12345...
-format-number/format-number-048  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
-format-number/format-number-049  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2; XPST0017: Unknown...
-format-number/format-number-050  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
-format-number/format-number-051  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
-format-number/format-number-052  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
-format-number/format-number-053  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 3
-format-number/format-number-054  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
-format-number/format-number-055  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 3
-format-number/format-number-056  # [Compile] expected error XTSE1300, got XPST0017: Unknown function 'format-number' with arity 2
-format-number/format-number-057  # [Compile] expected error XTDE1310, got XPST0017: Unknown function 'format-number' with arity 2
-format-number/format-number-058  # [Compile] expected error XTSE1290, got XPST0017: Unknown function 'format-number' with arity 3
-format-number/format-number-059  # [Compile] expected error XTSE1300, got XPST0017: Unknown function 'format-number' with arity 3; XPST0017: Unkn...
-format-number/format-number-060  # [Compile] expected error XTDE1310, got XPST0017: Unknown function 'format-number' with arity 3
-format-number/format-number-061  # [Compile] expected error XTSE0020, got XPST0017: Unknown function 'format-number' with arity 3
-format-number/format-number-062  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
-format-number/format-number-063  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 3
-format-number/format-number-064  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 3
-format-number/format-number-065  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
-format-number/format-number-066  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
-format-number/format-number-067  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2; XPST0017: Unknown...
-format-number/format-number-068  # [Compile] expected error XTSE1295, got XPST0017: Unknown function 'format-number' with arity 2
-format-number/format-number-069c  # [Compile] expected error XTSE0090, got XPST0017: Unknown function 'format-number' with arity 2
-format-number/format-number-070  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2; XPST0017: Unknown...
+format-number/format-number-070  # [Run] expected a result but got XTDE0040: The initial template 'main' is not declared in the stylesheet
 function/function-0119a  # [Compare] expected error XTSE0090 but the transformation succeeded
 function/function-0120a  # [Compare] expected error XTSE0090 but the transformation succeeded
 function/function-0301  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out><item>10-grapefruit: grapefruit</i...
 function/function-0302  # [Compile] expected a result but got XPST0003: Expected a step expression but found 'Pipe'; XPST0008: Undeclare...
-function/function-1005  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
 function/function-1009  # [Compare] XML differs. Expected: <out count="3"/> Actual: <?xml version="1.0" encoding="UTF-8"?><out count="1"...
 function/function-1015  # [Compare] assert was false: /out = 'false'
 function/function-1016  # [Compile] expected error XTSE0770, got XTSE0660: Duplicate xsl:function '{http://xxx.com/}test#1' at the same ...
@@ -1112,7 +1017,7 @@ id/id-041  # [Compile] expected a result but got XPST0003: Expected a step expre
 id/id-042  # [Compare] XML differs. Expected: <out><a id="a" from="c,d"/><a id="b" ref="c d" from="c,d"/><a id="c" ref="d a...
 id/id-043  # [Compare] expected a result but got internal XmlException: Root element is missing.
 import-schema/import-schema-191  # [Compare] expected error XTSE1650 but the transformation succeeded
-import/import-0001  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
+import/import-0001  # [Compare] XML differs. Expected: <out xmlns:xsl="http://www.w3.org/1999/XSL/Transform"><variable>1</variable
 import/import-0401  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
 import/import-0501  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
 import/import-0502a  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
@@ -1243,7 +1148,6 @@ math/math-3311  # [Run] expected a result but got FORG0001: Integer value 999999
 math/math-3313  # [Run] expected a result but got FORG0001: Integer value 10000000000000000000000000000000000 overflows xs:decim...
 math/math-3315  # [Compile] expected a result but got XPST0003: Invalid decimal literal: 123456789612345678961234567896123456789...
 math/math-3316  # [Compare] XML differs. Expected: <circle xmlns:xs="http://www.w3.org/2001/XMLSchema" cx="10" cy="-1" r="4"/> A...
-math/math-3317  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2; XPST0017: Unknown...
 math/math-3318  # [Compare] XML differs. Expected: <x>123456789012345678</x> Actual: <?xml version="1.0" encoding="UTF-8"?>
 math/math-3319  # [Compare] XML differs. Expected: <x>1.17</x> Actual: <?xml version="1.0" encoding="UTF-8"?>
 math/math-3320  # [Compare] expected error XPST0017 but the transformation succeeded
@@ -1416,7 +1320,6 @@ number/number-0812  # [Compare] assert was false: //n3 = "drei"
 number/number-0813  # [Compare] assert was false: //n3 = "dritte"
 number/number-0814  # [Compare] XML differs. Expected: <out><v2/><v1>NaN</v1></out> Actual: <?xml version="1.0" encoding="ISO-8859-1...
 number/number-0815  # [Run] expected a result but got XTDE0980: xsl:number value 'fizz' cannot be converted to a non-negative intege...
-number/number-0822  # [Compare] XML differs. Expected: <out xmlns:xs="http://www.w3.org/2001/XMLSchema">1&#65792;234&#65792;567</out...
 number/number-0825  # [Run] any-of: expected error XTDE0030, got XTTE1000: The select attribute of xsl:number must yield a single no...
 number/number-0826  # [Compare] expected error XTDE0030 but the transformation succeeded
 number/number-0828  # [Compare] assert was false: //n3 = "dritte"
@@ -1754,7 +1657,6 @@ sequence/sequence-0136  # [Compare] expected error XPDY0050 but the transformati
 sequence/sequence-0138  # [Compare] expected error XTSE0010 but the transformation succeeded
 sequence/sequence-0139  # [Compare] expected error XTSE0010 but the transformation succeeded
 sequence/sequence-0601  # [Compare] XML differs. Expected: <HTML>
-sequence/sequence-1101  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
 sequence/sequence-1201  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?>
 sequence/sequence-1202  # [Compare] XML differs. Expected: <out>(((<doc/>)))</out> Actual: <?xml version="1.0" encoding="UTF-8"?><out>((...
 sequence/sequence-1402  # [Compare] XML differs. Expected: <?xml version="1.0" encoding="UTF-8"?><out>
@@ -1828,17 +1730,11 @@ sort/sort-072  # [Compare] XML differs. Expected: <out>NaN | -5 | 0 | 1 | 3.3 | 
 sort/sort-073  # [Compare] XML differs. Expected: <out>z w r l f d a </out> Actual: <?xml version="1.0" encoding="UTF-8"?><out ...
 sort/sort-078  # [Compare] expected error XTSE0020 but the transformation succeeded
 string/string-003  # [Run] expected a result but got XPTY0004: Function argument cardinality violation: 2 items for occurrence Zero...
-string/string-014  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
 string/string-020  # [Compare] XML differs. Expected: <out/> Actual: <?xml version="1.0" encoding="UTF-8"?><out>12345</out>
 string/string-031  # [Run] expected a result but got XPTY0004: Function argument cardinality violation: 2 items for occurrence Zero...
 string/string-032  # [Compare] XML differs. Expected: <out xmlns:baz1="http://xsl.lotus.com/ns1" xmlns:baz2="http://xsl.lotus.com/n...
 string/string-035  # [Compare] XML differs. Expected: <out xmlns:baz1="http://xsl.lotus.com/ns1" xmlns:baz2="http://xsl.lotus.com/n...
 string/string-093  # [Compare] XML differs. Expected: <out>cdef</out> Actual: <?xml version="1.0" encoding="UTF-8"?><out>bcde</out>
-string/string-117  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
-string/string-118  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
-string/string-119  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
-string/string-120  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
-string/string-121  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
 strip-space/strip-space-003  # [Compare] assert evaluation failed: XPST0003: Unexpected character '!' at offset 51
 strip-space/strip-space-005  # [Compare] assert evaluation failed: XPST0003: Unexpected character '!' at offset 60
 strip-space/strip-space-022  # [Compare] assert evaluation failed: XPST0081: Undeclared namespace prefix 'xml'
@@ -1906,16 +1802,16 @@ type/type-0159  # [Compare] expected error XTTE0520 but the transformation succe
 type/type-0165  # [Compare] expected error XPTY0004 but the transformation succeeded
 type/type-0166  # [Compare] expected error XPTY0004 but the transformation succeeded
 type/type-0168a  # [Compare] expected error XPTY0004 but the transformation succeeded
-type/type-0169  # [Compile] expected error XTTE0505, got XPST0017: Unknown function 'format-number' with arity 2
-type/type-0170  # [Compile] expected error XTTE0505, got XPST0017: Unknown function 'format-number' with arity 2
-type/type-0171  # [Compile] expected error XTTE0505, got XPST0017: Unknown function 'format-number' with arity 2
-type/type-0172  # [Compile] expected error XTTE0505, got XPST0017: Unknown function 'format-number' with arity 2
-type/type-0173  # [Compile] expected error XTTE0505, got XPST0017: Unknown function 'format-number' with arity 2
+type/type-0169  # [Compare] expected error XTTE0505 but the transformation succeeded
+type/type-0170  # [Compare] expected error XTTE0505 but the transformation succeeded
+type/type-0171  # [Compare] expected error XTTE0505 but the transformation succeeded
+type/type-0172  # [Compare] expected error XTTE0505 but the transformation succeeded
+type/type-0173  # [Compare] expected error XTTE0505 but the transformation succeeded
 type/type-0174  # [Compare] expected error XTTE0570 but the transformation succeeded
 type/type-0175  # [Compare] expected error XTTE0570 but the transformation succeeded
 type/type-0203  # [Compare] XML differs. Expected: <out><e>true</e><e>true</e><e>true</e><e>true</e><e>false</e><e>false</e><a>t...
 type/type-0303  # [Compare] expected error XTSE1660 but the transformation succeeded
-type/type-0501  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
+type/type-0501  # [Compare] XML differs. Expected: <html><head><title>Untitled</title></head><body leftmargin="100"><h2>This wee...
 unicode-90/unicode90-C-001  # [Compare] assert was false: /res = 'true'
 unicode-90/unicode90-C-002  # [Compare] assert was false: /res = 'true'
 unicode-90/unicode90-C-003  # [Compare] assert was false: /res = 'true'
@@ -3311,7 +3207,7 @@ xml-version/xml-version-042  # [Compile] expected a result but got XTSE0010: The
 xpath-compat/xpath-compat-0101  # [Compare] XML differs. Expected: <out><posInf>INF</posInf><negInf>-INF</negInf><negZero>-0</negZero><small>1.0...
 xpath-compat/xpath-compat-0102  # [Run] expected a result but got XPTY0004: Function argument cardinality violation: 3 items for occurrence Zero...
 xpath-compat/xpath-compat-0103  # [Run] expected a result but got XPTY0004: Function argument type mismatch: cannot convert xs:duration to xs:st...
-xpath-compat/xpath-compat-0104  # [Compile] expected a result but got XPST0017: Unknown function 'format-number' with arity 2
+xpath-compat/xpath-compat-0104  # [Run] expected a result but got FOAR0001: Division by zero.
 xpath-compat/xpath-compat-0105  # [Compare] XML differs. Expected: <out><eqTrue>false</eqTrue><eqFalse>true</eqFalse><neTrue>true</neTrue><neFal...
 xpath-compat/xpath-compat-0106  # [Compare] XML differs. Expected: <out><eqTrue>false</eqTrue><eqFalse>true</eqFalse><neTrue>true</neTrue><neFal...
 xpath-compat/xpath-compat-0107  # [Compare] XML differs. Expected: <out><gtNum>true</gtNum><ltNum>true</ltNum><ltString>true</ltString><geNum>tr...

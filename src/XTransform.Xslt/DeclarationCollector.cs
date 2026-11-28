@@ -29,6 +29,7 @@ internal static class DeclarationCollector
         List<TemplateDecl> templates = new List<TemplateDecl>();
         HashSet<QName> declaredModes = new HashSet<QName>();
         Dictionary<QName, List<KeyDecl>> keys = new Dictionary<QName, List<KeyDecl>>();
+        List<DecimalFormatDecl> decimalFormats = new List<DecimalFormatDecl>();
         List<WhitespaceRule> whitespaceRules = new List<WhitespaceRule>();
 
         // Modules are iterated in load order (post-order). Entries with the same precedence
@@ -74,6 +75,10 @@ internal static class DeclarationCollector
                         CollectWhitespace(child, string.Equals(child.Name.LocalName, "strip-space", StringComparison.Ordinal), entry.ImportPrecedence, whitespaceRules, bag);
                         break;
 
+                    case "decimal-format":
+                        CollectDecimalFormat(child, entry.ImportPrecedence, decimalFormats, bag);
+                        break;
+
                     case "key":
                         CollectKey(child, entry.ImportPrecedence, keys, bag);
                         break;
@@ -94,7 +99,70 @@ internal static class DeclarationCollector
             keyGroups[group.Key] = group.Value;
         }
 
-        return new DeclarationTable(globals, templates, namedTemplates, functions, declaredModes, keyGroups, new WhitespaceTable(whitespaceRules));
+        return new DeclarationTable(globals, templates, namedTemplates, functions, declaredModes, keyGroups, new WhitespaceTable(whitespaceRules), DecimalFormatTable.Build(decimalFormats, bag));
+    }
+
+    // ── xsl:decimal-format (XSLT 2.0 §16.4.1) ──────────────────────────────────
+
+    private static readonly string[] s_decimalFormatProperties =
+    {
+        "decimal-separator", "grouping-separator", "percent", "per-mille", "zero-digit",
+        "digit", "pattern-separator", "minus-sign", "infinity", "NaN",
+    };
+
+    private static readonly string[] s_standardAttributes =
+    {
+        "use-when", "xpath-default-namespace", "exclude-result-prefixes", "extension-element-prefixes", "version",
+    };
+
+    private static void CollectDecimalFormat(
+        StylesheetElement element,
+        int precedence,
+        List<DecimalFormatDecl> decls,
+        DiagnosticBag bag)
+    {
+        // XTSE0090: only the decimal-format properties and the standard attributes are allowed (XSLT 2.0 §3.7).
+        for (int i = 0; i < element.Attributes.Count; i++)
+        {
+            StylesheetAttribute attr = element.Attributes[i];
+            if (attr.Name.NamespaceUri.Length != 0)
+            {
+                continue;
+            }
+
+            string local = attr.Name.LocalName;
+            if (!string.Equals(local, "name", StringComparison.Ordinal) &&
+                Array.IndexOf(s_decimalFormatProperties, local) < 0 &&
+                Array.IndexOf(s_standardAttributes, local) < 0)
+            {
+                bag.Error(XsltErrors.XTSE0090, $"xsl:decimal-format: attribute '{local}' is not allowed", element.Location);
+            }
+        }
+
+        QName? name = null;
+        string? nameAttr = GetAttribute(element, "name");
+        if (nameAttr is not null)
+        {
+            if (!LexicalQNameParser.TryResolve(nameAttr, element.InScopeNamespaces, out QName resolved, out string? why))
+            {
+                bag.Error(XsltErrors.XTSE0020, $"Invalid decimal-format name '{nameAttr}': {why}", element.Location);
+                return;
+            }
+
+            name = resolved;
+        }
+
+        Dictionary<string, string> values = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (string property in s_decimalFormatProperties)
+        {
+            string? value = GetAttribute(element, property);
+            if (value is not null)
+            {
+                values[property] = value;
+            }
+        }
+
+        decls.Add(new DecimalFormatDecl(element, precedence, name, values));
     }
 
     // ── xsl:strip-space / xsl:preserve-space (XSLT 2.0 §4.3) ───────────────────

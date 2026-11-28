@@ -337,7 +337,7 @@ internal sealed class XmlEmitter : IResultReceiver, IDisposable
     }
 
     private static Encoding ResolveEncoding(XmlEmitterOptions options) =>
-        EncodingResolver.Resolve(options.Encoding, options.ByteOrderMark);
+        EncodingResolver.Resolve(options.Encoding, options.ByteOrderMark, characterReferences: true);
 
     // ── Core writers (what actually touches the XmlWriter) ─────────────────
 

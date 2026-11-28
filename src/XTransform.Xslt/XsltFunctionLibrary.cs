@@ -136,6 +136,13 @@ internal sealed class XsltFunctionLibrary : FunctionLibrary
         Register("current-output-uri", 0, SeqAnyUriZeroOrOne(), System.Array.Empty<SequenceType>(),
             (context, args) => XTransform.Xdm.Iterators.EmptyIterator.Instance);
 
+        // XSLT 2.0 §16.4 format-number: the 2-argument form uses the unnamed decimal format; the 3-argument form
+        // reads a lexical QName, so it is bound to the namespaces in scope at the call.
+        Register("format-number", 2, SeqStringOne(), new[] { SeqAnyAtomicZeroOrOne(), SeqStringOne() },
+            (context, args) => FormatNumber(context, args, null));
+        RegisterBound("format-number", 3, SeqStringOne(), new[] { SeqAnyAtomicZeroOrOne(), SeqStringOne(), SeqStringOne() },
+            ns => (context, args) => FormatNumber(context, args, ns));
+
         // Functions that read a lexical QName argument are bound to the namespaces in scope at the call.
         RegisterBound("system-property", 1, SeqStringOne(), new[] { SeqStringOne() },
             ns => (context, args) => new XTransform.Xdm.Iterators.SingleItemIterator(XdmAtomicValue.String(
@@ -350,6 +357,68 @@ internal sealed class XsltFunctionLibrary : FunctionLibrary
         return new XTransform.Xdm.Iterators.SingleItemIterator(current);
     }
 
+    private static bool IsNcName(string text) =>
+        text.Length > 0 && XdmAtomicValue.TryParse(text, XdmTypeCode.NcName, out _);
+
+    // A lexical QName: an NCName, optionally preceded by an NCName and a colon.
+    private static bool IsLexicalQName(string lexical)
+    {
+        int colon = lexical.IndexOf(':');
+        return colon < 0
+            ? IsNcName(lexical)
+            : IsNcName(lexical.Substring(0, colon)) && IsNcName(lexical.Substring(colon + 1));
+    }
+
+    private static XTransform.Xdm.Iterators.SingleItemIterator FormatNumber(DynamicContext context, XdmSequence[] args, IStaticNamespaceResolver? ns)
+    {
+        XsltRunState run = GetRun(context);
+        DecimalFormatTable formats = run.Stylesheet.Declarations.DecimalFormats;
+        DecimalFormat format = formats.Unnamed;
+        if (ns is not null)
+        {
+            string lexical = args[2].FirstOrNull()?.GetStringValue() ?? string.Empty;
+            QName name;
+            if (!SystemFunctions.TryResolveName(lexical, ns, out string uri, out string local) ||
+                !IsLexicalQName(lexical))
+            {
+                throw new XsltDynamicException(
+                    XsltErrors.XTDE1280,
+                    $"format-number: '{lexical}' is not a valid decimal format name",
+                    SourceSpan.None);
+            }
+
+            name = new QName(uri, local);
+            if (!formats.TryGetNamed(name, out DecimalFormat? named) || named is null)
+            {
+                throw new XsltDynamicException(
+                    XsltErrors.XTDE1280,
+                    $"format-number: there is no xsl:decimal-format named '{lexical}'",
+                    SourceSpan.None);
+            }
+
+            format = named;
+        }
+
+        // An empty value is NaN; xs:untypedAtomic is cast to xs:double (F&O §6.2.1).
+        XdmAtomicValue? value = args[0].FirstOrNull() as XdmAtomicValue;
+        if (value is not null && value.TypeCode == XdmTypeCode.UntypedAtomic)
+        {
+            value = CastTable.Cast(value, XdmTypeCode.Double, SourceSpan.None);
+        }
+
+        if (value is not null && !XTransform.XPath.Operators.NumericPromotion.IsNumeric(value.TypeCode))
+        {
+            throw new XsltDynamicException(
+                XPathErrors.XPTY0004,
+                "format-number: the first argument must be numeric",
+                SourceSpan.None);
+        }
+
+        string picture = args[1].FirstOrNull()?.GetStringValue() ?? string.Empty;
+        string text = NumberPictureFormatter.Format(format, value, picture, SourceSpan.None);
+        return new XTransform.Xdm.Iterators.SingleItemIterator(XdmAtomicValue.String(text));
+    }
+
     private static IXdmIterator DocAvailableInvoker(DynamicContext context, XdmSequence[] args)
     {
         XsltRunState run = GetRun(context);
@@ -393,6 +462,9 @@ internal sealed class XsltFunctionLibrary : FunctionLibrary
 
     private static string MakeKey(string ns, string local, int arity)
         => "{" + ns + "}" + local + "#" + arity;
+
+    private static SequenceType SeqAnyAtomicZeroOrOne() =>
+        new SequenceType(ItemType.Atomic(XdmTypeCode.AnyAtomicType), Occurrence.ZeroOrOne);
 
     private static SequenceType SeqStringZeroOrOne() =>
         new SequenceType(ItemType.Atomic(XdmTypeCode.String), Occurrence.ZeroOrOne);
