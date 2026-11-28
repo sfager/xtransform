@@ -295,7 +295,8 @@ internal static class InstructionCompiler
                 XsltCompileScope scope = XsltCompileScope.WithGlobals(declarations.GlobalVariables.Keys, declarations.NamespaceAliases);
                 bodies[decl] = new VariableValueBody(
                     CompileChildren(decl.Element, scope, bag),
-                    buildsDocument: decl.AsType is null);
+                    buildsDocument: decl.AsType is null,
+                    baseUri: decl.Element.InScopeNamespaces.BaseUri);
             }
         }
         finally
@@ -938,7 +939,7 @@ internal static class InstructionCompiler
             bool hasAs = GetAttribute(element, "as") is not null;
             if (element.Children.Count > 0)
             {
-                body = new VariableValueBody(CompileChildren(element, scope, bag), buildsDocument: !hasAs);
+                body = new VariableValueBody(CompileChildren(element, scope, bag), buildsDocument: !hasAs, baseUri: element.InScopeNamespaces.BaseUri);
             }
             else if (!hasAs && !TryCompileXPath("''", element, scope, bag, out select))
             {
@@ -1106,7 +1107,7 @@ internal static class InstructionCompiler
         else if (element.Children.Count > 0)
         {
             // XSLT 2.0 §9.3: the content is a document node unless there is an as attribute.
-            defaultBody = new VariableValueBody(CompileChildren(element, scope, bag), buildsDocument: asType is null);
+            defaultBody = new VariableValueBody(CompileChildren(element, scope, bag), buildsDocument: asType is null, baseUri: element.InScopeNamespaces.BaseUri);
         }
 
         if (!TryParseTunnel(element, bag, out bool tunnelParam))
@@ -1583,7 +1584,7 @@ internal static class InstructionCompiler
             else if (child.Children.Count > 0)
             {
                 // XSLT 2.0 §9.3: the content is a document node unless there is an as attribute.
-                body = new VariableValueBody(CompileChildren(child, scope, bag), buildsDocument: asType is null);
+                body = new VariableValueBody(CompileChildren(child, scope, bag), buildsDocument: asType is null, baseUri: child.InScopeNamespaces.BaseUri);
             }
 
             if (GetAttribute(child, "required") is not null)

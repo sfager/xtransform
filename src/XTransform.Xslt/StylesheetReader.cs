@@ -55,7 +55,7 @@ internal static class StylesheetReader
             }
         }
 
-        root = ReadElement(reader, NamespaceBindings.Root, effectiveVersion: null, xpathDefaultNamespace: string.Empty, System.Array.Empty<string>(), System.Array.Empty<string>(), moduleUri, diagnostics);
+        root = ReadElement(reader, NamespaceBindings.Root.WithBaseUri(moduleUri is not null && System.Uri.TryCreate(moduleUri, System.UriKind.Absolute, out System.Uri? moduleAbsolute) ? moduleAbsolute.AbsoluteUri : null), effectiveVersion: null, xpathDefaultNamespace: string.Empty, System.Array.Empty<string>(), System.Array.Empty<string>(), moduleUri, diagnostics);
 
         // The reader may have more siblings at the top level if the document is malformed;
         // XmlReader will have thrown already if it's not well-formed XML.
@@ -93,7 +93,7 @@ internal static class StylesheetReader
 #pragma warning restore CA1510
 
         XmlReaderSettings settings = CreateSettings();
-        using XmlReader reader = XmlReader.Create(source, settings, baseUri?.OriginalString);
+        using XmlReader reader = Xml11Source.CreateReader(source, settings, baseUri?.OriginalString);
         return Read(reader, baseUri);
     }
 
@@ -102,8 +102,9 @@ internal static class StylesheetReader
     {
         return new XmlReaderSettings
         {
-            DtdProcessing = DtdProcessing.Ignore,
+            DtdProcessing = DtdProcessing.Parse,
             XmlResolver = null,
+            MaxCharactersFromEntities = XsltInput.MaxCharactersFromEntities,
             CloseInput = false,
             IgnoreComments = true,
             IgnoreProcessingInstructions = true,
@@ -158,6 +159,15 @@ internal static class StylesheetReader
         reader.MoveToElement();
 
         NamespaceBindings inScope = parentScope.Extend(nsDecls);
+
+        // xml:base changes the static base URI of the element and everything below it.
+        foreach (RawAttribute raw in rawAttrs)
+        {
+            if (raw.LocalName == "base" && raw.NamespaceUri == XsltNamespace.XmlUri)
+            {
+                inScope = inScope.WithBaseUri(BaseUriResolver.Resolve(raw.Value, inScope.BaseUri));
+            }
+        }
 
         // Resolve the element name. XmlReader reports a resolved NamespaceURI which we trust;
         // the local name stays as is. We use NamespaceUri+LocalName for QName (prefix retained for diagnostics).

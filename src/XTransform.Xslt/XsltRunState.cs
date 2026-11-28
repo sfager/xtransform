@@ -155,9 +155,43 @@ internal sealed class XsltRunState
     /// callers must decide whether that's an error (fn:document / fn:doc) or a false result
     /// (fn:doc-available).
     /// </summary>
-    public XdmNode? LoadDocument(string uriString)
+    public XdmNode? LoadDocument(string uriString) => LoadDocument(uriString, null);
+
+    /// <summary>
+    /// Loads the document that <paramref name="uriString"/> names, a relative reference being resolved against
+    /// <paramref name="baseUri"/> (XSLT 2.0 §16.1). A fragment identifier is dropped. Null when there is no absolute URI
+    /// to load or the resource cannot be read.
+    /// </summary>
+    public XdmNode? LoadDocument(string uriString, string? baseUri)
     {
-        if (string.IsNullOrEmpty(uriString))
+        if (uriString is null)
+        {
+            return null;
+        }
+
+        // An empty reference is the base URI itself: document('') is the stylesheet module.
+        int hash = uriString.IndexOf('#');
+        if (hash >= 0)
+        {
+            uriString = uriString.Substring(0, hash);
+        }
+
+        Uri uri;
+        try
+        {
+            if (!Uri.TryCreate(uriString, UriKind.Absolute, out Uri? absolute))
+            {
+                if (baseUri is null || !Uri.TryCreate(baseUri, UriKind.Absolute, out Uri? baseResult)
+                    || !Uri.TryCreate(baseResult, uriString, out absolute))
+                {
+                    return null;
+                }
+            }
+
+            uri = absolute;
+            uriString = uri.AbsoluteUri;
+        }
+        catch (UriFormatException)
         {
             return null;
         }
@@ -165,16 +199,6 @@ internal sealed class XsltRunState
         if (DocumentCache.TryGetValue(uriString, out XdmNode? cached))
         {
             return cached;
-        }
-
-        Uri uri;
-        try
-        {
-            uri = new Uri(uriString, UriKind.Absolute);
-        }
-        catch
-        {
-            return null;
         }
 
         IResourceResolver resolver = Resolver ?? FileSystemResourceResolver.Instance;
@@ -196,11 +220,7 @@ internal sealed class XsltRunState
         try
         {
             using (stream)
-            using (XmlReader reader = XmlReader.Create(stream, new XmlReaderSettings
-            {
-                DtdProcessing = DtdProcessing.Ignore,
-                XmlResolver = null,
-            }))
+            using (XmlReader reader = XsltInput.CreateReader(stream, uriString))
             {
                 // Documents loaded by doc() / document() are source documents: xsl:strip-space applies (§4.3).
                 WhitespaceTable whitespace = Stylesheet.Declarations.Whitespace;

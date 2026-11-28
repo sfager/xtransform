@@ -107,7 +107,7 @@ There are two grammars to parse: the stylesheet itself (XML) and the XPath 2.0 e
 
 **1a. Stylesheet reader**
 
-1. Read the stylesheet with `XmlReader` (DTD processing off, line info on) into a lightweight `StylesheetNode` tree that keeps line/column and in-scope namespaces per element.
+1. Read the stylesheet with `XmlReader` (DTD parsed with no resolver, so internal entities work and nothing external is read; line info on) into a lightweight `StylesheetNode` tree that keeps line/column and in-scope namespaces per element.
 2. Recognise XSLT elements by namespace (`http://www.w3.org/1999/XSL/Transform`); everything else is a literal result element or an extension element.
 3. Split attribute value templates (AVTs) such as `href="{$base}/x"` into literal and expression parts, honouring `{{` / `}}` escapes.
 4. Apply `use-when` (static evaluation against system properties) and strip whitespace-only text per `xml:space`.

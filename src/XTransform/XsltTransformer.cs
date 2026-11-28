@@ -33,6 +33,9 @@ public sealed class XsltTransformer
     /// <summary>A named template to start from instead of applying templates to the input.</summary>
     public QName? InitialTemplate { get; set; }
 
+    /// <summary>The base URI of the source document when it is given as a stream, which has none of its own; it is the document's base URI and document URI.</summary>
+    public Uri? InputBaseUri { get; set; }
+
     /// <summary>Base URI against which <c>xsl:result-document</c> hrefs resolve (reserved: result documents arrive in phase 4).</summary>
     public Uri? BaseOutputUri { get; set; }
 
@@ -133,7 +136,7 @@ public sealed class XsltTransformer
     private void TransformStreams(Stream? input, Stream output, CancellationToken cancellationToken)
     {
         Require(output, nameof(output));
-        using XmlReader? reader = input is null ? null : XmlReader.Create(input, XsltInput.CreateReaderSettings());
+        using XmlReader? reader = input is null ? null : XsltInput.CreateReader(input, InputBaseUri?.AbsoluteUri);
         Execute(reader, pool => OutputEmitterFactory.Create(_compiled.PrincipalOutput, output, pool), cancellationToken);
     }
 

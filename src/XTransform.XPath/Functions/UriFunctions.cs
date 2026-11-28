@@ -41,7 +41,7 @@ internal static class UriFunctions
             : new SingleItemIterator(XdmAtomicValue.AnyUri(baseUri));
     }
 
-    private static IXdmIterator Resolve(XdmSequence relativeArg, string baseUri)
+    internal static IXdmIterator Resolve(XdmSequence relativeArg, string baseUri)
     {
         XdmItem? relativeItem = relativeArg.FirstOrNull();
         if (relativeItem is null)

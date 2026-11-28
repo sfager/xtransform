@@ -658,6 +658,8 @@ public sealed class XsltTransformer
     public void SetParameter(QName name, XdmSequence value);
     public void SetParameter(QName name, XdmItem value);
     public QName? InitialMode { get; set; }
+    /// <summary>Base URI of the source document when it is given as a stream (which has none); also its document URI.</summary>
+    public Uri? InputBaseUri { get; set; }
     public QName? InitialTemplate { get; set; }
     public Uri? BaseOutputUri { get; set; }
     public Action<XsltMessage>? MessageListener { get; set; }

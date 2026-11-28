@@ -21,6 +21,9 @@ internal sealed class NamespaceBindingsResolver : IStaticNamespaceResolver
         DefaultFunctionNamespace = defaultFunctionNamespace;
     }
 
+    /// <summary>The static base URI at the expression (XPath 2.0 §2.1.1), honouring <c>xml:base</c> in the stylesheet.</summary>
+    public string? StaticBaseUri => _bindings.BaseUri;
+
     /// <inheritdoc/>
     public string? LookupNamespace(string prefix) => _bindings.Resolve(prefix);
 

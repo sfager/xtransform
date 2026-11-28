@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Text;
 using System.Threading;
 
@@ -63,10 +64,16 @@ internal sealed partial class TinyTree
         int[] nsParent,
         string[] nsPrefix,
         string[] nsUri,
-        int nsCount)
+        int nsCount,
+        string? documentUri = null,
+        Dictionary<int, string>? nodeBaseUris = null,
+        Dictionary<string, UnparsedEntity>? unparsedEntities = null)
     {
+        UnparsedEntities = unparsedEntities;
         NamePool = namePool;
         BaseUri = baseUri;
+        DocumentUri = documentUri;
+        _nodeBaseUris = nodeBaseUris;
         TreeId = Interlocked.Increment(ref s_nextTreeId);
 
         NodeCount = kind.Length;
@@ -108,8 +115,31 @@ internal sealed partial class TinyTree
     /// <summary>Total number of namespace entries.</summary>
     internal int NamespaceCount { get; }
 
-    /// <summary>Base URI of the document, or null if unknown.</summary>
+    /// <summary>Base URI of the document node, or null if unknown.</summary>
     internal string? BaseUri { get; }
+
+    /// <summary>The unparsed entities its DTD declares, by name; null when there are none.</summary>
+    internal IReadOnlyDictionary<string, UnparsedEntity>? UnparsedEntities { get; }
+
+    /// <summary>The URI the document was loaded from; null for a tree that was constructed.</summary>
+    internal string? DocumentUri { get; }
+
+    // Base URIs set on elements by xml:base (resolved) or by copying; a node without one has its parent's.
+    private readonly Dictionary<int, string>? _nodeBaseUris;
+
+    /// <summary>The base URI of the node at <paramref name="index"/>: its own, else its nearest ancestor's, else the document's.</summary>
+    internal string? GetBaseUri(int index)
+    {
+        for (int i = index; i >= 0; i = _parent[i])
+        {
+            if (_nodeBaseUris is not null && _nodeBaseUris.TryGetValue(i, out string? found))
+            {
+                return found;
+            }
+        }
+
+        return BaseUri;
+    }
 
     // ── Node accessors ──────────────────────────────────────────────────────
 

@@ -40,6 +40,11 @@ internal sealed class CopyInstruction : XsltInstruction
         {
             case XdmNodeKind.Element:
                 receiver.StartElement(tree.GetNameCode(index), Location);
+                if (receiver is IBaseUriReceiver baseReceiver && node.BaseUri is { } copiedBase)
+                {
+                    baseReceiver.BaseUri(copiedBase);
+                }
+
                 // Body produces the attributes + children. The caller is responsible for
                 // ordering (xsl:attribute siblings before any content).
                 Body.Execute(context, receiver, run);

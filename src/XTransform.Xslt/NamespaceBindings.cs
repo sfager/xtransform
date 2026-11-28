@@ -13,10 +13,17 @@ internal sealed class NamespaceBindings
 {
     private readonly Dictionary<string, string> _bindings;
 
-    private NamespaceBindings(Dictionary<string, string> bindings)
+    private NamespaceBindings(Dictionary<string, string> bindings, string? baseUri = null)
     {
         _bindings = bindings;
+        BaseUri = baseUri;
     }
+
+    /// <summary>The static base URI at the element: the module URI changed by any <c>xml:base</c> on it or an ancestor; null when unknown.</summary>
+    public string? BaseUri { get; }
+
+    /// <summary>The same bindings with another static base URI.</summary>
+    public NamespaceBindings WithBaseUri(string? baseUri) => new NamespaceBindings(_bindings, baseUri);
 
     /// <summary>Empty root (only the implicit <c>xml</c> binding).</summary>
     public static NamespaceBindings Root { get; } = CreateRoot();
@@ -57,6 +64,7 @@ internal sealed class NamespaceBindings
             return this;
         }
 
+
         Dictionary<string, string> merged = new Dictionary<string, string>(_bindings, System.StringComparer.Ordinal);
         foreach (KeyValuePair<string, string> kv in newBindings)
         {
@@ -72,6 +80,6 @@ internal sealed class NamespaceBindings
             }
         }
 
-        return new NamespaceBindings(merged);
+        return new NamespaceBindings(merged, BaseUri);
     }
 }

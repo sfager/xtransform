@@ -21,3 +21,5 @@ XTransform.XsltOutputSettings.CdataSectionElements.get -> System.Collections.Gen
 XTransform.XsltOutputSettings.CdataSectionElements.init -> void
 XTransform.XsltOutputSettings.ByteOrderMark.get -> bool?
 XTransform.XsltOutputSettings.ByteOrderMark.init -> void
+XTransform.XsltOutputSettings.Version.get -> string!
+XTransform.XsltOutputSettings.Version.init -> void

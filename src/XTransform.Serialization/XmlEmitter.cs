@@ -24,6 +24,7 @@ internal sealed class XmlEmitter : IResultReceiver, IDisposable
 
     private readonly TextWriter _text;
     private readonly bool _ownsText;
+    private readonly bool _xml11;
     private readonly NamePool _pool;
     private readonly XmlEmitterOptions _options;
     private readonly XmlWriter _writer;
@@ -75,6 +76,7 @@ internal sealed class XmlEmitter : IResultReceiver, IDisposable
 #pragma warning restore CA1510
 
         _text = text;
+        _xml11 = options.Version == "1.1";
         _ownsText = ownsWriter;
         _pool = pool;
         _options = options;
@@ -89,6 +91,7 @@ internal sealed class XmlEmitter : IResultReceiver, IDisposable
             NewLineChars = "\n",
             NewLineHandling = NewLineHandling.Replace,
             CloseOutput = false,
+            CheckCharacters = options.Version != "1.1",
         });
     }
 
@@ -282,7 +285,7 @@ internal sealed class XmlEmitter : IResultReceiver, IDisposable
             return;
         }
 
-        StringBuilder sb = new StringBuilder("<?xml version=\"1.0\" encoding=\"");
+        StringBuilder sb = new StringBuilder(_xml11 ? "<?xml version=\"1.1\" encoding=\"" : "<?xml version=\"1.0\" encoding=\"");
         sb.Append(_options.Encoding.WebName.ToUpperInvariant()).Append('"');
         if (_options.Standalone is bool standalone)
         {
@@ -412,7 +415,7 @@ internal sealed class XmlEmitter : IResultReceiver, IDisposable
         }
 
         QName q = _pool.GetQName(nameCode);
-        _writer.WriteAttributeString(q.Prefix, q.LocalName, q.NamespaceUri, value);
+        WriteAttribute(q.Prefix, q.LocalName, q.NamespaceUri, value);
     }
 
     // Writes the held start tag: the namespace nodes the ancestors have not already made, the element name and the attributes,
@@ -482,7 +485,7 @@ internal sealed class XmlEmitter : IResultReceiver, IDisposable
                 WriteNamespace(attributePrefix, attribute.NamespaceUri);
             }
 
-            _writer.WriteAttributeString(attributePrefix, attribute.LocalName, attribute.NamespaceUri, _pendingAttributeValues[i]);
+            WriteAttribute(attributePrefix, attribute.LocalName, attribute.NamespaceUri, _pendingAttributeValues[i]);
         }
 
         _pendingPrefixes.Clear();
@@ -599,9 +602,58 @@ internal sealed class XmlEmitter : IResultReceiver, IDisposable
         }
         else
         {
-            _writer.WriteString(text);
+            WriteText(text);
         }
     }
+
+    // XML 1.1 output writes the control characters XML 1.0 forbids as character references (Serialization 1.0 §7.1).
+    private void WriteText(string text)
+    {
+        if (!_xml11)
+        {
+            _writer.WriteString(text);
+            return;
+        }
+
+        int run = 0;
+        for (int i = 0; i < text.Length; i++)
+        {
+            if (!NeedsReference(text[i]))
+            {
+                continue;
+            }
+
+            if (i > run)
+            {
+                _writer.WriteString(text.Substring(run, i - run));
+            }
+
+            _writer.WriteCharEntity(text[i]);
+            run = i + 1;
+        }
+
+        if (run < text.Length)
+        {
+            _writer.WriteString(run == 0 ? text : text.Substring(run));
+        }
+    }
+
+    private void WriteAttribute(string prefix, string localName, string namespaceUri, string value)
+    {
+        if (!_xml11)
+        {
+            _writer.WriteAttributeString(prefix, localName, namespaceUri, value);
+            return;
+        }
+
+        _writer.WriteStartAttribute(prefix, localName, namespaceUri);
+        WriteText(value);
+        _writer.WriteEndAttribute();
+    }
+
+    private static bool NeedsReference(char c) =>
+        (c < ' ' && c != '\t' && c != '\n') || (c >= '\u007F' && c <= '\u009F');
+
     // Serialization 1.0 §7.1: "]]>" inside a CDATA section is split across two sections.
     private void WriteCData(string text)
     {

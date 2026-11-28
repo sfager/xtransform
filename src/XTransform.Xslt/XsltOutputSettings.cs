@@ -21,6 +21,9 @@ public sealed class XsltOutputSettings
     /// <summary>Encoding name. Default <c>utf-8</c>.</summary>
     public string Encoding { get; init; } = "utf-8";
 
+    /// <summary><c>version</c>: <c>1.1</c> escapes the control characters XML 1.0 forbids as character references; any other value is <c>1.0</c>.</summary>
+    public string Version { get; init; } = "1.0";
+
     /// <summary><c>indent</c>.</summary>
     public bool Indent { get; init; }
 
@@ -66,6 +69,7 @@ public sealed class XsltOutputSettings
     {
         Encoding = ResolveEncoding(),
         Indent = Indent,
+        Version = Version,
         OmitXmlDeclaration = OmitXmlDeclaration,
         Standalone = Standalone,
         DoctypePublic = DoctypePublic,

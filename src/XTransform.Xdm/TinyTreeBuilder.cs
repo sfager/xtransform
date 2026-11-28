@@ -13,6 +13,9 @@ internal sealed class TinyTreeBuilder : IResultReceiver
     // ── Configuration ────────────────────────────────────────────────────────
     private readonly NamePool _namePool;
     private readonly string? _baseUri;
+    private string? _documentUri;
+    private Dictionary<int, string>? _nodeBaseUris;
+    private Dictionary<string, UnparsedEntity>? _unparsedEntities;
 
     // ── Node parallel lists ──────────────────────────────────────────────────
     private readonly List<byte> _kind;
@@ -152,11 +155,65 @@ internal sealed class TinyTreeBuilder : IResultReceiver
         _attrNameCode.Add(nameCode);
         _attrValue.Add(value ?? string.Empty);
 
+        // xml:base sets the base URI of its element, resolved against the base URI the element would otherwise have.
+        if (parentIndex > 0 && !(_nodeBaseUris is not null && _nodeBaseUris.ContainsKey(parentIndex))
+            && string.Equals(_namePool.GetLocalName(nameCode), "base", StringComparison.Ordinal)
+            && string.Equals(_namePool.GetNamespaceUri(nameCode), BaseUriResolver.XmlNamespace, StringComparison.Ordinal))
+        {
+            int ancestor = _parent[parentIndex];
+            SetBaseUri(parentIndex, BaseUriResolver.Resolve(value ?? string.Empty, InheritedBaseUri(ancestor)));
+        }
+
         // If this is the first attribute for this element, set alpha.
         if (_alpha[parentIndex] == -1)
         {
             _alpha[parentIndex] = attrIndex;
         }
+    }
+
+    // <!ENTITY name SYSTEM "uri" NDATA notation> and <!ENTITY name PUBLIC "id" "uri" NDATA notation> in the internal subset.
+    private static readonly System.Text.RegularExpressions.Regex s_unparsedEntity = new System.Text.RegularExpressions.Regex(
+        @"<!ENTITY\s+([^\s%]+)\s+(?:PUBLIC\s+(?:""([^""]*)""|'([^']*)')\s+(?:""([^""]*)""|'([^']*)')|SYSTEM\s+(?:""([^""]*)""|'([^']*)'))\s+NDATA\s",
+        System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+
+    /// <summary>Records the unparsed entities the internal DTD subset declares, their system identifiers resolved against <paramref name="baseUri"/>.</summary>
+    internal void AddUnparsedEntities(string internalSubset, string baseUri)
+    {
+        foreach (System.Text.RegularExpressions.Match m in s_unparsedEntity.Matches(internalSubset ?? string.Empty))
+        {
+            string publicId = m.Groups[2].Success ? m.Groups[2].Value : m.Groups[3].Success ? m.Groups[3].Value : string.Empty;
+            string system = m.Groups[4].Success ? m.Groups[4].Value : m.Groups[5].Success ? m.Groups[5].Value : m.Groups[6].Success ? m.Groups[6].Value : m.Groups[7].Value;
+            _unparsedEntities ??= new Dictionary<string, UnparsedEntity>(StringComparer.Ordinal);
+            _unparsedEntities[m.Groups[1].Value] = new UnparsedEntity(BaseUriResolver.Resolve(system, baseUri), publicId);
+        }
+    }
+
+    /// <summary>Sets the base URI of the element that is open now (a copy keeps the base URI of the node it was copied from).</summary>
+    internal void SetCurrentBaseUri(string baseUri)
+    {
+        if (_openElements.Count > 0)
+        {
+            SetBaseUri(_openElements.Peek(), baseUri);
+        }
+    }
+
+    private void SetBaseUri(int nodeIndex, string baseUri)
+    {
+        _nodeBaseUris ??= new Dictionary<int, string>();
+        _nodeBaseUris[nodeIndex] = baseUri;
+    }
+
+    private string? InheritedBaseUri(int nodeIndex)
+    {
+        for (int i = nodeIndex; i >= 0; i = _parent[i])
+        {
+            if (_nodeBaseUris is not null && _nodeBaseUris.TryGetValue(i, out string? found))
+            {
+                return found;
+            }
+        }
+
+        return _baseUri;
     }
 
     /// <inheritdoc/>
@@ -298,7 +355,10 @@ internal sealed class TinyTreeBuilder : IResultReceiver
             _nsParent.ToArray(),
             _nsPrefix.ToArray(),
             _nsUri.ToArray(),
-            nsCount);
+            nsCount,
+            _documentUri,
+            _nodeBaseUris,
+            _unparsedEntities);
     }
 
     // ── Static factory ────────────────────────────────────────────────────────
@@ -331,7 +391,7 @@ internal sealed class TinyTreeBuilder : IResultReceiver
         string? baseUri = null;
         try
         {
-            baseUri = reader.BaseURI;
+            baseUri = string.IsNullOrEmpty(reader.BaseURI) ? null : reader.BaseURI;
         }
         catch (NotSupportedException)
         {
@@ -339,6 +399,7 @@ internal sealed class TinyTreeBuilder : IResultReceiver
         }
 
         TinyTreeBuilder builder = new TinyTreeBuilder(namePool, baseUri);
+        builder._documentUri = baseUri;
         builder.StartDocument();
 
         // Per open element: is xml:space="preserve" in effect, and are its whitespace-only children stripped.
@@ -452,8 +513,11 @@ internal sealed class TinyTreeBuilder : IResultReceiver
                     builder.ProcessingInstruction(reader.Name, reader.Value);
                     break;
 
-                case XmlNodeType.XmlDeclaration:
                 case XmlNodeType.DocumentType:
+                    builder.AddUnparsedEntities(reader.Value, reader.BaseURI);
+                    break;
+
+                case XmlNodeType.XmlDeclaration:
                 case XmlNodeType.EntityReference:
                 case XmlNodeType.Entity:
                 case XmlNodeType.Notation:
