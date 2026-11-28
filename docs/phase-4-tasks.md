@@ -535,7 +535,7 @@ external entities are not resolved by default.
 
 ## P4-21 Keys, `id()`, whitespace stripping
 
-- [ ] Done
+- [x] Done
 
 **Scope.** `xsl:key` with `collation`, composite and multi-valued `use`, `key()` with the
 third argument and nodes from other documents, `fn:id` / `fn:idref` / `fn:element-with-id`
@@ -543,6 +543,8 @@ semantics from DTD or `xml:id`, `xsl:strip-space` / `xsl:preserve-space` with na
 precedence (`XTSE0270`), whitespace in the input document, and `xml:space` on the source.
 
 **Acceptance.** `key`, `id`, `strip-space` sets ≥ 85% passing.
+
+**Result (branch `p4-21-keys-whitespace`).** `key` **85 of 89** (95.5%, was 63), `id` **40 of 43** (93%, was 24), `strip-space` 19 of 22 (86.4%); `whitespace` 19 of 28 (was 16), `backwards` 11 of 46 (was 9). Core shard **5,262 of 6,010** (5,217 before; nothing that passed before fails now); QT3 unchanged (13,916 passed, 0 failed); the real-world corpus is byte for byte unchanged. **Keys:** the `use` expression is compiled with the stylesheet and sees the global variables and parameters; a key can take its values from its content; key values are compared by type (numbers, dates as instants, NaN matching nothing; strings and untyped as strings, and string keys in a backwards-compatible stylesheet); the third argument of `key()` limits the search to its subtree; `key()` and `id()` patterns may be followed by a path and the key value may be a number. **IDs:** the `ELEMENT` and `ATTLIST` declarations of the internal DTD subset are read, so `id()`, `idref()` and `id()` patterns use the attributes declared ID / IDREF / IDREFS and `xml:id`, and whitespace in element-only content is not in the tree; a tree with no ID information keeps the old `id` attribute rule. **Stylesheet whitespace:** text on both sides of a comment or processing instruction is one text node. New tests: `XsltKeysIdsAndWhitespaceTests` (16). **Left over:** `key-026` (namespace nodes, P4-14 limit), `key-047`, `-055`, `-076`, `-077`; `id-001` / `-043` (fragment identifiers and an empty document), `id-041` (XPath 3.0 `||`); nine `whitespace` tests (`xsl:analyze-string` content, entities, `xml:space` on stylesheet elements); the rest of `backwards` is P4-25. `xslt-baseline.json` (core floor 5,217 → 5,262; combined 5,409 → 5,454) and `known-failures/xslt-g3.txt` are updated; the `unicode-90` figures were not re-measured.
 
 **Progress (branch `p4-21-strip-space`).** Done: `xsl:strip-space` / `xsl:preserve-space` with the
 whole name-test grammar (`*`, `p:*`, `*:l`, QName, `Q{uri}l`, `Q{uri}*`), import precedence, priority

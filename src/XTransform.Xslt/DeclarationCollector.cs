@@ -86,7 +86,7 @@ internal static class DeclarationCollector
                         break;
 
                     case "key":
-                        CollectKey(child, entry.ImportPrecedence, keys, bag);
+                        CollectKey(child, entry.ImportPrecedence, keys, bag, IsBackwardsCompatible(root));
                         break;
 
                     case "attribute-set":
@@ -381,7 +381,8 @@ internal static class DeclarationCollector
         StylesheetElement element,
         int precedence,
         Dictionary<QName, List<KeyDecl>> keys,
-        DiagnosticBag bag)
+        DiagnosticBag bag,
+        bool backwardsCompatible)
     {
         string? nameAttr = GetAttribute(element, "name");
         if (nameAttr is null)
@@ -412,11 +413,8 @@ internal static class DeclarationCollector
             return;
         }
 
-        if (use is null)
-        {
-            bag.Error(XsltErrors.XTSE0010, "xsl:key with content instead of a use attribute is not supported", element.Location);
-            return;
-        }
+        // The content of the element is a sequence constructor that gives the value (§16.3); its compiled form is attached later.
+        use ??= string.Empty;
 
         // Several xsl:key declarations with the same name are all in effect: the key's index is the
         // union of what each declaration selects (XSLT 2.0 §16.3).
@@ -426,8 +424,12 @@ internal static class DeclarationCollector
             keys[name] = group;
         }
 
-        group.Add(new KeyDecl(element, precedence, name, match, use));
+        group.Add(new KeyDecl(element, precedence, name, match, use) { BackwardsCompatible = backwardsCompatible });
     }
+
+    // A stylesheet whose version is below 2.0 runs in backwards-compatible mode (XSLT 2.0 §3.8).
+    private static bool IsBackwardsCompatible(StylesheetElement root) =>
+        double.TryParse(root.DeclaredVersion, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double version) && version < 2.0;
 
     // ── xsl:variable / xsl:param ────────────────────────────────────────────
 

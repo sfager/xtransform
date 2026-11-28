@@ -170,6 +170,7 @@ internal static class StylesheetCompiler
                 PatternAst pattern = XPathParser.ParsePattern(key.MatchPattern, key.Location, resolver);
                 patterns.Register(pattern, resolver, functions, key.Location, bag);
                 patterns.SetKeyPattern(key, pattern);
+                InstructionCompiler.CompileKeyUse(key, declarations, functions, patterns, bag);
             }
             catch (XTransformException ex)
             {

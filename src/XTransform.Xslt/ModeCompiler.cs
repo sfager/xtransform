@@ -163,6 +163,14 @@ internal static class ModeCompiler
     /// </summary>
     private static void RegisterRule(ModeTable table, PatternAst pattern, TemplateRule rule)
     {
+        // id(...)/steps and key(...)/steps are classified by their last step, as a path pattern is.
+        if (pattern is IdKeyWithPathAst { TailSteps.IsEmpty: false } withPath)
+        {
+            StepPatternAst tailEnd = withPath.TailSteps[withPath.TailSteps.Length - 1];
+            ClassifyByFinalTest(table, tailEnd.Test, tailEnd.Axis == Axis.Attribute, rule);
+            return;
+        }
+
         // id() and key() patterns match element nodes.
         if (pattern is IdPatternAst or KeyPatternAst or IdKeyWithPathAst)
         {

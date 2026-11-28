@@ -76,6 +76,38 @@ internal static class InstructionCompiler
         }
     }
 
+    /// <summary>
+    /// Compiles the <c>use</c> expression of an <c>xsl:key</c>, or its content when there is no <c>use</c>. The global variables are in scope
+    /// (XSLT 2.0 §16.3), the local ones are not.
+    /// </summary>
+    public static void CompileKeyUse(KeyDecl key, DeclarationTable declarations, FunctionLibrary functions, PatternPredicateTable patterns, DiagnosticBag bag)
+    {
+        s_functions = functions;
+        s_patterns = patterns;
+        s_attributeSets = declarations.AttributeSets;
+        try
+        {
+            XsltCompileScope scope = XsltCompileScope.WithGlobals(declarations.GlobalVariables.Keys, declarations.NamespaceAliases);
+            if (key.UseExpression.Length > 0)
+            {
+                if (TryCompileXPath(key.UseExpression, key.Element, scope, bag, out BoundExpression? compiled))
+                {
+                    key.UseCompiled = compiled;
+                }
+            }
+            else
+            {
+                key.UseBody = new VariableValueBody(CompileChildren(key.Element, scope, bag), buildsDocument: false);
+            }
+        }
+        finally
+        {
+            s_functions = null;
+            s_patterns = null;
+            s_attributeSets = null;
+        }
+    }
+
     // The instruction that adds the attribute sets a use-attribute-sets value names; null when it names none.
     private static XsltInstruction? UseAttributeSets(string? names, StylesheetElement element)
     {

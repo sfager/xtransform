@@ -38,22 +38,98 @@ internal sealed class KeyDecl
     /// <summary>The <c>@match</c> pattern text.</summary>
     public string MatchPattern { get; }
 
-    /// <summary>The <c>@use</c> expression text.</summary>
+    /// <summary>The <c>@use</c> expression text; empty when the value comes from the content of the element.</summary>
     public string UseExpression { get; }
+
+    /// <summary>True when the declaring stylesheet is backwards-compatible: a key value that is not a string is compared as one.</summary>
+    public bool BackwardsCompatible { get; init; }
+
+    /// <summary>The compiled <c>@use</c> expression; set when the stylesheet is compiled.</summary>
+    public Instructions.BoundExpression? UseCompiled { get; set; }
+
+    /// <summary>The compiled content of the element when it has no <c>@use</c> (a sequence constructor); set when the stylesheet is compiled.</summary>
+    public Instructions.VariableValueBody? UseBody { get; set; }
 
     /// <summary>Source location.</summary>
     public SourceSpan Location => Element.Location;
 }
 
+/// <summary>
+/// Compares key values as the <c>eq</c> operator does (XSLT 2.0 §16.3): numbers by value (NaN equals nothing), dates and times as
+/// instants, and <c>xs:untypedAtomic</c>, <c>xs:string</c> and <c>xs:anyURI</c> as strings. Values of types that cannot be compared are different.
+/// </summary>
+internal sealed class KeyValueComparer : IEqualityComparer<XdmAtomicValue>
+{
+    /// <summary>The shared instance.</summary>
+    public static KeyValueComparer Instance { get; } = new KeyValueComparer();
+
+    /// <summary>The atomic value a key item stands for: a node gives its untyped string value.</summary>
+    public static XdmAtomicValue ToKey(XdmItem item) =>
+        item as XdmAtomicValue ?? XdmAtomicValue.UntypedAtomic(item.GetStringValue());
+
+    /// <inheritdoc/>
+    public bool Equals(XdmAtomicValue? x, XdmAtomicValue? y)
+    {
+        if (x is null || y is null)
+        {
+            return false;
+        }
+
+        x = AsComparable(x);
+        y = AsComparable(y);
+        try
+        {
+            return XTransform.XPath.Operators.ComparisonOperators.ValueEqual(x, y) == true;
+        }
+        catch (XTransformException)
+        {
+            return false;
+        }
+    }
+
+    /// <inheritdoc/>
+    public int GetHashCode(XdmAtomicValue value)
+    {
+        value = AsComparable(value);
+        XdmTypeCode type = value.TypeCode;
+        if (XTransform.XPath.Operators.NumericPromotion.IsNumeric(type))
+        {
+            double d = XTransform.XPath.Operators.NumericPromotion.PromoteNumeric(value, XdmTypeCode.Double, SourceSpan.None).AsDouble();
+            return d == 0 ? 0 : d.GetHashCode();
+        }
+
+        if (type == XdmTypeCode.String || type == XdmTypeCode.AnyUri)
+        {
+            return value.GetStringValue().GetHashCode();
+        }
+
+        // Date and time values compare as instants, whatever their time zone, so they share a bucket by kind.
+        return (int)type;
+    }
+
+    private static XdmAtomicValue AsComparable(XdmAtomicValue value) =>
+        value.TypeCode == XdmTypeCode.UntypedAtomic ? XdmAtomicValue.String(value.GetStringValue()) : value;
+}
+
 /// <summary>Lazily-built index for one <c>(document, key name)</c> pair.</summary>
 internal sealed class KeyIndex
 {
-    private readonly Dictionary<string, List<XdmNode>> _buckets =
-        new Dictionary<string, List<XdmNode>>(System.StringComparer.Ordinal);
+    private readonly Dictionary<XdmAtomicValue, List<XdmNode>> _buckets =
+        new Dictionary<XdmAtomicValue, List<XdmNode>>(KeyValueComparer.Instance);
+
+    /// <summary>True when a backwards-compatible declaration put string keys in the index.</summary>
+    public bool HasBackwardsCompatibleKeys { get; private set; }
 
     /// <summary>Appends <paramref name="node"/> under <paramref name="key"/>.</summary>
-    public void Add(string key, XdmNode node)
+    public void Add(XdmAtomicValue key, XdmNode node, bool backwardsCompatible = false)
     {
+        // A backwards-compatible declaration gives string keys.
+        if (backwardsCompatible)
+        {
+            HasBackwardsCompatibleKeys = true;
+            key = XdmAtomicValue.String(key.GetStringValue());
+        }
+
         if (!_buckets.TryGetValue(key, out List<XdmNode>? list))
         {
             list = new List<XdmNode>();
@@ -64,7 +140,7 @@ internal sealed class KeyIndex
     }
 
     /// <summary>Returns true when at least one node is indexed under <paramref name="key"/>.</summary>
-    public bool TryGetValue(string key, out IReadOnlyList<XdmNode>? nodes)
+    public bool TryGetValue(XdmAtomicValue key, out IReadOnlyList<XdmNode>? nodes)
     {
         if (_buckets.TryGetValue(key, out List<XdmNode>? list))
         {

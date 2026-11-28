@@ -829,6 +829,30 @@ internal static class SequenceFunctions
             return EmptyIterator.Instance;
         }
 
+        // A tree with ID information (a DTD, or xml:id) answers from its ID table (F&O §15.5.1).
+        TinyTree idTree = root.Handle.Tree;
+        if (idTree.HasIdInformation)
+        {
+            List<int> found = new List<int>();
+            foreach (string id in idSet)
+            {
+                if (idTree.IdMap.TryGetValue(id, out int element))
+                {
+                    found.Add(element);
+                }
+            }
+
+            found.Sort();
+            List<XdmItem> elements = new List<XdmItem>(found.Count);
+            foreach (int element in found)
+            {
+                elements.Add(new XdmNode(NodeHandle.ForNode(idTree, element)));
+            }
+
+            return elements.Count == 0 ? EmptyIterator.Instance : new ArrayIterator(elements.ToArray());
+        }
+
+        // Without any, the elements with an id attribute stand for it.
         // Walk all element descendants of root, checking @id attribute.
         // Use a HashSet for deduplication; order by document order (descendant axis is doc-order).
         List<XdmItem> matches = new List<XdmItem>();
@@ -948,6 +972,22 @@ internal static class SequenceFunctions
         if (idSet.Count == 0)
         {
             return EmptyIterator.Instance;
+        }
+
+        // A tree with ID information answers from the attributes declared IDREF or IDREFS (F&O §15.5.2).
+        TinyTree refTree = root.Handle.Tree;
+        if (refTree.HasIdInformation)
+        {
+            List<XdmItem> refs = new List<XdmItem>();
+            for (int a = 0; a < refTree.AttributeCount; a++)
+            {
+                if ((refTree.GetAttributeFlags(a) & DtdInfo.IdRefFlag) != 0 && ContainsAnyToken(refTree.GetAttributeValue(a), idSet))
+                {
+                    refs.Add(new XdmNode(NodeHandle.ForAttribute(refTree, a)));
+                }
+            }
+
+            return refs.Count == 0 ? EmptyIterator.Instance : new ArrayIterator(refs.ToArray());
         }
 
         // Walk all element descendants; check each attribute for token membership.

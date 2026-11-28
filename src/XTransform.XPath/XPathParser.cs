@@ -1956,9 +1956,24 @@ internal static class XPathParser
                     Expect(TokenKind.RightParen);
                     keyHead = new KeyPatternAst(_baseSpan.WithRange(start, Current.Start - start), keyQName, null, varRef);
                 }
+                else if (Kind == TokenKind.IntegerLiteral || Kind == TokenKind.DecimalLiteral || Kind == TokenKind.DoubleLiteral)
+                {
+                    TokenKind numberKind = Kind;
+                    Token numberToken = Consume();
+                    Expect(TokenKind.RightParen);
+                    string numberText = numberToken.Text!;
+                    XdmAtomicValue number = numberKind == TokenKind.IntegerLiteral
+                        ? (long.TryParse(numberText, NumberStyles.None, CultureInfo.InvariantCulture, out long whole)
+                            ? XdmAtomicValue.Integer(whole)
+                            : XdmAtomicValue.Integer(BigInteger.Parse(numberText, NumberStyles.None, CultureInfo.InvariantCulture)))
+                        : numberKind == TokenKind.DecimalLiteral
+                            ? XdmAtomicValue.Decimal(decimal.Parse(numberText, NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture))
+                            : XdmAtomicValue.Double(double.Parse(numberText, NumberStyles.Float, CultureInfo.InvariantCulture));
+                    keyHead = new KeyPatternAst(_baseSpan.WithRange(start, Current.Start - start), keyQName, null, null, number);
+                }
                 else
                 {
-                    throw PatternError("Expected string literal or variable reference as second argument of key()");
+                    throw PatternError("Expected string literal, number or variable reference as second argument of key()");
                 }
                 head = keyHead;
             }
@@ -1970,7 +1985,8 @@ internal static class XPathParser
                     ? StepCombinator.DoubleSlash
                     : StepCombinator.Slash;
                 Consume();
-                ImmutableArray<StepPatternAst> tail = ParseRelativePathPattern(StepCombinator.Leading);
+                // The combinator of the first step says how the id or key head is related to it.
+                ImmutableArray<StepPatternAst> tail = ParseRelativePathPattern(comb);
                 return new IdKeyWithPathAst(_baseSpan.WithRange(start, Current.Start - start), head, tail);
             }
 

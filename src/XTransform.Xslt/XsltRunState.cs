@@ -306,8 +306,7 @@ internal sealed class XsltRunState
         PatternAst pattern =
             ((XsltRunState)context.Run.Tag!).Stylesheet.PatternPredicates.GetKeyPattern(decl)
             ?? XPathParser.ParsePattern(decl.MatchPattern, decl.Location, resolver);
-        CompiledExpression useExpr = XPathCompiler.ParseAndCompile(
-            decl.UseExpression, decl.Location, resolver, ((XsltRunState)context.Run.Tag!).Stylesheet.Functions);
+        XsltRunState run = (XsltRunState)context.Run.Tag!;
 
         // Walk every node in the tree; nodes matching the pattern contribute to the index.
         for (int i = 0; i < tree.NodeCount; i++)
@@ -318,12 +317,14 @@ internal sealed class XsltRunState
                 continue;
             }
 
-            DynamicContext itemCtx = context.WithCurrentItem(node, 1, 1).WithFrame(useExpr.SlotCount);
-            IXdmIterator iter = useExpr.Root.Iterate(itemCtx);
+            DynamicContext itemCtx = context.WithCurrentItem(node, 1, 1);
+            IXdmIterator iter = decl.UseCompiled is not null
+                ? decl.UseCompiled.Prepare(itemCtx, run) is { } prepared ? decl.UseCompiled.Root.Iterate(prepared) : XTransform.Xdm.Iterators.EmptyIterator.Instance
+                : decl.UseBody!.Evaluate(itemCtx, run).GetIterator();
             XdmItem? value;
             while ((value = iter.Next()) is not null)
             {
-                index.Add(value.GetStringValue(), node);
+                index.Add(KeyValueComparer.ToKey(value), node, decl.BackwardsCompatible);
             }
         }
     }
