@@ -101,6 +101,30 @@ public static class XsltErrors
     /// <summary>XTRE0270: an element matches conflicting xsl:strip-space and xsl:preserve-space declarations. Recoverable. (XSLT 2.0 §4.4)</summary>
     public static readonly QName XTRE0270 = new QName("err", XPathErrors.Namespace, "XTRE0270");
 
+    /// <summary>XTSE1070: current-grouping-key() is used within a pattern. (XSLT 2.0 §14.2)</summary>
+    public static readonly QName XTSE1070 = new QName("err", XPathErrors.Namespace, "XTSE1070");
+
+    /// <summary>XTSE1060: current-group() is used within a pattern. (XSLT 2.0 §14.1)</summary>
+    public static readonly QName XTSE1060 = new QName("err", XPathErrors.Namespace, "XTSE1060");
+
+    /// <summary>XTSE1017: the stable attribute of xsl:sort appears on an xsl:sort that is not the first of its siblings. (XSLT 2.0 §13.1)</summary>
+    public static readonly QName XTSE1017 = new QName("err", XPathErrors.Namespace, "XTSE1017");
+
+    /// <summary>XTTE1120: group-starting-with or group-ending-with is used and the population contains an item that is not a node. (XSLT 2.0 §14.3)</summary>
+    public static readonly QName XTTE1120 = new QName("err", XPathErrors.Namespace, "XTTE1120");
+
+    /// <summary>XTDE1110: the collation of xsl:for-each-group is not supported. (XSLT 2.0 §14.3)</summary>
+    public static readonly QName XTDE1110 = new QName("err", XPathErrors.Namespace, "XTDE1110");
+
+    /// <summary>XTTE1100: a group-adjacent key is not exactly one atomic value. (XSLT 2.0 §14.3)</summary>
+    public static readonly QName XTTE1100 = new QName("err", XPathErrors.Namespace, "XTTE1100");
+
+    /// <summary>XTSE1090: xsl:for-each-group has a collation attribute without group-by or group-adjacent. (XSLT 2.0 §14.3)</summary>
+    public static readonly QName XTSE1090 = new QName("err", XPathErrors.Namespace, "XTSE1090");
+
+    /// <summary>XTSE1080: xsl:for-each-group has none or more than one of group-by, group-adjacent, group-starting-with and group-ending-with. (XSLT 2.0 §14.3)</summary>
+    public static readonly QName XTSE1080 = new QName("err", XPathErrors.Namespace, "XTSE1080");
+
     /// <summary>XTSE1015: xsl:sort has both a select attribute and content. (XSLT 2.0 §13.1)</summary>
     public static readonly QName XTSE1015 = new QName("err", XPathErrors.Namespace, "XTSE1015");
 

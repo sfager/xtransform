@@ -111,6 +111,16 @@ internal sealed class XsltFunctionLibrary : FunctionLibrary
             new[] { new SequenceType(ItemType.Atomic(XdmTypeCode.Integer), Occurrence.ExactlyOne) },
             RegexGroupInvoker);
 
+        // XSLT 2.0 §14.1, §14.2: the group being processed by xsl:for-each-group; empty outside one.
+        Register("current-group", 0, new SequenceType(ItemType.AnyItem, Occurrence.ZeroOrMore), System.Array.Empty<SequenceType>(),
+            (context, args) => GetRun(context).CurrentGroup is { } group
+                ? XdmSequence.From(group).GetIterator()
+                : XTransform.Xdm.Iterators.EmptyIterator.Instance);
+        Register("current-grouping-key", 0, new SequenceType(ItemType.Atomic(XdmTypeCode.AnyAtomicType), Occurrence.ZeroOrOne), System.Array.Empty<SequenceType>(),
+            (context, args) => GetRun(context).CurrentGroupingKey is { } key
+                ? new XTransform.Xdm.Iterators.SingleItemIterator(key)
+                : XTransform.Xdm.Iterators.EmptyIterator.Instance);
+
         Register("doc-available", 1,
             SeqBoolOne(),
             new[] { SeqStringOne() },
@@ -551,7 +561,25 @@ internal sealed class UserFunctionSlot
                         SourceSpan.None);
                 }
 
-                return _body.Invoke(ctx, args);
+                // The current group and grouping key are empty inside a stylesheet function (XSLT 2.0 §14.1).
+                if (ctx.Run.Tag is not XsltRunState run || (run.CurrentGroup is null && run.CurrentGroupingKey is null))
+                {
+                    return _body.Invoke(ctx, args);
+                }
+
+                IReadOnlyList<XdmItem>? savedGroup = run.CurrentGroup;
+                XdmAtomicValue? savedKey = run.CurrentGroupingKey;
+                run.CurrentGroup = null;
+                run.CurrentGroupingKey = null;
+                try
+                {
+                    return _body.Invoke(ctx, args);
+                }
+                finally
+                {
+                    run.CurrentGroup = savedGroup;
+                    run.CurrentGroupingKey = savedKey;
+                }
             });
     }
 

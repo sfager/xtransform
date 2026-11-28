@@ -223,9 +223,10 @@ internal static class InstructionCompiler
             "number" => CompileNumber(element, scope, bag),
             "analyze-string" => CompileAnalyzeString(element, scope, bag),
             "perform-sort" => CompilePerformSort(element, scope, bag),
+            "for-each-group" => CompileForEachGroup(element, scope, bag),
             // Deferred to later tasks:
             "message" or "result-document" or
-            "for-each-group" or "next-match" or "fallback" or
+            "next-match" or "fallback" or
             "apply-imports" => null,
             _ => null,
         };
@@ -456,12 +457,25 @@ internal static class InstructionCompiler
     }
 
     private static bool TryParsePattern(
-        string? text, StylesheetElement element, DiagnosticBag bag, out XTransform.XPath.Ast.PatternAst? pattern)
+        string? text, StylesheetElement element, DiagnosticBag bag, out XTransform.XPath.Ast.PatternAst? pattern, XsltCompileScope? scope = null)
     {
         pattern = null;
         if (text is null)
         {
             return true;
+        }
+
+        // The current group and grouping key cannot be used in a pattern (XSLT 2.0 §14.1, §14.2).
+        if (PatternCalls(text, "current-group"))
+        {
+            bag.Error(XsltErrors.XTSE1060, "current-group() cannot be used in a pattern", element.Location);
+            return false;
+        }
+
+        if (PatternCalls(text, "current-grouping-key"))
+        {
+            bag.Error(XsltErrors.XTSE1070, "current-grouping-key() cannot be used in a pattern", element.Location);
+            return false;
         }
 
         try
@@ -471,7 +485,7 @@ internal static class InstructionCompiler
                 defaultElementNamespace: string.Empty,
                 defaultFunctionNamespace: BuiltInFunctionLibrary.FnNamespace);
             pattern = XPathParser.ParsePattern(text, element.Location, resolver);
-            s_patterns?.Register(pattern, resolver, s_functions ?? BuiltInFunctionLibrary.Instance, element.Location, bag);
+            s_patterns?.Register(pattern, resolver, s_functions ?? BuiltInFunctionLibrary.Instance, element.Location, bag, scope?.Names);
             return true;
         }
         catch (XTransformException ex)
@@ -966,6 +980,12 @@ internal static class InstructionCompiler
                 child.IsXsltElement &&
                 string.Equals(child.Name.LocalName, "sort", StringComparison.Ordinal))
             {
+                // XTSE1017: stable is only allowed on the first xsl:sort (XSLT 2.0 §13.1).
+                if (keys.Count > 0 && GetAttribute(child, "stable") is not null)
+                {
+                    bag.Error(XsltErrors.XTSE1017, "The stable attribute is only allowed on the first xsl:sort", child.Location);
+                }
+
                 SortKey? key = CompileSortKey(child, scope, bag);
                 if (key is not null)
                 {
@@ -1041,6 +1061,41 @@ internal static class InstructionCompiler
         return string.Equals(text, a, StringComparison.Ordinal) || string.Equals(text, b, StringComparison.Ordinal);
     }
 
+    // True when the pattern text calls the function <paramref name="name"/> (string literals are skipped).
+    private static bool PatternCalls(string pattern, string name)
+    {
+        int i = 0;
+        while (i < pattern.Length)
+        {
+            char c = pattern[i];
+            if (c == '\'' || c == '"')
+            {
+                int close = pattern.IndexOf(c, i + 1);
+                i = close < 0 ? pattern.Length : close + 1;
+                continue;
+            }
+
+            if (string.CompareOrdinal(pattern, i, name, 0, name.Length) == 0 &&
+                (i == 0 || !(char.IsLetterOrDigit(pattern[i - 1]) || pattern[i - 1] == '-' || pattern[i - 1] == '_' || pattern[i - 1] == '.' || pattern[i - 1] == ':')))
+            {
+                int j = i + name.Length;
+                while (j < pattern.Length && char.IsWhiteSpace(pattern[j]))
+                {
+                    j++;
+                }
+
+                if (j < pattern.Length && pattern[j] == '(')
+                {
+                    return true;
+                }
+            }
+
+            i++;
+        }
+
+        return false;
+    }
+
     private static bool IsValidLanguageLiteral(CompiledAvt? avt)
     {
         string? text = avt is null ? null : LiteralValue(avt);
@@ -1082,6 +1137,76 @@ internal static class InstructionCompiler
         // The content, other than the xsl:sort elements (which compile to nothing), builds the sequence.
         VariableValueBody content = new VariableValueBody(CompileChildren(element, scope, bag), buildsDocument: false);
         return new PerformSortInstruction(null, content, keys, element.Location);
+    }
+
+    // ── xsl:for-each-group (XSLT 2.0 §14) ──────────────────────────────────────
+
+    private static XsltInstruction? CompileForEachGroup(StylesheetElement element, XsltCompileScope scope, DiagnosticBag bag)
+    {
+        string? selectAttr = GetAttribute(element, "select");
+        if (selectAttr is null)
+        {
+            bag.Error(XsltErrors.XTSE0010, "xsl:for-each-group requires a select attribute", element.Location);
+            return null;
+        }
+
+        string? by = GetAttribute(element, "group-by");
+        string? adjacent = GetAttribute(element, "group-adjacent");
+        string? starting = GetAttribute(element, "group-starting-with");
+        string? ending = GetAttribute(element, "group-ending-with");
+        int given = (by is null ? 0 : 1) + (adjacent is null ? 0 : 1) + (starting is null ? 0 : 1) + (ending is null ? 0 : 1);
+        if (given != 1)
+        {
+            bag.Error(
+                XsltErrors.XTSE1080,
+                "xsl:for-each-group must have exactly one of group-by, group-adjacent, group-starting-with and group-ending-with",
+                element.Location);
+            return null;
+        }
+
+        if (GetAttribute(element, "collation") is not null && by is null && adjacent is null)
+        {
+            bag.Error(
+                XsltErrors.XTSE1090,
+                "xsl:for-each-group: collation is only allowed with group-by or group-adjacent",
+                element.Location);
+            return null;
+        }
+
+        if (!TryCompileXPath(selectAttr, element, scope, bag, out BoundExpression? select))
+        {
+            return null;
+        }
+
+        GroupingMethod method = by is not null
+            ? GroupingMethod.By
+            : adjacent is not null
+                ? GroupingMethod.Adjacent
+                : starting is not null ? GroupingMethod.StartingWith : GroupingMethod.EndingWith;
+
+        BoundExpression? key = null;
+        XTransform.XPath.Ast.PatternAst? pattern = null;
+        if (method is GroupingMethod.By or GroupingMethod.Adjacent)
+        {
+            if (!TryCompileXPath(by ?? adjacent!, element, scope, bag, out key))
+            {
+                return null;
+            }
+        }
+        else if (!TryParsePattern(starting ?? ending, element, bag, out pattern, scope) || pattern is null)
+        {
+            return null;
+        }
+
+        CompiledAvt? collation = CompileOptionalAvt(element, "collation", scope, bag, out bool collationOk);
+        if (!collationOk)
+        {
+            return null;
+        }
+
+        List<SortKey> sorts = CompileSortKeys(element, scope, bag);
+        XsltInstruction body = CompileChildren(element, scope, bag);
+        return new ForEachGroupInstruction(select!, method, key, pattern, collation, sorts, body, element.Location);
     }
 
     // ── apply-templates / call-template ────────────────────────────────────

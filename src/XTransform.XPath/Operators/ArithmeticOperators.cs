@@ -666,7 +666,7 @@ internal static class ArithmeticOperators
     }
 
     // Days since 1970-01-01 for a proleptic Gregorian date in astronomical year numbering.
-    private static long CivilToDays(long year, int month, int day)
+    internal static long CivilToDays(long year, int month, int day)
     {
         long y = month <= 2 ? year - 1 : year;
         long era = FloorDiv(y, 400);

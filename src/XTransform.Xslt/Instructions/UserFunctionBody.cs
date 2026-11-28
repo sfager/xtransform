@@ -48,7 +48,7 @@ internal sealed class UserFunctionBody
             }
 
             // XSLT 2.0 §10.3: the focus is undefined within a function body.
-            ItemCollectorReceiver collector = new ItemCollectorReceiver();
+            ItemCollectorReceiver collector = new ItemCollectorReceiver(run.NamePool);
             Body.Execute(context.WithoutFocus(), collector, run);
             return collector.ToSequence().GetIterator();
         }
@@ -61,28 +61,128 @@ internal sealed class UserFunctionBody
 
 /// <summary>
 /// Collects items emitted during xsl:function body execution. <see cref="Append"/> records
-/// items by reference; text events become <c>xs:string</c> atomics.
+/// items by reference; top-level text events become <c>xs:string</c> atomics; elements, comments and
+/// processing instructions that the body constructs are built into nodes (one item each).
 /// </summary>
 internal sealed class ItemCollectorReceiver : IResultReceiver
 {
     private readonly List<XdmItem> _items = new List<XdmItem>();
+    private readonly NamePool _pool;
+    private TreeBuilder? _current;
+    private int _depth;
+
+    public ItemCollectorReceiver(NamePool pool)
+    {
+        _pool = pool;
+    }
 
     public XdmSequence ToSequence() => XdmSequence.From(_items);
 
     public void StartDocument() { }
+
     public void EndDocument() { }
-    public void StartElement(int nameCode, SourceSpan location) { }
-    public void Namespace(string prefix, string uri) { }
-    public void Attribute(int nameCode, string value, SourceSpan location) { }
-    public void EndElement() { }
-    public void Text(string text) => _items.Add(XdmAtomicValue.String(text));
-    public void Comment(string text) { }
-    public void ProcessingInstruction(string target, string data) { }
+
+    public void StartElement(int nameCode, SourceSpan location)
+    {
+        _current ??= new TreeBuilder(_pool);
+        _current.StartElement(nameCode, location);
+        _depth++;
+    }
+
+    public void Namespace(string prefix, string uri)
+    {
+        if (_current is not null && _depth > 0)
+        {
+            _current.Namespace(prefix, uri);
+        }
+    }
+
+    public void Attribute(int nameCode, string value, SourceSpan location)
+    {
+        if (_current is not null && _depth > 0)
+        {
+            _current.Attribute(nameCode, value, location);
+        }
+    }
+
+    public void EndElement()
+    {
+        if (_current is null)
+        {
+            return;
+        }
+
+        _current.EndElement();
+        _depth--;
+        if (_depth == 0)
+        {
+            _items.Add(FirstChild(_current.Build()));
+            _current = null;
+        }
+    }
+
+    public void Text(string text)
+    {
+        if (_depth > 0)
+        {
+            _current!.Text(text);
+        }
+        else
+        {
+            _items.Add(XdmAtomicValue.String(text));
+        }
+    }
+
+    public void Comment(string text)
+    {
+        if (_depth > 0)
+        {
+            _current!.Comment(text);
+            return;
+        }
+
+        TreeBuilder builder = new TreeBuilder(_pool);
+        builder.Comment(text);
+        _items.Add(FirstChild(builder.Build()));
+    }
+
+    public void ProcessingInstruction(string target, string data)
+    {
+        if (_depth > 0)
+        {
+            _current!.ProcessingInstruction(target, data);
+            return;
+        }
+
+        TreeBuilder builder = new TreeBuilder(_pool);
+        builder.ProcessingInstruction(target, data);
+        _items.Add(FirstChild(builder.Build()));
+    }
+
     public void Append(XdmItem item)
     {
-        if (item is not null)
+        if (item is null)
+        {
+            return;
+        }
+
+        if (_depth > 0)
+        {
+            _current!.Append(item);
+        }
+        else
         {
             _items.Add(item);
         }
+    }
+
+    private static XdmNode FirstChild(XdmNode document)
+    {
+        foreach (XdmNode child in document.Axis(Axis.Child))
+        {
+            return child;
+        }
+
+        return document;
     }
 }

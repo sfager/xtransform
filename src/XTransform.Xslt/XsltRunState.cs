@@ -47,6 +47,12 @@ internal sealed class XsltRunState
     /// <summary>The match whose groups <c>regex-group()</c> reads: set while an xsl:matching-substring body runs, null elsewhere.</summary>
     public System.Text.RegularExpressions.Match? CurrentRegexMatch { get; set; }
 
+    /// <summary>The group <c>current-group()</c> returns: set while the body of an xsl:for-each-group runs, null elsewhere (§14.1).</summary>
+    public IReadOnlyList<XdmItem>? CurrentGroup { get; set; }
+
+    /// <summary>The key <c>current-grouping-key()</c> returns: null for group-starting-with / group-ending-with and outside a group (§14.2).</summary>
+    public XdmAtomicValue? CurrentGroupingKey { get; set; }
+
     /// <summary>The underlying XPath run state (current-dateTime, cancellation, timezone).</summary>
     public RunState XPathRun { get; }
 
