@@ -97,6 +97,17 @@ static readonly XTransform.Xdm.XsltErrors.XTDE1150 -> XTransform.Xdm.QName
 static readonly XTransform.Xdm.XsltErrors.XTSE1130 -> XTransform.Xdm.QName
 static readonly XTransform.Xdm.XsltErrors.XTSE0280 -> XTransform.Xdm.QName
 static readonly XTransform.Xdm.XsltErrors.XTRE0270 -> XTransform.Xdm.QName
+static readonly XTransform.Xdm.XsltErrors.XTSE0870 -> XTransform.Xdm.QName
+static readonly XTransform.Xdm.XsltErrors.XTSE0760 -> XTransform.Xdm.QName
+static readonly XTransform.Xdm.XsltErrors.XTSE0580 -> XTransform.Xdm.QName
+static readonly XTransform.Xdm.XsltErrors.XTSE0620 -> XTransform.Xdm.QName
+static readonly XTransform.Xdm.XsltErrors.XTTE0790 -> XTransform.Xdm.QName
+static readonly XTransform.Xdm.XsltErrors.XTTE0780 -> XTransform.Xdm.QName
+static readonly XTransform.Xdm.XsltErrors.XTTE0505 -> XTransform.Xdm.QName
+static readonly XTransform.Xdm.XsltErrors.XTDE0610 -> XTransform.Xdm.QName
+static readonly XTransform.Xdm.XsltErrors.XTTE0600 -> XTransform.Xdm.QName
+static readonly XTransform.Xdm.XsltErrors.XTTE0590 -> XTransform.Xdm.QName
+static readonly XTransform.Xdm.XsltErrors.XTTE0570 -> XTransform.Xdm.QName
 static readonly XTransform.Xdm.XsltErrors.XTDE0560 -> XTransform.Xdm.QName
 static readonly XTransform.Xdm.XsltErrors.XTSE1070 -> XTransform.Xdm.QName
 static readonly XTransform.Xdm.XsltErrors.XTSE1060 -> XTransform.Xdm.QName

@@ -12,12 +12,13 @@ namespace XTransform.Xslt.Instructions;
 internal sealed class VariableInstruction : XsltInstruction
 {
     /// <summary>Initializes a local xsl:variable.</summary>
-    public VariableInstruction(QName name, BoundExpression? select, VariableValueBody? body, SourceSpan location)
+    public VariableInstruction(QName name, BoundExpression? select, VariableValueBody? body, SourceSpan location, SequenceType? asType = null)
         : base(location)
     {
         Name = name;
         Select = select;
         Body = body;
+        AsType = asType;
     }
 
     /// <summary>The variable's expanded name.</summary>
@@ -25,6 +26,9 @@ internal sealed class VariableInstruction : XsltInstruction
 
     /// <summary>The compiled select expression, or null when the value comes from <see cref="Body"/> or is the empty string.</summary>
     public BoundExpression? Select { get; }
+
+    /// <summary>The required type from the <c>as</c> attribute, or null.</summary>
+    public SequenceType? AsType { get; }
 
     /// <summary>The compiled content when there is no select attribute, or null.</summary>
     public VariableValueBody? Body { get; }
@@ -36,6 +40,12 @@ internal sealed class VariableInstruction : XsltInstruction
         XdmSequence value = Select is not null
             ? Select.Evaluate(context, run)
             : Body is not null ? Body.Evaluate(context, run) : XdmSequence.Empty;
+        // XSLT 2.0 §9.1: the value is converted to the as type; failure is XTTE0570.
+        if (AsType is not null)
+        {
+            value = SequenceTypes.Convert(value, AsType, XsltErrors.XTTE0570, Location, $"The value of variable ${Name.LocalName}");
+        }
+
         run.PushVariable(Name, value);
     }
 }

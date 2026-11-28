@@ -27,7 +27,7 @@ internal sealed class CopyInstruction : XsltInstruction
             // Atomic context item: xsl:copy emits the atomized value as text.
             if (context.ContextItem is XdmAtomicValue atomic)
             {
-                receiver.Text(atomic.GetStringValue());
+                receiver.Append(atomic);
             }
 
             return;
@@ -65,8 +65,17 @@ internal sealed class CopyInstruction : XsltInstruction
                 return;
 
             case XdmNodeKind.Document:
-                // Document: run the body; no wrapping element.
-                Body.Execute(context, receiver, run);
+                // A document node copies to a new document node with the content the body constructs (XSLT 2.0 §11.9).
+                receiver.StartDocument();
+                try
+                {
+                    Body.Execute(context, receiver, run);
+                }
+                finally
+                {
+                    receiver.EndDocument();
+                }
+
                 return;
 
             case XdmNodeKind.Namespace:

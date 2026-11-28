@@ -101,6 +101,39 @@ public static class XsltErrors
     /// <summary>XTRE0270: an element matches conflicting xsl:strip-space and xsl:preserve-space declarations. Recoverable. (XSLT 2.0 §4.4)</summary>
     public static readonly QName XTRE0270 = new QName("err", XPathErrors.Namespace, "XTRE0270");
 
+    /// <summary>XTSE0870: xsl:value-of has both a select attribute and content. (XSLT 2.0 §11.4)</summary>
+    public static readonly QName XTSE0870 = new QName("err", XPathErrors.Namespace, "XTSE0870");
+
+    /// <summary>XTSE0760: an xsl:param of an xsl:function has a default value. (XSLT 2.0 §10.3)</summary>
+    public static readonly QName XTSE0760 = new QName("err", XPathErrors.Namespace, "XTSE0760");
+
+    /// <summary>XTSE0580: two parameters of one template or function have the same name. (XSLT 2.0 §9.2)</summary>
+    public static readonly QName XTSE0580 = new QName("err", XPathErrors.Namespace, "XTSE0580");
+
+    /// <summary>XTSE0620: a variable-binding element has both a select attribute and content. (XSLT 2.0 §9.3)</summary>
+    public static readonly QName XTSE0620 = new QName("err", XPathErrors.Namespace, "XTSE0620");
+
+    /// <summary>XTTE0790: an argument of a stylesheet function cannot be converted to the as type of its parameter. (XSLT 2.0 §10.3)</summary>
+    public static readonly QName XTTE0790 = new QName("err", XPathErrors.Namespace, "XTTE0790");
+
+    /// <summary>XTTE0780: the result of a stylesheet function cannot be converted to its as type. (XSLT 2.0 §10.3)</summary>
+    public static readonly QName XTTE0780 = new QName("err", XPathErrors.Namespace, "XTTE0780");
+
+    /// <summary>XTTE0505: the result of a template body cannot be converted to the as type of the template. (XSLT 2.0 §6.1)</summary>
+    public static readonly QName XTTE0505 = new QName("err", XPathErrors.Namespace, "XTTE0505");
+
+    /// <summary>XTDE0610: a parameter whose as type does not allow the empty sequence, with no default, was not supplied. (XSLT 2.0 §9.2)</summary>
+    public static readonly QName XTDE0610 = new QName("err", XPathErrors.Namespace, "XTDE0610");
+
+    /// <summary>XTTE0600: the default value of a parameter cannot be converted to its as type. (XSLT 2.0 §9.2)</summary>
+    public static readonly QName XTTE0600 = new QName("err", XPathErrors.Namespace, "XTTE0600");
+
+    /// <summary>XTTE0590: a supplied parameter value cannot be converted to the as type of the parameter. (XSLT 2.0 §9.2)</summary>
+    public static readonly QName XTTE0590 = new QName("err", XPathErrors.Namespace, "XTTE0590");
+
+    /// <summary>XTTE0570: the value of a variable cannot be converted to its as type. (XSLT 2.0 §9.1)</summary>
+    public static readonly QName XTTE0570 = new QName("err", XPathErrors.Namespace, "XTTE0570");
+
     /// <summary>XTDE0560: xsl:apply-imports or xsl:next-match is evaluated when there is no current template rule. (XSLT 2.0 §6.7)</summary>
     public static readonly QName XTDE0560 = new QName("err", XPathErrors.Namespace, "XTDE0560");
 

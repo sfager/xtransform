@@ -11,21 +11,38 @@ namespace XTransform.Xslt.Instructions;
 
 internal sealed class UserFunctionBody
 {
-    public UserFunctionBody(IReadOnlyList<QName> paramNames, XsltInstruction body)
+    public UserFunctionBody(
+        IReadOnlyList<QName> paramNames,
+        XsltInstruction body,
+        IReadOnlyList<SequenceType?>? paramTypes = null,
+        SequenceType? resultType = null,
+        SourceSpan location = default)
     {
         ParamNames = paramNames;
         Body = body;
+        ParamTypes = paramTypes;
+        ResultType = resultType;
+        Location = location;
     }
 
     /// <summary>Parameter names in declaration order.</summary>
     public IReadOnlyList<QName> ParamNames { get; }
+
+    /// <summary>The as type of each parameter (null entries have none), or null when no parameter has one.</summary>
+    public IReadOnlyList<SequenceType?>? ParamTypes { get; }
+
+    /// <summary>The as type of the function result, or null.</summary>
+    public SequenceType? ResultType { get; }
+
+    /// <summary>Where the function is declared.</summary>
+    public SourceSpan Location { get; }
 
     /// <summary>The compiled body instructions.</summary>
     public XsltInstruction Body { get; }
 
     /// <summary>
     /// Invokes the function with <paramref name="args"/> in slot order. Pushes each argument
-    /// as a local variable binding, runs the body against an <see cref="ItemCollectorReceiver"/>,
+    /// as a local variable binding, runs the body against an <see cref="SequenceResultReceiver"/>,
     /// and returns the collected sequence.
     /// </summary>
     public IXdmIterator Invoke(DynamicContext context, XdmSequence[] args)
@@ -44,145 +61,34 @@ internal sealed class UserFunctionBody
         {
             for (int i = 0; i < ParamNames.Count; i++)
             {
-                run.PushVariable(ParamNames[i], i < args.Length ? args[i] : XdmSequence.Empty);
+                XdmSequence argument = i < args.Length ? args[i] : XdmSequence.Empty;
+
+                // Each argument is converted to the as type of its parameter (XTTE0790).
+                SequenceType? paramType = ParamTypes is not null && i < ParamTypes.Count ? ParamTypes[i] : null;
+                if (paramType is not null)
+                {
+                    argument = SequenceTypes.Convert(argument, paramType, XsltErrors.XTTE0790, Location, $"Argument {i + 1} of the function");
+                }
+
+                run.PushVariable(ParamNames[i], argument);
             }
 
             // XSLT 2.0 §10.3: the focus is undefined within a function body.
-            ItemCollectorReceiver collector = new ItemCollectorReceiver(run.NamePool);
+            SequenceResultReceiver collector = new SequenceResultReceiver(run.NamePool);
             Body.Execute(context.WithoutFocus(), collector, run);
-            return collector.ToSequence().GetIterator();
+            XdmSequence result = collector.ToSequence();
+
+            // The result is converted to the as type of the function (XTTE0780).
+            if (ResultType is not null)
+            {
+                result = SequenceTypes.Convert(result, ResultType, XsltErrors.XTTE0780, Location, "The result of the function");
+            }
+
+            return result.GetIterator();
         }
         finally
         {
             run.RestoreVariablesTo(marker);
         }
-    }
-}
-
-/// <summary>
-/// Collects items emitted during xsl:function body execution. <see cref="Append"/> records
-/// items by reference; top-level text events become <c>xs:string</c> atomics; elements, comments and
-/// processing instructions that the body constructs are built into nodes (one item each).
-/// </summary>
-internal sealed class ItemCollectorReceiver : IResultReceiver
-{
-    private readonly List<XdmItem> _items = new List<XdmItem>();
-    private readonly NamePool _pool;
-    private TreeBuilder? _current;
-    private int _depth;
-
-    public ItemCollectorReceiver(NamePool pool)
-    {
-        _pool = pool;
-    }
-
-    public XdmSequence ToSequence() => XdmSequence.From(_items);
-
-    public void StartDocument() { }
-
-    public void EndDocument() { }
-
-    public void StartElement(int nameCode, SourceSpan location)
-    {
-        _current ??= new TreeBuilder(_pool);
-        _current.StartElement(nameCode, location);
-        _depth++;
-    }
-
-    public void Namespace(string prefix, string uri)
-    {
-        if (_current is not null && _depth > 0)
-        {
-            _current.Namespace(prefix, uri);
-        }
-    }
-
-    public void Attribute(int nameCode, string value, SourceSpan location)
-    {
-        if (_current is not null && _depth > 0)
-        {
-            _current.Attribute(nameCode, value, location);
-        }
-    }
-
-    public void EndElement()
-    {
-        if (_current is null)
-        {
-            return;
-        }
-
-        _current.EndElement();
-        _depth--;
-        if (_depth == 0)
-        {
-            _items.Add(FirstChild(_current.Build()));
-            _current = null;
-        }
-    }
-
-    public void Text(string text)
-    {
-        if (_depth > 0)
-        {
-            _current!.Text(text);
-        }
-        else
-        {
-            _items.Add(XdmAtomicValue.String(text));
-        }
-    }
-
-    public void Comment(string text)
-    {
-        if (_depth > 0)
-        {
-            _current!.Comment(text);
-            return;
-        }
-
-        TreeBuilder builder = new TreeBuilder(_pool);
-        builder.Comment(text);
-        _items.Add(FirstChild(builder.Build()));
-    }
-
-    public void ProcessingInstruction(string target, string data)
-    {
-        if (_depth > 0)
-        {
-            _current!.ProcessingInstruction(target, data);
-            return;
-        }
-
-        TreeBuilder builder = new TreeBuilder(_pool);
-        builder.ProcessingInstruction(target, data);
-        _items.Add(FirstChild(builder.Build()));
-    }
-
-    public void Append(XdmItem item)
-    {
-        if (item is null)
-        {
-            return;
-        }
-
-        if (_depth > 0)
-        {
-            _current!.Append(item);
-        }
-        else
-        {
-            _items.Add(item);
-        }
-    }
-
-    private static XdmNode FirstChild(XdmNode document)
-    {
-        foreach (XdmNode child in document.Axis(Axis.Child))
-        {
-            return child;
-        }
-
-        return document;
     }
 }

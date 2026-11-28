@@ -196,6 +196,16 @@ internal sealed class TinyTreeBuilder : IResultReceiver
         _lastNodeWasText = true;
     }
 
+    /// <summary>Adds a zero-length text node (kept as a node, never merged); used when a sequence constructor yields one as an item.</summary>
+    internal void ZeroLengthText()
+    {
+        ThrowIfBuilt();
+        int nodeIndex = AddNode((byte)XdmNodeKind.Text, (byte)(_currentDepth + 1), -1);
+        _textStart[nodeIndex] = _textBufferUsed;
+        _textLength[nodeIndex] = 0;
+        _lastNodeWasText = false;
+    }
+
     /// <inheritdoc/>
     public void Comment(string text)
     {

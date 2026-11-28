@@ -22,9 +22,10 @@ internal sealed class TextInstruction : XsltInstruction
     /// <inheritdoc/>
     public override void Execute(DynamicContext context, IResultReceiver receiver, XsltRunState run)
     {
-        if (Text.Length > 0)
+        // A zero-length xsl:text is still a text node when the receiver builds a sequence.
+        if (Text.Length > 0 || receiver is ISequenceReceiver)
         {
-            receiver.Text(Text);
+            receiver.EmitTextNode(Text);
         }
     }
 }

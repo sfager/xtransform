@@ -59,6 +59,13 @@ internal sealed class TreeBuilder : IResultReceiver
         _builder.Text(text);
     }
 
+    /// <summary>Adds a zero-length text node (see <see cref="TinyTreeBuilder.ZeroLengthText"/>).</summary>
+    public void ZeroLengthText()
+    {
+        EnsureDocument();
+        _builder.ZeroLengthText();
+    }
+
     /// <inheritdoc/>
     public void Comment(string text)
     {

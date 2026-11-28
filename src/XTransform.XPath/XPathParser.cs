@@ -70,6 +70,22 @@ internal static class XPathParser
         return parser.ParseExpr();
     }
 
+    /// <summary>Parses <paramref name="text"/> as a SequenceType (XPath 2.0 §2.5.4), for the as attribute of XSLT elements.</summary>
+    /// <param name="text">The sequence type text.</param>
+    /// <param name="span">Source location to embed in thrown exceptions.</param>
+    /// <param name="namespaces">Namespace resolver for prefix lookups.</param>
+    /// <returns>The parsed sequence type.</returns>
+    public static SequenceType ParseSequenceType(string text, SourceSpan span, IStaticNamespaceResolver namespaces)
+    {
+#pragma warning disable CA1510
+        if (text is null) { throw new ArgumentNullException(nameof(text)); }
+        if (namespaces is null) { throw new ArgumentNullException(nameof(namespaces)); }
+#pragma warning restore CA1510
+
+        var parser = new Parser(text, span, namespaces);
+        return parser.ParseSequenceTypeToEnd();
+    }
+
     /// <summary>
     /// Parses <paramref name="pattern"/> as an XSLT 2.0 Pattern (§5.5.2).
     /// </summary>
@@ -230,6 +246,17 @@ internal static class XPathParser
         // ── Production: Expr (§A.1 prod 1) ───────────────────────────────────
 
         // XPath 2.0 §A.1 production 1: Expr ::= ExprSingle ("," ExprSingle)*
+        internal SequenceType ParseSequenceTypeToEnd()
+        {
+            SequenceType type = ParseSequenceType();
+            if (Kind != TokenKind.EndOfInput)
+            {
+                throw _lexer.SyntaxError($"Unexpected token '{Current.Text ?? Kind.ToString()}' after sequence type");
+            }
+
+            return type;
+        }
+
         internal XPathAst ParseExpr()
         {
             int start = Current.Start;
@@ -729,7 +756,10 @@ internal static class XPathParser
                     int start = Current.Start;
                     NodeTestAst kindTest = ParseKindTest();
                     ImmutableArray<XPathAst> predicates = ParsePredicateList();
-                    return new AxisStep(_baseSpan.WithRange(start, Current.Start - start), Axis.Child, kindTest, predicates);
+                    // XPath 2.0 §3.2.1.1: an abbreviated step is on the child axis, except that attribute() and
+                    // schema-attribute() are on the attribute axis.
+                    Axis implicitAxis = kindTest is KindTestAst { Kind: XdmNodeKind.Attribute } ? Axis.Attribute : Axis.Child;
+                    return new AxisStep(_baseSpan.WithRange(start, Current.Start - start), implicitAxis, kindTest, predicates);
                 }
             }
 
