@@ -75,6 +75,7 @@ internal static class StylesheetCompiler
         CompileKeyPatterns(declarations, functions, patterns, bag);
         IReadOnlyDictionary<GlobalVariableDecl, VariableValueBody> globalBodies =
             InstructionCompiler.CompileGlobalBodies(declarations, functions, patterns, bag);
+        InstructionCompiler.CompileAttributeSets(declarations, functions, patterns, bag);
         IReadOnlyDictionary<QName, ModeTable> modes = ModeCompiler.Compile(declarations, functions, patterns, bag);
         IReadOnlyDictionary<QName, XsltOutputSettings> outputs = OutputDeclarationCollector.Collect(assembly, bag);
 

@@ -65,6 +65,17 @@ internal static class TemplateInvoker
         IReadOnlyDictionary<QName, XdmSequence> tunnel,
         SourceSpan callSite)
     {
+        // The values of the with-param elements are worked out in the caller's scope, before any parameter of the callee is bound.
+        Dictionary<WithParamInstruction, XdmSequence>? evaluated = null;
+        for (int i = 0; i < withParams.Count; i++)
+        {
+            if (!withParams[i].IsTunnel)
+            {
+                evaluated ??= new Dictionary<WithParamInstruction, XdmSequence>();
+                evaluated[withParams[i]] = withParams[i].Evaluate(context, run);
+            }
+        }
+
         foreach (ParamSlot slot in compiled.Parameters)
         {
             // A tunnel parameter takes its value from the tunnel context, an ordinary one from an ordinary with-param.
@@ -86,7 +97,7 @@ internal static class TemplateInvoker
             if (supplied is not null)
             {
                 // A supplied value is converted to the as type of the parameter (XTTE0590).
-                XdmSequence given = supplied.Evaluate(context, run);
+                XdmSequence given = evaluated![supplied];
                 if (slot.AsType is not null)
                 {
                     given = SequenceTypes.Convert(given, slot.AsType, XsltErrors.XTTE0590, supplied.Location, $"The value supplied for parameter ${slot.Name.LocalName}");

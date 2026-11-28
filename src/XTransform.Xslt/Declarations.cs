@@ -167,8 +167,10 @@ internal sealed class DeclarationTable
         IReadOnlyDictionary<QName, IReadOnlyList<KeyDecl>> keys,
         WhitespaceTable whitespace,
         DecimalFormatTable decimalFormats,
-        NamespaceAliasTable namespaceAliases)
+        NamespaceAliasTable namespaceAliases,
+        AttributeSetTable? attributeSets = null)
     {
+        AttributeSets = attributeSets ?? AttributeSetTable.Empty;
         GlobalVariables = globalVariables;
         Templates = templates;
         NamedTemplates = namedTemplates;
@@ -179,6 +181,9 @@ internal sealed class DeclarationTable
         DecimalFormats = decimalFormats;
         NamespaceAliases = namespaceAliases;
     }
+
+    /// <summary>The xsl:attribute-set declarations (XSLT 2.0 §10.2).</summary>
+    public AttributeSetTable AttributeSets { get; }
 
     /// <summary>The xsl:namespace-alias declarations (XSLT 2.0 §11.1.4).</summary>
     public NamespaceAliasTable NamespaceAliases { get; }

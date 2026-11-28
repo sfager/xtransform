@@ -8,6 +8,10 @@ internal sealed class StringCollectingReceiver : IResultReceiver
 {
     private readonly StringBuilder _sb = new StringBuilder();
     private readonly bool _collectAttributeValues;
+    private bool _lastWasAtomic;
+
+    /// <summary>The string put between two adjacent atomic values in the content (the <c>separator</c> of xsl:attribute).</summary>
+    public string AtomicSeparator { get; set; } = string.Empty;
 
     /// <summary>Initializes a collector; with <paramref name="collectAttributeValues"/> the value of an attribute node in the content counts as text.</summary>
     public StringCollectingReceiver(bool collectAttributeValues = false)
@@ -43,7 +47,11 @@ internal sealed class StringCollectingReceiver : IResultReceiver
     public void EndElement() { }
 
     /// <inheritdoc/>
-    public void Text(string text) => _sb.Append(text);
+    public void Text(string text)
+    {
+        _lastWasAtomic = false;
+        _sb.Append(text);
+    }
 
     /// <inheritdoc/>
     public void Comment(string text) { }
@@ -56,6 +64,12 @@ internal sealed class StringCollectingReceiver : IResultReceiver
     {
         if (item is not null)
         {
+            if (item is XdmAtomicValue && _lastWasAtomic)
+            {
+                _sb.Append(AtomicSeparator);
+            }
+
+            _lastWasAtomic = item is XdmAtomicValue;
             _sb.Append(item.GetStringValue());
         }
     }

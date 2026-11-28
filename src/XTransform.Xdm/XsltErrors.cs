@@ -393,4 +393,6 @@ public static class XsltErrors
 
     /// <summary>unparsed-entity-public-id() was called with no context node, or its root is not a document node. (XSLT 2.0 §16.6.4)</summary>
     public static readonly QName XTDE1380 = new QName("err", XPathErrors.Namespace, "XTDE1380");
+    /// <summary>xsl:copy was evaluated with no context item. (XSLT 2.0 §11.9.1)</summary>
+    public static readonly QName XTTE0945 = new QName("err", XPathErrors.Namespace, "XTTE0945");
 }

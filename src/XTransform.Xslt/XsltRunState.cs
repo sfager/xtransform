@@ -122,6 +122,19 @@ internal sealed class XsltRunState
         _variableStack.Add(new KeyValuePair<QName, XdmSequence>(name, value));
     }
 
+    private int _variableFloor;
+
+    /// <summary>Hides the local variables bound so far (a global-only scope, as in an attribute set); returns the value to give back to <see cref="RestoreLocalVariables"/>.</summary>
+    public int HideLocalVariables()
+    {
+        int previous = _variableFloor;
+        _variableFloor = _variableStack.Count;
+        return previous;
+    }
+
+    /// <summary>Makes the local variables hidden by <see cref="HideLocalVariables"/> visible again.</summary>
+    public void RestoreLocalVariables(int previous) => _variableFloor = previous;
+
     /// <summary>Pops every binding added after <paramref name="marker"/>.</summary>
     public void RestoreVariablesTo(int marker)
     {
@@ -325,7 +338,7 @@ internal sealed class XsltRunState
     /// </summary>
     public XdmSequence LookupVariable(QName name)
     {
-        for (int i = _variableStack.Count - 1; i >= 0; i--)
+        for (int i = _variableStack.Count - 1; i >= _variableFloor; i--)
         {
             if (_variableStack[i].Key.Equals(name))
             {

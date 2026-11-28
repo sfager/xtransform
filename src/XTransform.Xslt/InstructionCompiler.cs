@@ -31,6 +31,76 @@ internal static class InstructionCompiler
     [System.ThreadStatic]
     private static PatternPredicateTable? s_patterns;
 
+    /// <summary>The attribute sets of the stylesheet being compiled, for <c>use-attribute-sets</c>.</summary>
+    [System.ThreadStatic]
+    private static AttributeSetTable? s_attributeSets;
+
+    /// <summary>
+    /// Compiles the attribute sets (XSLT 2.0 §10.2): each set is the attributes of the sets it uses, then its own, for every
+    /// declaration of the name in ascending import precedence. They see the global variables only.
+    /// </summary>
+    public static void CompileAttributeSets(
+        DeclarationTable declarations,
+        FunctionLibrary functions,
+        PatternPredicateTable patterns,
+        DiagnosticBag bag)
+    {
+        s_functions = functions;
+        s_patterns = patterns;
+        s_attributeSets = declarations.AttributeSets;
+        try
+        {
+            foreach (AttributeSetSlot slot in declarations.AttributeSets.Slots)
+            {
+                List<XsltInstruction> parts = new List<XsltInstruction>();
+                foreach (AttributeSetDecl decl in slot.Declarations)
+                {
+                    XsltInstruction? uses = UseAttributeSets(GetAttribute(decl.Element, "use-attribute-sets"), decl.Element);
+                    if (uses is not null)
+                    {
+                        parts.Add(uses);
+                    }
+
+                    XsltCompileScope scope = XsltCompileScope.WithGlobals(declarations.GlobalVariables.Keys, declarations.NamespaceAliases);
+                    parts.Add(CompileChildren(decl.Element, scope, bag));
+                }
+
+                slot.Body = new SequenceInstruction(parts, slot.Declarations[0].Element.Location);
+            }
+        }
+        finally
+        {
+            s_functions = null;
+            s_patterns = null;
+            s_attributeSets = null;
+        }
+    }
+
+    // The instruction that adds the attribute sets a use-attribute-sets value names; null when it names none.
+    private static XsltInstruction? UseAttributeSets(string? names, StylesheetElement element)
+    {
+        if (string.IsNullOrWhiteSpace(names) || s_attributeSets is null)
+        {
+            return null;
+        }
+
+        List<AttributeSetSlot> sets = new List<AttributeSetSlot>();
+        foreach (string token in names!.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries))
+        {
+            // An unknown name or an unbound prefix is reported by AttributeSetReferenceValidator.
+            if (LexicalQNameParser.TryResolve(token, element.InScopeNamespaces, out QName name, out _) && s_attributeSets.TryGet(name, out AttributeSetSlot slot))
+            {
+                sets.Add(slot);
+            }
+        }
+
+        return sets.Count == 0 ? null : new UseAttributeSetsInstruction(sets.ToArray(), element.Location);
+    }
+
+    // Puts the attributes of the sets a use-attribute-sets value names in front of an element's content.
+    private static XsltInstruction WithAttributeSets(string? names, StylesheetElement element, XsltInstruction body) =>
+        UseAttributeSets(names, element) is { } uses ? new SequenceInstruction(new[] { uses, body }, element.Location) : body;
+
     public static CompiledTemplate? CompileTemplate(
         TemplateDecl decl,
         DeclarationTable declarations,
@@ -40,6 +110,7 @@ internal static class InstructionCompiler
     {
         s_functions = functions;
         s_patterns = patterns;
+        s_attributeSets = declarations.AttributeSets;
         try
         {
             return CompileTemplateInner(decl, declarations, bag);
@@ -48,6 +119,7 @@ internal static class InstructionCompiler
         {
             s_functions = null;
             s_patterns = null;
+            s_attributeSets = null;
         }
     }
 
@@ -65,6 +137,7 @@ internal static class InstructionCompiler
     {
         s_functions = functions;
         s_patterns = patterns;
+        s_attributeSets = declarations.AttributeSets;
         try
         {
             XsltCompileScope scope = XsltCompileScope.WithGlobals(declarations.GlobalVariables.Keys, declarations.NamespaceAliases);
@@ -283,6 +356,7 @@ internal static class InstructionCompiler
         Dictionary<GlobalVariableDecl, VariableValueBody> bodies = new Dictionary<GlobalVariableDecl, VariableValueBody>();
         s_functions = functions;
         s_patterns = patterns;
+        s_attributeSets = declarations.AttributeSets;
         try
         {
             foreach (GlobalVariableDecl decl in declarations.GlobalVariables.Values)
@@ -557,7 +631,7 @@ internal static class InstructionCompiler
         }
 
         string defaultElementNs = element.InScopeNamespaces.Resolve(string.Empty) ?? string.Empty;
-        XsltInstruction body = CompileChildren(element, scope, bag);
+        XsltInstruction body = WithAttributeSets(GetAttribute(element, "use-attribute-sets"), element, CompileChildren(element, scope, bag));
         return new ElementInstruction(nameAvt, nsAvt, element.InScopeNamespaces, defaultElementNs, body, element.Location);
     }
 
@@ -596,7 +670,14 @@ internal static class InstructionCompiler
             body = CompileChildren(element, scope, bag);
         }
 
-        return new AttributeInstruction(nameAvt, nsAvt, element.InScopeNamespaces, select, body, element.Location);
+        CompiledAvt? separatorAvt = null;
+        if (GetAttribute(element, "separator") is string separatorAttr)
+        {
+            separatorAvt = CompileAvtString(separatorAttr, element, scope, bag);
+            if (separatorAvt is null) { return null; }
+        }
+
+        return new AttributeInstruction(nameAvt, nsAvt, element.InScopeNamespaces, select, body, element.Location, separatorAvt);
     }
 
     // XSLT 2.0 §11.7: the value comes from exactly one of select and the content (XTSE0910).
@@ -799,7 +880,7 @@ internal static class InstructionCompiler
     private static XsltInstruction? CompileCopy(StylesheetElement element, XsltCompileScope scope, DiagnosticBag bag)
     {
         XsltInstruction body = CompileChildren(element, scope, bag);
-        return new CopyInstruction(body, element.Location);
+        return new CopyInstruction(body, element.Location, UseAttributeSets(GetAttribute(element, "use-attribute-sets"), element));
     }
 
     private static XsltInstruction? CompileCopyOf(StylesheetElement element, XsltCompileScope scope, DiagnosticBag bag)
@@ -976,7 +1057,8 @@ internal static class InstructionCompiler
         }
 
         XsltInstruction body = CompileChildren(element, scope, bag);
-        return new LiteralResultElementInstruction(AliasedName(element.Name, scope.NamespaceAliases), attributes, body, LiteralResultNamespaces(element, scope.NamespaceAliases), element.Location);
+        XsltInstruction? attributeSets = UseAttributeSets(GetAttribute(element, "use-attribute-sets", XsltNamespace.Uri), element);
+        return new LiteralResultElementInstruction(AliasedName(element.Name, scope.NamespaceAliases), attributes, body, LiteralResultNamespaces(element, scope.NamespaceAliases), element.Location, attributeSets);
     }
 
     // XSLT 2.0 §11.1.2, §11.1.4: a literal result element gets a copy of the namespace nodes of the stylesheet element, except the XSLT
@@ -1687,6 +1769,22 @@ internal static class InstructionCompiler
             compiled = null;
             return false;
         }
+    }
+
+    // The value of an attribute in a namespace (xsl:use-attribute-sets on a literal result element).
+    private static string? GetAttribute(StylesheetElement element, string localName, string namespaceUri)
+    {
+        for (int i = 0; i < element.Attributes.Count; i++)
+        {
+            StylesheetAttribute attr = element.Attributes[i];
+            if (string.Equals(attr.Name.NamespaceUri, namespaceUri, StringComparison.Ordinal) &&
+                string.Equals(attr.Name.LocalName, localName, StringComparison.Ordinal))
+            {
+                return attr.Value;
+            }
+        }
+
+        return null;
     }
 
     private static string? GetAttribute(StylesheetElement element, string localName)

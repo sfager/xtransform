@@ -33,6 +33,7 @@ internal static class DeclarationCollector
         HashSet<QName> declaredModes = new HashSet<QName>();
         Dictionary<QName, List<KeyDecl>> keys = new Dictionary<QName, List<KeyDecl>>();
         NamespaceAliasTable.Builder namespaceAliases = NamespaceAliasTable.CreateBuilder();
+        AttributeSetTable attributeSets = new AttributeSetTable();
         List<DecimalFormatDecl> decimalFormats = new List<DecimalFormatDecl>();
         List<WhitespaceRule> whitespaceRules = new List<WhitespaceRule>();
 
@@ -88,6 +89,15 @@ internal static class DeclarationCollector
                         CollectKey(child, entry.ImportPrecedence, keys, bag);
                         break;
 
+                    case "attribute-set":
+                        if (GetAttribute(child, "name") is string setName
+                            && LexicalQNameParser.TryResolve(setName.Trim(), child.InScopeNamespaces, out QName setQName, out _))
+                        {
+                            attributeSets.Add(setQName, child, entry.ImportPrecedence);
+                        }
+
+                        break;
+
                     case "namespace-alias":
                         CollectNamespaceAlias(child, entry.ImportPrecedence, namespaceAliases, bag);
                         break;
@@ -108,7 +118,7 @@ internal static class DeclarationCollector
             keyGroups[group.Key] = group.Value;
         }
 
-        return new DeclarationTable(globals, templates, namedTemplates, functions, declaredModes, keyGroups, new WhitespaceTable(whitespaceRules), DecimalFormatTable.Build(decimalFormats, bag), namespaceAliases.Build());
+        return new DeclarationTable(globals, templates, namedTemplates, functions, declaredModes, keyGroups, new WhitespaceTable(whitespaceRules), DecimalFormatTable.Build(decimalFormats, bag), namespaceAliases.Build(), attributeSets);
     }
 
     // XSLT 2.0 §11.1.4: stylesheet-prefix and result-prefix each name a prefix in scope, or #default for the default namespace.
