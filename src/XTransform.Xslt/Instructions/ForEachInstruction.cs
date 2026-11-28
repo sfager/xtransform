@@ -11,15 +11,19 @@ namespace XTransform.Xslt.Instructions;
 internal sealed class ForEachInstruction : XsltInstruction
 {
     /// <summary>Initializes an xsl:for-each instruction.</summary>
-    public ForEachInstruction(BoundExpression select, XsltInstruction body, SourceSpan location)
+    public ForEachInstruction(BoundExpression select, XsltInstruction body, SourceSpan location, IReadOnlyList<SortKey>? sorts = null)
         : base(location)
     {
         Select = select;
         Body = body;
+        Sorts = sorts ?? System.Array.Empty<SortKey>();
     }
 
     /// <summary>The compiled <c>@select</c> expression.</summary>
     public BoundExpression Select { get; }
+
+    /// <summary>The <c>xsl:sort</c> keys (XSLT 2.0 §13); empty when the items are processed in selection order.</summary>
+    public IReadOnlyList<SortKey> Sorts { get; }
 
     /// <summary>The body to run with each item as focus.</summary>
     public XsltInstruction Body { get; }
@@ -40,6 +44,11 @@ internal sealed class ForEachInstruction : XsltInstruction
             {
                 context.CheckCancellation();
             }
+        }
+
+        if (Sorts.Count > 0)
+        {
+            items = ItemSorter.Sort(items, Sorts, context, run);
         }
 
         int size = items.Count;

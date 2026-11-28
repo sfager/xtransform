@@ -222,10 +222,11 @@ internal static class InstructionCompiler
             "document" => CompileXslDocument(element, scope, bag),
             "number" => CompileNumber(element, scope, bag),
             "analyze-string" => CompileAnalyzeString(element, scope, bag),
+            "perform-sort" => CompilePerformSort(element, scope, bag),
             // Deferred to later tasks:
             "message" or "result-document" or
             "for-each-group" or "next-match" or "fallback" or
-            "apply-imports" or "perform-sort" => null,
+            "apply-imports" => null,
             _ => null,
         };
     }
@@ -950,7 +951,137 @@ internal static class InstructionCompiler
         }
 
         XsltInstruction body = CompileChildren(element, scope, bag);
-        return new ForEachInstruction(select!, body, element.Location);
+        return new ForEachInstruction(select!, body, element.Location, CompileSortKeys(element, scope, bag));
+    }
+
+    // ── xsl:sort / xsl:perform-sort (XSLT 2.0 §13) ─────────────────────────────
+
+    // The xsl:sort children of an instruction, in order.
+    private static List<SortKey> CompileSortKeys(StylesheetElement parent, XsltCompileScope scope, DiagnosticBag bag)
+    {
+        List<SortKey> keys = new List<SortKey>();
+        for (int i = 0; i < parent.Children.Count; i++)
+        {
+            if (parent.Children[i] is StylesheetElement child &&
+                child.IsXsltElement &&
+                string.Equals(child.Name.LocalName, "sort", StringComparison.Ordinal))
+            {
+                SortKey? key = CompileSortKey(child, scope, bag);
+                if (key is not null)
+                {
+                    keys.Add(key);
+                }
+            }
+        }
+
+        return keys;
+    }
+
+    private static SortKey? CompileSortKey(StylesheetElement element, XsltCompileScope scope, DiagnosticBag bag)
+    {
+        string? selectAttr = GetAttribute(element, "select");
+        BoundExpression? select = null;
+        VariableValueBody? content = null;
+        if (selectAttr is not null)
+        {
+            if (element.Children.Count > 0)
+            {
+                bag.Error(XsltErrors.XTSE1015, "xsl:sort has both a select attribute and content", element.Location);
+                return null;
+            }
+
+            if (!TryCompileXPath(selectAttr, element, scope, bag, out select))
+            {
+                return null;
+            }
+        }
+        else if (element.Children.Count > 0)
+        {
+            content = new VariableValueBody(CompileChildren(element, scope, bag), buildsDocument: false);
+        }
+        else if (!TryCompileXPath(".", element, scope, bag, out select))
+        {
+            return null;
+        }
+
+        CompiledAvt? order = CompileOptionalAvt(element, "order", scope, bag, out bool ok1);
+        CompiledAvt? dataType = CompileOptionalAvt(element, "data-type", scope, bag, out bool ok2);
+        CompiledAvt? caseOrder = CompileOptionalAvt(element, "case-order", scope, bag, out bool ok3);
+        CompiledAvt? lang = CompileOptionalAvt(element, "lang", scope, bag, out bool ok4);
+        CompiledAvt? collation = CompileOptionalAvt(element, "collation", scope, bag, out bool ok5);
+        CompiledAvt? stable = CompileOptionalAvt(element, "stable", scope, bag, out bool ok6);
+        if (!(ok1 && ok2 && ok3 && ok4 && ok5 && ok6))
+        {
+            return null;
+        }
+
+        // A literal value that is not allowed is a static error; one computed at run time is XTDE0030.
+        if (!IsValidLiteral(order, "ascending", "descending") ||
+            !IsValidLiteral(caseOrder, "upper-first", "lower-first") ||
+            !IsValidLiteral(stable, "yes", "no") ||
+            !IsValidDataType(dataType) ||
+            !IsValidLanguageLiteral(lang))
+        {
+            bag.Error(XsltErrors.XTSE0020, "xsl:sort has an attribute with an invalid value", element.Location);
+            return null;
+        }
+
+        return new SortKey(select, content, order, dataType, caseOrder, lang, collation, stable, element.Location);
+    }
+
+    private static bool IsValidLiteral(CompiledAvt? avt, string a, string b)
+    {
+        string? text = avt is null ? null : LiteralValue(avt);
+        if (text is null)
+        {
+            return true;
+        }
+
+        text = text.Trim();
+        return string.Equals(text, a, StringComparison.Ordinal) || string.Equals(text, b, StringComparison.Ordinal);
+    }
+
+    private static bool IsValidLanguageLiteral(CompiledAvt? avt)
+    {
+        string? text = avt is null ? null : LiteralValue(avt);
+        return text is null || ItemSorter.IsValidLanguage(text.Trim());
+    }
+
+    private static bool IsValidDataType(CompiledAvt? avt)
+    {
+        string? text = avt is null ? null : LiteralValue(avt);
+        if (text is null)
+        {
+            return true;
+        }
+
+        text = text.Trim();
+        return text == "text" || text == "number" || text.IndexOf(':') > 0;
+    }
+
+    private static XsltInstruction? CompilePerformSort(StylesheetElement element, XsltCompileScope scope, DiagnosticBag bag)
+    {
+        List<SortKey> keys = CompileSortKeys(element, scope, bag);
+        if (keys.Count == 0)
+        {
+            bag.Error(XsltErrors.XTSE0010, "xsl:perform-sort requires at least one xsl:sort", element.Location);
+            return null;
+        }
+
+        string? selectAttr = GetAttribute(element, "select");
+        if (selectAttr is not null)
+        {
+            if (!TryCompileXPath(selectAttr, element, scope, bag, out BoundExpression? select))
+            {
+                return null;
+            }
+
+            return new PerformSortInstruction(select, null, keys, element.Location);
+        }
+
+        // The content, other than the xsl:sort elements (which compile to nothing), builds the sequence.
+        VariableValueBody content = new VariableValueBody(CompileChildren(element, scope, bag), buildsDocument: false);
+        return new PerformSortInstruction(null, content, keys, element.Location);
     }
 
     // ── apply-templates / call-template ────────────────────────────────────
@@ -985,7 +1116,7 @@ internal static class InstructionCompiler
         }
 
         List<WithParamInstruction> withParams = CollectWithParams(element, scope, bag);
-        return new ApplyTemplatesInstruction(select!, modeSpec, mode, withParams, element.Location);
+        return new ApplyTemplatesInstruction(select!, modeSpec, mode, withParams, element.Location, CompileSortKeys(element, scope, bag));
     }
 
     private static XsltInstruction? CompileCallTemplate(StylesheetElement element, XsltCompileScope scope, DiagnosticBag bag)
