@@ -115,6 +115,88 @@ internal sealed class XsltFunctionLibrary : FunctionLibrary
             SeqBoolOne(),
             new[] { SeqStringOne() },
             DocAvailableInvoker);
+
+        Register("generate-id", 0, SeqStringOne(), System.Array.Empty<SequenceType>(), SystemFunctions.GenerateId0);
+        Register("generate-id", 1, SeqStringOne(),
+            new[] { new SequenceType(ItemType.AnyNode, Occurrence.ZeroOrOne) },
+            SystemFunctions.GenerateId1);
+
+        Register("unparsed-text", 1, SeqStringZeroOrOne(), new[] { SeqStringZeroOrOne() }, SystemFunctions.UnparsedText);
+        Register("unparsed-text", 2, SeqStringZeroOrOne(), new[] { SeqStringZeroOrOne(), SeqStringOne() }, SystemFunctions.UnparsedText);
+        Register("unparsed-text-available", 1, SeqBoolOne(), new[] { SeqStringZeroOrOne() }, SystemFunctions.UnparsedTextAvailable);
+        Register("unparsed-text-available", 2, SeqBoolOne(), new[] { SeqStringZeroOrOne(), SeqStringOne() }, SystemFunctions.UnparsedTextAvailable);
+
+        // No DTD entity data reaches the tree yet (P4-20): every entity is undeclared, so the answer is "".
+        Register("unparsed-entity-uri", 1, SeqStringOne(), new[] { SeqStringOne() },
+            (context, args) => new XTransform.Xdm.Iterators.SingleItemIterator(XdmAtomicValue.String(string.Empty)));
+        Register("unparsed-entity-public-id", 1, SeqStringOne(), new[] { SeqStringOne() },
+            (context, args) => new XTransform.Xdm.Iterators.SingleItemIterator(XdmAtomicValue.String(string.Empty)));
+
+        // fn:current-output-uri() is the empty sequence when the principal result has no URI.
+        Register("current-output-uri", 0, SeqAnyUriZeroOrOne(), System.Array.Empty<SequenceType>(),
+            (context, args) => XTransform.Xdm.Iterators.EmptyIterator.Instance);
+
+        // Functions that read a lexical QName argument are bound to the namespaces in scope at the call.
+        RegisterBound("system-property", 1, SeqStringOne(), new[] { SeqStringOne() },
+            ns => (context, args) => new XTransform.Xdm.Iterators.SingleItemIterator(XdmAtomicValue.String(
+                SystemFunctions.SystemProperty(args[0].FirstOrNull()?.GetStringValue() ?? string.Empty, ns))));
+        RegisterBound("element-available", 1, SeqBoolOne(), new[] { SeqStringOne() },
+            ns => (context, args) => new XTransform.Xdm.Iterators.SingleItemIterator(XdmAtomicValue.Boolean(
+                SystemFunctions.ElementAvailable(args[0].FirstOrNull()?.GetStringValue() ?? string.Empty, ns))));
+        RegisterBound("type-available", 1, SeqBoolOne(), new[] { SeqStringOne() },
+            ns => (context, args) => new XTransform.Xdm.Iterators.SingleItemIterator(XdmAtomicValue.Boolean(
+                SystemFunctions.TypeAvailable(args[0].FirstOrNull()?.GetStringValue() ?? string.Empty, ns))));
+        RegisterBound("function-available", 1, SeqBoolOne(), new[] { SeqStringOne() },
+            ns => (context, args) => new XTransform.Xdm.Iterators.SingleItemIterator(XdmAtomicValue.Boolean(
+                FunctionAvailable(args[0].FirstOrNull()?.GetStringValue() ?? string.Empty, -1, ns))));
+        RegisterBound("function-available", 2, SeqBoolOne(), new[] { SeqStringOne(), SeqIntegerOne() },
+            ns => (context, args) => new XTransform.Xdm.Iterators.SingleItemIterator(XdmAtomicValue.Boolean(
+                FunctionAvailable(
+                    args[0].FirstOrNull()?.GetStringValue() ?? string.Empty,
+                    (int)((XdmAtomicValue)args[1].FirstOrNull()!).AsInt64(),
+                    ns))));
+    }
+
+    // XSLT 2.0 §16.6.1: true when a function of that name (and arity, when given) could be called here.
+    private bool FunctionAvailable(string lexical, int arity, IStaticNamespaceResolver ns)
+    {
+        if (!SystemFunctions.TryResolveName(lexical, ns, out string uri, out string local))
+        {
+            throw new XsltDynamicException(
+                XsltErrors.XTDE1400,
+                $"function-available: the prefix of '{lexical}' has no namespace binding",
+                SourceSpan.None);
+        }
+
+        // An unprefixed name is in the default function namespace.
+        if (lexical.IndexOf(':') < 0)
+        {
+            uri = ns.DefaultFunctionNamespace;
+        }
+
+        QName name = new QName(uri, local);
+        for (int a = arity < 0 ? 0 : arity; a <= (arity < 0 ? 10 : arity); a++)
+        {
+            if (TryResolve(name, a, out _))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void RegisterBound(string localName, int arity, SequenceType returnType, SequenceType[] parameters,
+                               System.Func<IStaticNamespaceResolver, FunctionInvoker> bind)
+    {
+        QName name = new QName("fn", BuiltInFunctionLibrary.FnNamespace, localName);
+        FunctionSignature sig = new FunctionSignature(
+            name, arity, returnType, parameters.ToImmutableArray(),
+            static (_, _) => throw new System.InvalidOperationException("Function needs its static context"))
+        {
+            BindStaticContext = bind,
+        };
+        _xslt[MakeKey(BuiltInFunctionLibrary.FnNamespace, localName, arity)] = sig;
     }
 
     private static IXdmIterator KeyInvoker(DynamicContext context, XdmSequence[] args) =>
@@ -311,6 +393,15 @@ internal sealed class XsltFunctionLibrary : FunctionLibrary
 
     private static string MakeKey(string ns, string local, int arity)
         => "{" + ns + "}" + local + "#" + arity;
+
+    private static SequenceType SeqStringZeroOrOne() =>
+        new SequenceType(ItemType.Atomic(XdmTypeCode.String), Occurrence.ZeroOrOne);
+
+    private static SequenceType SeqAnyUriZeroOrOne() =>
+        new SequenceType(ItemType.Atomic(XdmTypeCode.AnyUri), Occurrence.ZeroOrOne);
+
+    private static SequenceType SeqIntegerOne() =>
+        new SequenceType(ItemType.Atomic(XdmTypeCode.Integer), Occurrence.ExactlyOne);
 
     private static SequenceType SeqStringOne() =>
         new SequenceType(ItemType.Atomic(XdmTypeCode.String), Occurrence.ExactlyOne);
