@@ -449,3 +449,4 @@ static readonly XTransform.Xdm.XsltErrors.XTDE0430 -> XTransform.Xdm.QName
 static readonly XTransform.Xdm.XsltErrors.XTDE0440 -> XTransform.Xdm.QName
 static readonly XTransform.Xdm.XsltErrors.XTDE1370 -> XTransform.Xdm.QName
 static readonly XTransform.Xdm.XsltErrors.XTDE1380 -> XTransform.Xdm.QName
+static readonly XTransform.Xdm.XsltErrors.XTTE0945 -> XTransform.Xdm.QName

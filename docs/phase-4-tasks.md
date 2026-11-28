@@ -424,7 +424,7 @@ declares the namespaces it uses. `XTDE0430`, `XTDE0440`, `XTSE0165`.
 
 ## P4-15 `xsl:attribute-set`, `use-attribute-sets`, `xsl:copy` attributes
 
-- [ ] Done
+- [x] Done
 
 **Scope.** Attribute sets with `use-attribute-sets` on `xsl:element`, `xsl:copy`, `xsl:attribute-set`
 itself and on literal result elements (`xsl:use-attribute-sets`); circularity `XTSE0720`;
@@ -433,6 +433,8 @@ evaluation order and duplicate-attribute handling. `xsl:copy`'s `copy-namespaces
 `xsl:copy-of` `copy-namespaces`.
 
 **Acceptance.** `attribute-set` ≥ 90% and `copy` ≥ 85% passing.
+
+**Result (branch `p4-15-attribute-sets`).** `attribute-set` **43 of 46** (93.5%, was 3), `copy` **66 of 75** (88%, was 61); core shard **4,972 of 6,010** (4,919 before; nothing that passed before fails now); the real-world corpus is byte for byte unchanged (QT3 not re-run: no XPath code changed). **Attribute sets:** declarations are collected by name and merged in ascending import precedence and document order; `use-attribute-sets` works on literal result elements (`xsl:use-attribute-sets`), `xsl:element`, `xsl:copy` (elements only) and `xsl:attribute-set` itself; each use evaluates the set again with the user's focus and the global variables only. **Also fixed:** the `separator` attribute of `xsl:attribute` (a space with `select`, nothing with content), `xsl:with-param` values are now evaluated in the caller's scope before any parameter is bound (`copy-4306`), and `xsl:copy` with no context item is `XTTE0945`. New tests: `XsltAttributeSetTests` (16). **Left over:** `copy-namespaces` / `inherit-namespaces` are still not honoured (the tree stores a namespace node on the declaring element only; see `implementation-defined.md`), so `namespace-0901`, `2603` .. `2610` and similar stay known failures; `attribute-set-1814` needs `xml:base` on stylesheet elements (P4-20) and `-1508` / `-1509` need whitespace-only text kept from the source; `copy-1201` .. `1401` need DTD entities (P4-20); `copy-4101` / `4102` are `xsl:comment` / `xsl:processing-instruction` content. `xslt-baseline.json` (core floor 5,162 → 5,217; combined 5,354 → 5,409) and `known-failures/xslt-g3.txt` are updated; the `unicode-90` figures were not re-measured.
 
 ## P4-16 `xsl:message`, `xsl:result-document`, run warnings
 

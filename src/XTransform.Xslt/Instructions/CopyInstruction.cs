@@ -10,11 +10,15 @@ namespace XTransform.Xslt.Instructions;
 internal sealed class CopyInstruction : XsltInstruction
 {
     /// <summary>Initializes an xsl:copy instruction.</summary>
-    public CopyInstruction(XsltInstruction body, SourceSpan location)
+    public CopyInstruction(XsltInstruction body, SourceSpan location, XsltInstruction? attributeSets = null)
         : base(location)
     {
         Body = body;
+        AttributeSets = attributeSets;
     }
+
+    /// <summary>The attributes of the sets <c>use-attribute-sets</c> names; they are added only when an element is copied.</summary>
+    public XsltInstruction? AttributeSets { get; }
 
     /// <summary>Body producing the copied node's content (attributes + children).</summary>
     public XsltInstruction Body { get; }
@@ -22,6 +26,11 @@ internal sealed class CopyInstruction : XsltInstruction
     /// <inheritdoc/>
     public override void Execute(DynamicContext context, IResultReceiver receiver, XsltRunState run)
     {
+        if (context.ContextItem is null)
+        {
+            throw new XsltDynamicException(XsltErrors.XTTE0945, "xsl:copy needs a context item", Location);
+        }
+
         if (context.ContextItem is not XdmNode node)
         {
             // Atomic context item: xsl:copy emits the atomized value as text.
@@ -45,6 +54,7 @@ internal sealed class CopyInstruction : XsltInstruction
                     baseReceiver.BaseUri(copiedBase);
                 }
 
+                AttributeSets?.Execute(context, receiver, run);
                 // Body produces the attributes + children. The caller is responsible for
                 // ordering (xsl:attribute siblings before any content).
                 Body.Execute(context, receiver, run);

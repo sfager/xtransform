@@ -17,9 +17,11 @@ internal sealed class LiteralResultElementInstruction : XsltInstruction
         IReadOnlyList<LiteralAttributeInstruction> attributes,
         XsltInstruction body,
         IReadOnlyList<NamespaceDeclaration> namespaces,
-        SourceSpan location)
+        SourceSpan location,
+        XsltInstruction? attributeSets = null)
         : base(location)
     {
+        AttributeSets = attributeSets;
         Name = name;
         Attributes = attributes;
         Body = body;
@@ -28,6 +30,9 @@ internal sealed class LiteralResultElementInstruction : XsltInstruction
 
     /// <summary>The namespace nodes of the element: the namespaces in scope in the stylesheet, less the excluded ones (XSLT 2.0 §11.1.2).</summary>
     public IReadOnlyList<NamespaceDeclaration> Namespaces { get; }
+
+    /// <summary>The attributes of the sets <c>xsl:use-attribute-sets</c> names, added before the element's own attributes; or null.</summary>
+    public XsltInstruction? AttributeSets { get; }
 
     /// <summary>The expanded element name.</summary>
     public QName Name { get; }
@@ -49,6 +54,7 @@ internal sealed class LiteralResultElementInstruction : XsltInstruction
             receiver.Namespace(Namespaces[i].Prefix, Namespaces[i].Uri);
         }
 
+        AttributeSets?.Execute(context, receiver, run);
         for (int i = 0; i < Attributes.Count; i++)
         {
             Attributes[i].Execute(context, receiver, run);

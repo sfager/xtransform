@@ -19,15 +19,20 @@ internal sealed class AttributeInstruction : XsltInstruction
         NamespaceBindings staticScope,
         BoundExpression? select,
         XsltInstruction? body,
-        SourceSpan location)
+        SourceSpan location,
+        CompiledAvt? separator = null)
         : base(location)
     {
+        Separator = separator;
         Name = name;
         Namespace = namespaceAvt;
         StaticScope = staticScope;
         Select = select;
         Body = body;
     }
+
+    /// <summary>Compiled @separator AVT; the default is a single space with select, none with content.</summary>
+    public CompiledAvt? Separator { get; }
 
     /// <summary>Compiled @name AVT.</summary>
     public CompiledAvt Name { get; }
@@ -94,9 +99,11 @@ internal sealed class AttributeInstruction : XsltInstruction
         }
 
         // Evaluate the value: @select wins; otherwise run the body into a scratch collector.
+        // XSLT 2.0 §11.3.1: the default separator is a space with select and a zero-length string with content.
+        string separator = Separator?.Stringify(context, run) ?? (Select is not null ? " " : string.Empty);
         string value = Select is not null
-            ? SelectToString(context, run)
-            : BodyToString(context, run);
+            ? SelectToString(context, run, separator)
+            : BodyToString(context, run, separator);
 
         int nameCode = run.NamePool.Allocate(prefix, ns, local);
         receiver.Attribute(nameCode, value, Location);
@@ -115,7 +122,7 @@ internal sealed class AttributeInstruction : XsltInstruction
         }
     }
 
-    private string SelectToString(DynamicContext context, XsltRunState run)
+    private string SelectToString(DynamicContext context, XsltRunState run, string separator)
     {
         IXdmIterator iter = Select!.Iterate(context, run);
         StringBuilder sb = new StringBuilder();
@@ -125,7 +132,7 @@ internal sealed class AttributeInstruction : XsltInstruction
         {
             if (!first)
             {
-                sb.Append(' ');
+                sb.Append(separator);
             }
 
             sb.Append(item.GetStringValue());
@@ -135,14 +142,14 @@ internal sealed class AttributeInstruction : XsltInstruction
         return sb.ToString();
     }
 
-    private string BodyToString(DynamicContext context, XsltRunState run)
+    private string BodyToString(DynamicContext context, XsltRunState run, string separator)
     {
         if (Body is null)
         {
             return string.Empty;
         }
 
-        StringCollectingReceiver collector = new StringCollectingReceiver();
+        StringCollectingReceiver collector = new StringCollectingReceiver { AtomicSeparator = separator };
         Body.Execute(context, collector, run);
         return collector.Result;
     }
