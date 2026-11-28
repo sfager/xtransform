@@ -149,7 +149,8 @@ internal sealed class XdmNodeTests
     {
         // Arrange
         TinyTree tree = LoadXml("<root xmlns:x=\"http://example.com\"/>");
-        XdmNode ns = new XdmNode(NodeHandle.ForNamespace(tree, 0));
+        // Node 0 is the xml node of the outermost element; the declared one follows.
+        XdmNode ns = new XdmNode(NodeHandle.ForNamespace(tree, 1));
 
         // Act
         QName? name = ns.NodeName;

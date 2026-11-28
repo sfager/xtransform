@@ -351,4 +351,40 @@ public static class XsltErrors
 
     /// <summary>It is a static error if two xsl:key declarations with the same name have different collations. (XSLT 2.0 §16.3)</summary>
     public static readonly QName XTSE1220 = new QName("err", XPathErrors.Namespace, "XTSE1220");
+
+    /// <summary>It is a static error if a prefix in exclude-result-prefixes is not bound to a namespace in scope. (XSLT 2.0 §11.1.3)</summary>
+    public static readonly QName XTSE0808 = new QName("err", XPathErrors.Namespace, "XTSE0808");
+
+    /// <summary>It is a static error if #default is used in exclude-result-prefixes or extension-element-prefixes when there is no default namespace in scope. (XSLT 2.0 §11.1.3)</summary>
+    public static readonly QName XTSE0809 = new QName("err", XPathErrors.Namespace, "XTSE0809");
+
+    /// <summary>It is a static error if a prefix in extension-element-prefixes is not bound to a namespace in scope. (XSLT 2.0 §18.2)</summary>
+    public static readonly QName XTSE1430 = new QName("err", XPathErrors.Namespace, "XTSE1430");
+
+    /// <summary>It is a static error if two xsl:namespace-alias declarations with the same import precedence name the same stylesheet namespace and different result namespaces. (XSLT 2.0 §11.1.4)</summary>
+    public static readonly QName XTSE0810 = new QName("err", XPathErrors.Namespace, "XTSE0810");
+
+    /// <summary>It is a static error if the stylesheet-prefix or result-prefix of an xsl:namespace-alias is not bound to a namespace in scope, or is #default with no default namespace. (XSLT 2.0 §11.1.4)</summary>
+    public static readonly QName XTSE0812 = new QName("err", XPathErrors.Namespace, "XTSE0812");
+
+    /// <summary>It is a static error if an xsl:namespace has a select attribute and content, or neither. (XSLT 2.0 §11.7)</summary>
+    public static readonly QName XTSE0910 = new QName("err", XPathErrors.Namespace, "XTSE0910");
+
+    /// <summary>It is a non-recoverable dynamic error if the value of an xsl:namespace is not a valid xs:anyURI, or is the namespace of xmlns. (XSLT 2.0 §11.7)</summary>
+    public static readonly QName XTDE0905 = new QName("err", XPathErrors.Namespace, "XTDE0905");
+
+    /// <summary>It is a non-recoverable dynamic error if the name of an xsl:namespace is neither a zero-length string nor an NCName, or is xmlns. (XSLT 2.0 §11.7)</summary>
+    public static readonly QName XTDE0920 = new QName("err", XPathErrors.Namespace, "XTDE0920");
+
+    /// <summary>It is a non-recoverable dynamic error if an xsl:namespace binds the prefix xml to a namespace other than the XML namespace, or binds that namespace to another prefix. (XSLT 2.0 §11.7)</summary>
+    public static readonly QName XTDE0925 = new QName("err", XPathErrors.Namespace, "XTDE0925");
+
+    /// <summary>It is a non-recoverable dynamic error if the value of an xsl:namespace is a zero-length string. (XSLT 2.0 §11.7)</summary>
+    public static readonly QName XTDE0930 = new QName("err", XPathErrors.Namespace, "XTDE0930");
+
+    /// <summary>It is a non-recoverable dynamic error if the content of an element has two namespace nodes with the same name and different values. (XSLT 2.0 §5.7.1)</summary>
+    public static readonly QName XTDE0430 = new QName("err", XPathErrors.Namespace, "XTDE0430");
+
+    /// <summary>It is a non-recoverable dynamic error if an element in no namespace has a namespace node for the default namespace. (XSLT 2.0 §5.7.1)</summary>
+    public static readonly QName XTDE0440 = new QName("err", XPathErrors.Namespace, "XTDE0440");
 }

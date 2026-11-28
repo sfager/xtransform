@@ -25,6 +25,10 @@ internal sealed class SequenceNormalizer : IResultReceiver
     // replaces an earlier one (XSLT 2.0 §5.7.1) instead of reaching the serializer twice.
     private readonly Stack<List<PendingAttribute>> _pendingAttributes = new Stack<List<PendingAttribute>>();
     private readonly List<Diagnostic> _diagnostics = new List<Diagnostic>();
+
+    // The namespace nodes given to each open element, and whether the element is in no namespace (XSLT 2.0 §5.7.1: XTDE0430, XTDE0440).
+    private readonly Stack<Dictionary<string, string>> _elementNamespaces = new Stack<Dictionary<string, string>>();
+    private readonly Stack<bool> _elementInNoNamespace = new Stack<bool>();
     private bool _lastWasAtomic;
 
     /// <summary>
@@ -72,6 +76,8 @@ internal sealed class SequenceNormalizer : IResultReceiver
         MarkCurrentHasContent();
         _hasContent.Push(false);
         _pendingAttributes.Push(new List<PendingAttribute>());
+        _elementNamespaces.Push(new Dictionary<string, string>(System.StringComparer.Ordinal));
+        _elementInNoNamespace.Push(_namePool is not null && _namePool.GetNamespaceUri(nameCode).Length == 0);
         _downstream.StartElement(nameCode, location);
     }
 
@@ -95,7 +101,32 @@ internal sealed class SequenceNormalizer : IResultReceiver
                 SourceSpan.None);
         }
 
-        _downstream.Namespace(prefix, uri);
+        // Two namespace nodes of one element with the same name must agree (XTDE0430); a namespace node with no name needs an
+        // element that is in a namespace (XTDE0440). A repeated node is kept once.
+        Dictionary<string, string> declared = _elementNamespaces.Peek();
+        if (declared.TryGetValue(prefix ?? string.Empty, out string? existing))
+        {
+            if (!string.Equals(existing, uri, System.StringComparison.Ordinal))
+            {
+                throw new XsltDynamicException(
+                    XsltErrors.XTDE0430,
+                    $"The namespace prefix '{prefix}' is bound to both '{existing}' and '{uri}' on one element",
+                    SourceSpan.None);
+            }
+
+            return;
+        }
+
+        if (string.IsNullOrEmpty(prefix) && uri.Length > 0 && _elementInNoNamespace.Peek())
+        {
+            throw new XsltDynamicException(
+                XsltErrors.XTDE0440,
+                "An element in no namespace cannot have a namespace node for the default namespace",
+                SourceSpan.None);
+        }
+
+        declared[prefix ?? string.Empty] = uri;
+        _downstream.Namespace(prefix!, uri);
     }
 
     /// <inheritdoc/>
@@ -121,7 +152,7 @@ internal sealed class SequenceNormalizer : IResultReceiver
         List<PendingAttribute> pending = _pendingAttributes.Peek();
         for (int i = 0; i < pending.Count; i++)
         {
-            if (pending[i].NameCode == nameCode)
+            if (_namePool is null ? pending[i].NameCode == nameCode : _namePool.Canonical(pending[i].NameCode) == _namePool.Canonical(nameCode))
             {
                 pending[i] = new PendingAttribute(nameCode, value, location);
                 return;
@@ -144,6 +175,12 @@ internal sealed class SequenceNormalizer : IResultReceiver
         if (_hasContent.Count > 0)
         {
             _hasContent.Pop();
+        }
+
+        if (_elementNamespaces.Count > 0)
+        {
+            _elementNamespaces.Pop();
+            _elementInNoNamespace.Pop();
         }
 
         _downstream.EndElement();
@@ -211,7 +248,7 @@ internal sealed class SequenceNormalizer : IResultReceiver
 
             case XdmNodeKind.Attribute when _namePool is not null && node.NodeName is QName attrName:
                 Attribute(
-                    _namePool.Allocate(attrName.NamespaceUri, attrName.LocalName),
+                    _namePool.Allocate(attrName),
                     node.GetStringValue(),
                     SourceSpan.None);
                 return;

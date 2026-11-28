@@ -16,13 +16,18 @@ internal sealed class LiteralResultElementInstruction : XsltInstruction
         QName name,
         IReadOnlyList<LiteralAttributeInstruction> attributes,
         XsltInstruction body,
+        IReadOnlyList<NamespaceDeclaration> namespaces,
         SourceSpan location)
         : base(location)
     {
         Name = name;
         Attributes = attributes;
         Body = body;
+        Namespaces = namespaces;
     }
+
+    /// <summary>The namespace nodes of the element: the namespaces in scope in the stylesheet, less the excluded ones (XSLT 2.0 §11.1.2).</summary>
+    public IReadOnlyList<NamespaceDeclaration> Namespaces { get; }
 
     /// <summary>The expanded element name.</summary>
     public QName Name { get; }
@@ -36,8 +41,13 @@ internal sealed class LiteralResultElementInstruction : XsltInstruction
     /// <inheritdoc/>
     public override void Execute(DynamicContext context, IResultReceiver receiver, XsltRunState run)
     {
-        int nameCode = run.NamePool.Allocate(Name.NamespaceUri, Name.LocalName);
+        int nameCode = run.NamePool.Allocate(Name);
         receiver.StartElement(nameCode, Location);
+
+        for (int i = 0; i < Namespaces.Count; i++)
+        {
+            receiver.Namespace(Namespaces[i].Prefix, Namespaces[i].Uri);
+        }
 
         for (int i = 0; i < Attributes.Count; i++)
         {

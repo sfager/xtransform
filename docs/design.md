@@ -95,7 +95,7 @@ Everything in XPath 2.0 is a sequence of items, so the core runtime type is an i
 
 **Node storage.** Use a purpose-built, read-only tree ("TinyTree" style: parallel arrays of node kind, name code, parent, next sibling, text offset) rather than `XmlDocument` or `XDocument`. It gives O(1) document-order comparison, low allocation, and fast axis navigation. Provide an adapter so an existing `XDocument` or `XmlReader` can be loaded into it.
 
-**Names.** Intern every QName in a `NamePool` and compare by integer code. Element and attribute name tests then become integer comparisons.
+**Names.** Intern every QName in a `NamePool` and compare by integer code. Element and attribute name tests then become integer comparisons. A node keeps the prefix it was written with (XDM `node-name`): a name with a prefix has a code of its own, which maps to one canonical code (the same name with no prefix), and name tests compare canonical codes.
 
 **Atomic types for v1.** `xs:string`, `xs:boolean`, `xs:decimal`, `xs:integer`, `xs:double`, `xs:float`, `xs:date`, `xs:time`, `xs:dateTime`, `xs:duration`, `xs:dayTimeDuration`, `xs:yearMonthDuration`, `xs:QName`, `xs:anyURI`, `xs:untypedAtomic`, plus the `g*` date fragments and `xs:hexBinary` / `xs:base64Binary`. Map `xs:decimal` to `System.Decimal` with an overflow fallback, and `xs:integer` to `long` with promotion to `BigInteger`.
 

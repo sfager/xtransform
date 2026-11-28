@@ -64,6 +64,12 @@ internal sealed class StylesheetElement : StylesheetNode
     /// <summary>The xpath-default-namespace in scope for this element: its own value, else the nearest ancestor's, else empty (XSLT 2.0 §5.2).</summary>
     public string XPathDefaultNamespace { get; internal set; } = string.Empty;
 
+    /// <summary>The namespace URIs left out of the result by <c>exclude-result-prefixes</c> and <c>extension-element-prefixes</c> on this element or an ancestor (XSLT 2.0 §11.1.3).</summary>
+    public IReadOnlyCollection<string> ExcludedNamespaceUris { get; internal set; } = System.Array.Empty<string>();
+
+    /// <summary>The namespace URIs designated as extension namespaces by <c>extension-element-prefixes</c> on this element or an ancestor (XSLT 2.0 §18.2).</summary>
+    public IReadOnlyCollection<string> ExtensionNamespaceUris { get; internal set; } = System.Array.Empty<string>();
+
     /// <summary>Attributes declared on this element, excluding namespace declarations.</summary>
     public IReadOnlyList<StylesheetAttribute> Attributes => _attributes;
 

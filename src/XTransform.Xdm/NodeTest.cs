@@ -96,7 +96,7 @@ internal sealed class NamedKindTest : NodeTest
 
     /// <inheritdoc/>
     public override bool Matches(XdmNodeKind kind, int nameCode, NamePool pool) =>
-        kind == Kind && nameCode == NameCode;
+        kind == Kind && (nameCode == NameCode || (nameCode >= 0 && pool.Canonical(nameCode) == pool.Canonical(NameCode)));
 
     /// <inheritdoc/>
     public override double DefaultPriority => 0.0;

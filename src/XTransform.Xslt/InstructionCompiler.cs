@@ -67,7 +67,7 @@ internal static class InstructionCompiler
         s_patterns = patterns;
         try
         {
-            XsltCompileScope scope = XsltCompileScope.WithGlobals(declarations.GlobalVariables.Keys);
+            XsltCompileScope scope = XsltCompileScope.WithGlobals(declarations.GlobalVariables.Keys, declarations.NamespaceAliases);
             List<QName> paramNames = new List<QName>();
             List<SequenceType?> paramTypes = new List<SequenceType?>();
             int firstNonParam = 0;
@@ -156,7 +156,7 @@ internal static class InstructionCompiler
         DeclarationTable declarations,
         DiagnosticBag bag)
     {
-        XsltCompileScope scope = XsltCompileScope.WithGlobals(declarations.GlobalVariables.Keys);
+        XsltCompileScope scope = XsltCompileScope.WithGlobals(declarations.GlobalVariables.Keys, declarations.NamespaceAliases);
 
         // Pass 1: collect xsl:param children at the start of the template body. XSLT 2.0
         // §9.5 — params must precede every other sibling.
@@ -253,6 +253,7 @@ internal static class InstructionCompiler
             "copy-of" => CompileCopyOf(element, scope, bag),
             "element" => CompileXslElement(element, scope, bag),
             "attribute" => CompileXslAttribute(element, scope, bag),
+            "namespace" => CompileXslNamespace(element, scope, bag),
             "comment" => CompileXslComment(element, scope, bag),
             "processing-instruction" => CompileXslPi(element, scope, bag),
             "document" => CompileXslDocument(element, scope, bag),
@@ -291,7 +292,7 @@ internal static class InstructionCompiler
                     continue;
                 }
 
-                XsltCompileScope scope = XsltCompileScope.WithGlobals(declarations.GlobalVariables.Keys);
+                XsltCompileScope scope = XsltCompileScope.WithGlobals(declarations.GlobalVariables.Keys, declarations.NamespaceAliases);
                 bodies[decl] = new VariableValueBody(
                     CompileChildren(decl.Element, scope, bag),
                     buildsDocument: decl.AsType is null);
@@ -597,6 +598,54 @@ internal static class InstructionCompiler
         return new AttributeInstruction(nameAvt, nsAvt, element.InScopeNamespaces, select, body, element.Location);
     }
 
+    // XSLT 2.0 §11.7: the value comes from exactly one of select and the content (XTSE0910).
+    private static XsltInstruction? CompileXslNamespace(StylesheetElement element, XsltCompileScope scope, DiagnosticBag bag)
+    {
+        string? nameAttr = GetAttribute(element, "name");
+        if (nameAttr is null)
+        {
+            bag.Error(XsltErrors.XTSE0010, "xsl:namespace requires a name attribute", element.Location);
+            return null;
+        }
+
+        CompiledAvt? nameAvt = CompileAvtString(nameAttr, element, scope, bag);
+        if (nameAvt is null)
+        {
+            return null;
+        }
+
+        string? selectExpr = GetAttribute(element, "select");
+        bool hasContent = false;
+        foreach (StylesheetNode child in element.Children)
+        {
+            if (child is StylesheetText || (child is StylesheetElement e && !(e.IsXsltElement && e.Name.LocalName == "fallback")))
+            {
+                hasContent = true;
+            }
+        }
+
+        if ((selectExpr is not null) == hasContent)
+        {
+            bag.Error(XsltErrors.XTSE0910, "xsl:namespace must have either a select attribute or content, not both and not neither", element.Location);
+            return null;
+        }
+
+        BoundExpression? select = null;
+        XsltInstruction? body = null;
+        if (selectExpr is not null)
+        {
+            if (!TryCompileXPath(selectExpr, element, scope, bag, out select))
+            {
+                return null;
+            }
+        }
+        else
+        {
+            body = CompileChildren(element, scope, bag);
+        }
+
+        return new NamespaceInstruction(nameAvt, select, body, element.Location);
+    }
     private static XsltInstruction? CompileXslComment(StylesheetElement element, XsltCompileScope scope, DiagnosticBag bag)
     {
         string? selectExpr = GetAttribute(element, "select");
@@ -922,13 +971,65 @@ internal static class InstructionCompiler
                 continue;
             }
 
-            attributes.Add(new LiteralAttributeInstruction(attr.Name, avt, attr.Location));
+            attributes.Add(new LiteralAttributeInstruction(AliasedName(attr.Name, scope.NamespaceAliases, isAttribute: true), avt, attr.Location));
         }
 
         XsltInstruction body = CompileChildren(element, scope, bag);
-        return new LiteralResultElementInstruction(element.Name, attributes, body, element.Location);
+        return new LiteralResultElementInstruction(AliasedName(element.Name, scope.NamespaceAliases), attributes, body, LiteralResultNamespaces(element, scope.NamespaceAliases), element.Location);
     }
 
+    // XSLT 2.0 §11.1.2, §11.1.4: a literal result element gets a copy of the namespace nodes of the stylesheet element, except the XSLT
+    // namespace and the namespaces that exclude-result-prefixes and extension-element-prefixes leave out; a namespace that
+    // xsl:namespace-alias designates is replaced by its result namespace, with the result prefix.
+    private static IReadOnlyList<NamespaceDeclaration> LiteralResultNamespaces(StylesheetElement element, NamespaceAliasTable aliases)
+    {
+        List<NamespaceDeclaration> declarations = new List<NamespaceDeclaration>();
+        HashSet<string> prefixes = new HashSet<string>(StringComparer.Ordinal);
+        foreach (KeyValuePair<string, string> binding in element.InScopeNamespaces.AsDictionary())
+        {
+            if (binding.Key == "xml"
+                || binding.Value.Length == 0
+                || string.Equals(binding.Value, XsltNamespace.Uri, StringComparison.Ordinal)
+                || System.Linq.Enumerable.Contains(element.ExcludedNamespaceUris, binding.Value))
+            {
+                continue;
+            }
+
+            string prefix = binding.Key;
+            string uri = binding.Value;
+            if (aliases.TryGetAlias(uri, out string resultUri, out string resultPrefix))
+            {
+                // An alias for the null namespace leaves no namespace node (a namespace node has a value).
+                if (resultUri.Length == 0)
+                {
+                    continue;
+                }
+
+                prefix = resultPrefix;
+                uri = resultUri;
+            }
+
+            if (prefixes.Add(prefix))
+            {
+                declarations.Add(new NamespaceDeclaration(prefix, uri));
+            }
+        }
+
+        declarations.Sort((a, b) => string.CompareOrdinal(a.Prefix, b.Prefix));
+        return declarations;
+    }
+
+    // The name a literal result element or attribute is given in the result: aliased when its namespace is (XSLT 2.0 §11.1.4).
+    // An attribute in no namespace is never aliased; an element in no namespace is when stylesheet-prefix is #default and no default namespace is declared.
+    private static QName AliasedName(QName name, NamespaceAliasTable aliases, bool isAttribute = false)
+    {
+        if ((!isAttribute || name.NamespaceUri.Length > 0) && aliases.TryGetAlias(name.NamespaceUri, out string resultUri, out string resultPrefix))
+        {
+            return new QName(resultPrefix, resultUri, name.LocalName);
+        }
+
+        return name;
+    }
     private static CompiledAvt? CompileAvt(StylesheetAttribute attr, StylesheetElement scopeElement, XsltCompileScope scope, DiagnosticBag bag)
     {
         AttributeValueTemplate? avt = attr.ParsedTemplate ?? AttributeValueTemplate.Parse(attr.Value, attr.Location);

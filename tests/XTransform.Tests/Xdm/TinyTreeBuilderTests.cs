@@ -124,12 +124,14 @@ internal sealed class TinyTreeBuilderTests
         TinyTree tree = builder.Build();
 
         // Assert
-        Assert.That(tree.NamespaceCount, Is.EqualTo(1));
+        // The outermost element gets the xml node (XDM) before the nodes it declares.
+        Assert.That(tree.NamespaceCount, Is.EqualTo(2));
         int firstNs = tree.GetFirstNamespace(1);
         Assert.That(firstNs, Is.EqualTo(0));
-        Assert.That(tree.GetNamespaceParent(0), Is.EqualTo(1));
-        Assert.That(tree.GetNamespacePrefix(0), Is.EqualTo("ex"));
-        Assert.That(tree.GetNamespaceUri(0), Is.EqualTo("http://example.com"));
+        Assert.That(tree.GetNamespacePrefix(0), Is.EqualTo("xml"));
+        Assert.That(tree.GetNamespaceParent(1), Is.EqualTo(1));
+        Assert.That(tree.GetNamespacePrefix(1), Is.EqualTo("ex"));
+        Assert.That(tree.GetNamespaceUri(1), Is.EqualTo("http://example.com"));
     }
 
     [Test]

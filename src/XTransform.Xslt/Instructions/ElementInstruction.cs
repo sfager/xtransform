@@ -74,7 +74,7 @@ internal sealed class ElementInstruction : XsltInstruction
                 ?? throw new XsltDynamicException(XsltErrors.XTDE0830, $"The prefix '{prefix}' of the element name '{lexical}' has no namespace declaration in scope", Location);
         }
 
-        int nameCode = run.NamePool.Allocate(ns, local);
+        int nameCode = run.NamePool.Allocate(prefix, ns, local);
         receiver.StartElement(nameCode, Location);
         Body.Execute(context, receiver, run);
         receiver.EndElement();
