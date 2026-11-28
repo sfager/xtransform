@@ -105,6 +105,12 @@ internal sealed class TinyTreeBuilder : IResultReceiver
         int nodeIndex = AddNode((byte)XdmNodeKind.Element, (byte)_currentDepth, nameCode);
         _openElements.Push(nodeIndex);
         _lastNodeWasText = false;
+
+        // XDM: every element has a namespace node for the xml prefix. The outermost element declares it and the others inherit it.
+        if (_currentDepth == 1)
+        {
+            Namespace("xml", "http://www.w3.org/XML/1998/namespace");
+        }
     }
 
     /// <inheritdoc/>
@@ -112,6 +118,16 @@ internal sealed class TinyTreeBuilder : IResultReceiver
     {
         ThrowIfBuilt();
         int parentIndex = _openElements.Count > 0 ? _openElements.Peek() : 0;
+
+        // A node for a prefix the element already has is not added again (the xml node of the outermost element is declared
+        // by the builder and may also arrive as an event).
+        for (int k = _nsParent.Count - 1; k >= 0 && _nsParent[k] == parentIndex; k--)
+        {
+            if (string.Equals(_nsPrefix[k], prefix ?? string.Empty, StringComparison.Ordinal))
+            {
+                return;
+            }
+        }
 
         int nsIndex = _nsParent.Count;
         _nsParent.Add(parentIndex);
@@ -334,7 +350,7 @@ internal sealed class TinyTreeBuilder : IResultReceiver
             {
                 case XmlNodeType.Element:
                 {
-                    int nameCode = namePool.Allocate(reader.NamespaceURI ?? string.Empty, reader.LocalName);
+                    int nameCode = namePool.Allocate(reader.Prefix, reader.NamespaceURI ?? string.Empty, reader.LocalName);
                     builder.StartElement(nameCode, SourceSpan.None);
 
                     // Emit namespace declarations before attributes.
@@ -366,7 +382,7 @@ internal sealed class TinyTreeBuilder : IResultReceiver
                                 !(string.Equals(reader.LocalName, "xmlns", StringComparison.Ordinal)
                                   && string.IsNullOrEmpty(reader.Prefix)))
                             {
-                                int attrNameCode = namePool.Allocate(reader.NamespaceURI ?? string.Empty, reader.LocalName);
+                                int attrNameCode = namePool.Allocate(reader.Prefix, reader.NamespaceURI ?? string.Empty, reader.LocalName);
                                 builder.Attribute(attrNameCode, reader.Value, SourceSpan.None);
 
                                 if (string.Equals(reader.Prefix, "xml", StringComparison.Ordinal) &&

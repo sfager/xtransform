@@ -63,6 +63,12 @@ internal sealed class XmlWriterReceiver : IResultReceiver, IDisposable
     /// <inheritdoc/>
     public void Namespace(string prefix, string uri)
     {
+        // The xml prefix is bound to its namespace everywhere and is never declared (Namespaces in XML 1.0 §3).
+        if (prefix == "xml")
+        {
+            return;
+        }
+
         if (string.IsNullOrEmpty(prefix))
         {
             _writer.WriteAttributeString("xmlns", uri);

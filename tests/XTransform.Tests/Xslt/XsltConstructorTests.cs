@@ -43,9 +43,8 @@ internal sealed class XsltConstructorTests
             "<xsl:template match='/'>" +
             "<xsl:element name='n:x' namespace='urn:runtime' xmlns:n='urn:static'/>" +
             "</xsl:template>");
-        // XmlWriter picks the shortest-serialisation prefix form; the element's name and
-        // namespace are what matter, not the chosen prefix.
-        AssertOutput(xsl, "<doc/>", "<x xmlns=\"urn:runtime\" />");
+        // The prefix written in the name is kept (XSLT 2.0 §11.2.1); the namespace comes from the namespace attribute.
+        AssertOutput(xsl, "<doc/>", "<n:x xmlns:n=\"urn:runtime\" />");
     }
 
     // ── xsl:attribute ───────────────────────────────────────────────────────

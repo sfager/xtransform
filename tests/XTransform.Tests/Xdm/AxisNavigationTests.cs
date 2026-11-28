@@ -298,6 +298,12 @@ internal sealed class AxisNavigationTests
             cur = cur.Parent;
         }
 
+        // XDM: every element also has a namespace node for the xml prefix.
+        if (seen.Add("xml"))
+        {
+            result.Add("namespace:xml");
+        }
+
         return result;
     }
 

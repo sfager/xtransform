@@ -166,7 +166,8 @@ internal sealed class DeclarationTable
         IReadOnlyCollection<QName> declaredModes,
         IReadOnlyDictionary<QName, IReadOnlyList<KeyDecl>> keys,
         WhitespaceTable whitespace,
-        DecimalFormatTable decimalFormats)
+        DecimalFormatTable decimalFormats,
+        NamespaceAliasTable namespaceAliases)
     {
         GlobalVariables = globalVariables;
         Templates = templates;
@@ -176,7 +177,11 @@ internal sealed class DeclarationTable
         Keys = keys;
         Whitespace = whitespace;
         DecimalFormats = decimalFormats;
+        NamespaceAliases = namespaceAliases;
     }
+
+    /// <summary>The xsl:namespace-alias declarations (XSLT 2.0 §11.1.4).</summary>
+    public NamespaceAliasTable NamespaceAliases { get; }
 
     /// <summary>Global variables and parameters, keyed by expanded name — higher-precedence wins.</summary>
     public IReadOnlyDictionary<QName, GlobalVariableDecl> GlobalVariables { get; }
