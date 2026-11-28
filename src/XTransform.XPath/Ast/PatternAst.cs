@@ -309,7 +309,8 @@ internal sealed record KeyPatternAst(
     SourceSpan Span,
     QName KeyName,
     string? ValueLiteral,      // non-null when key("name", "literal")
-    QName? VariableRef         // non-null when key("name", $var)
+    QName? VariableRef,        // non-null when key("name", $var)
+    XdmAtomicValue? ValueAtomic = null   // non-null when the value is a numeric literal
 ) : PatternAst(Span)
 {
     /// <inheritdoc/>
@@ -321,6 +322,10 @@ internal sealed record KeyPatternAst(
         if (ValueLiteral != null)
         {
             sb.Append("KeyPattern(\"").Append(KeyName.LocalName).Append("\", \"").Append(ValueLiteral).AppendLine("\")");
+        }
+        else if (ValueAtomic != null)
+        {
+            sb.Append("KeyPattern(\"").Append(KeyName.LocalName).Append("\", ").Append(ValueAtomic.GetStringValue()).AppendLine(")");
         }
         else
         {

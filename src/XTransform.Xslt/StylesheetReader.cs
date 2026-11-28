@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Xml;
 using XTransform.Xdm;
 
@@ -238,11 +239,26 @@ internal static class StylesheetReader
 
         reader.Read(); // Move to first child or end tag.
 
+        // Text on either side of a comment or processing instruction is one text node, once those are gone (XSLT 2.0 §4.2), so
+        // whether it is whitespace-only is decided on the whole.
+        StringBuilder? pendingText = null;
+        SourceSpan pendingLocation = location;
+
+        void FlushText()
+        {
+            if (pendingText is not null)
+            {
+                element.AppendChild(new StylesheetText(pendingText.ToString(), pendingLocation));
+                pendingText = null;
+            }
+        }
+
         while (reader.NodeType != XmlNodeType.EndElement)
         {
             switch (reader.NodeType)
             {
                 case XmlNodeType.Element:
+                    FlushText();
                     StylesheetElement child = ReadElement(reader, inScope, currentEffective, element.XPathDefaultNamespace, element.ExcludedNamespaceUris, element.ExtensionNamespaceUris, moduleUri, diagnostics);
 
                     // XTSE0130: when a child of xsl:stylesheet/xsl:transform is in no namespace.
@@ -262,8 +278,13 @@ internal static class StylesheetReader
                 case XmlNodeType.CDATA:
                 case XmlNodeType.Whitespace:
                 case XmlNodeType.SignificantWhitespace:
-                    SourceSpan textLoc = new SourceSpan(moduleUri, lineInfo.LineNumber, lineInfo.LinePosition);
-                    element.AppendChild(new StylesheetText(reader.Value, textLoc));
+                    if (pendingText is null)
+                    {
+                        pendingText = new StringBuilder();
+                        pendingLocation = new SourceSpan(moduleUri, lineInfo.LineNumber, lineInfo.LinePosition);
+                    }
+
+                    pendingText.Append(reader.Value);
                     reader.Read();
                     break;
 
@@ -284,6 +305,7 @@ internal static class StylesheetReader
             }
         }
 
+        FlushText();
         reader.Read(); // Past the end tag.
         return element;
     }

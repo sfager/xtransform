@@ -272,6 +272,19 @@ internal sealed class XsltFunctionLibrary : FunctionLibrary
 
     // ns is the namespace context of the call; a null ns (key() inside a pattern) matches the name leniently and returns
     // nothing for a key that is not declared.
+    private static bool IsInSubtree(XdmNode node, XdmNode root)
+    {
+        for (XdmNode? current = node; current is not null; current = current.Parent)
+        {
+            if (current.Equals(root))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     internal static IXdmIterator KeyLookup(DynamicContext context, XdmSequence[] args, XdmNode? top, IStaticNamespaceResolver? ns = null)
     {
         XsltRunState run = GetRun(context);
@@ -311,11 +324,33 @@ internal sealed class XsltFunctionLibrary : FunctionLibrary
         HashSet<XdmNode> seen = new HashSet<XdmNode>();
         foreach (XdmItem value in keyValues)
         {
-            string v = value.GetStringValue();
-            if (index.TryGetValue(v, out IReadOnlyList<XdmNode>? nodes) && nodes is not null)
+            // The keys of a backwards-compatible declaration are strings, so the value is also tried as a string (XSLT 2.0 §3.8).
+            XdmAtomicValue lookup = KeyValueComparer.ToKey(value);
+            for (int attempt = 0; attempt < 2; attempt++)
             {
+                if (attempt == 1)
+                {
+                    if (!index.HasBackwardsCompatibleKeys || lookup.TypeCode == XdmTypeCode.UntypedAtomic || lookup.TypeCode == XdmTypeCode.String)
+                    {
+                        break;
+                    }
+
+                    lookup = XdmAtomicValue.String(lookup.GetStringValue());
+                }
+
+                if (!index.TryGetValue(lookup, out IReadOnlyList<XdmNode>? nodes) || nodes is null)
+                {
+                    continue;
+                }
+
                 foreach (XdmNode n in nodes)
                 {
+                    // With a third argument only the nodes in the subtree it roots are found (XSLT 2.0 §16.4).
+                    if (top is not null && !IsInSubtree(n, top))
+                    {
+                        continue;
+                    }
+
                     if (seen.Add(n))
                     {
                         hits.Add(n);

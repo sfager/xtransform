@@ -16,6 +16,7 @@ internal sealed class TinyTreeBuilder : IResultReceiver
     private string? _documentUri;
     private Dictionary<int, string>? _nodeBaseUris;
     private Dictionary<string, UnparsedEntity>? _unparsedEntities;
+    private List<byte>? _attributeFlags;
 
     // ── Node parallel lists ──────────────────────────────────────────────────
     private readonly List<byte> _kind;
@@ -188,6 +189,21 @@ internal sealed class TinyTreeBuilder : IResultReceiver
         }
     }
 
+    /// <summary>Records that the tree knows which attributes are IDs (a DTD declares some), even if none is in use.</summary>
+    internal void FlagIdInformation() => _attributeFlags ??= new List<byte>();
+
+    /// <summary>Flags the attribute added last as an ID and / or an IDREF (see <see cref="DtdInfo"/>).</summary>
+    internal void FlagLastAttribute(byte flags)
+    {
+        _attributeFlags ??= new List<byte>();
+        while (_attributeFlags.Count < _attrParent.Count)
+        {
+            _attributeFlags.Add(0);
+        }
+
+        _attributeFlags[_attrParent.Count - 1] |= flags;
+    }
+
     /// <summary>Sets the base URI of the element that is open now (a copy keeps the base URI of the node it was copied from).</summary>
     internal void SetCurrentBaseUri(string baseUri)
     {
@@ -358,7 +374,8 @@ internal sealed class TinyTreeBuilder : IResultReceiver
             nsCount,
             _documentUri,
             _nodeBaseUris,
-            _unparsedEntities);
+            _unparsedEntities,
+            _attributeFlags?.ToArray());
     }
 
     // ── Static factory ────────────────────────────────────────────────────────
@@ -404,6 +421,7 @@ internal sealed class TinyTreeBuilder : IResultReceiver
 
         // Per open element: is xml:space="preserve" in effect, and are its whitespace-only children stripped.
         Stack<SpaceFrame> frames = new Stack<SpaceFrame>();
+        DtdInfo? dtd = null;
 
         while (reader.Read())
         {
@@ -412,6 +430,7 @@ internal sealed class TinyTreeBuilder : IResultReceiver
                 case XmlNodeType.Element:
                 {
                     int nameCode = namePool.Allocate(reader.Prefix, reader.NamespaceURI ?? string.Empty, reader.LocalName);
+                    string elementName = reader.Name;
                     builder.StartElement(nameCode, SourceSpan.None);
 
                     // Emit namespace declarations before attributes.
@@ -445,6 +464,14 @@ internal sealed class TinyTreeBuilder : IResultReceiver
                             {
                                 int attrNameCode = namePool.Allocate(reader.Prefix, reader.NamespaceURI ?? string.Empty, reader.LocalName);
                                 builder.Attribute(attrNameCode, reader.Value, SourceSpan.None);
+                                byte idFlags = (string.Equals(reader.Prefix, "xml", StringComparison.Ordinal) && string.Equals(reader.LocalName, "id", StringComparison.Ordinal))
+                                    ? DtdInfo.IdFlag
+                                    : dtd?.AttributeFlags(elementName, reader.Name) ?? 0;
+                                if (idFlags != 0)
+                                {
+                                    builder.FlagLastAttribute(idFlags);
+                                }
+
 
                                 if (string.Equals(reader.Prefix, "xml", StringComparison.Ordinal) &&
                                     string.Equals(reader.LocalName, "space", StringComparison.Ordinal))
@@ -468,8 +495,10 @@ internal sealed class TinyTreeBuilder : IResultReceiver
                     {
                         // xml:space is inherited; a value other than preserve / default leaves it unchanged.
                         bool preserve = spacePreserve ?? (frames.Count > 0 && frames.Peek().Preserve);
-                        bool strip = stripWhitespace is not null && !preserve &&
-                                     stripWhitespace(reader.NamespaceURI ?? string.Empty, reader.LocalName);
+                        // Whitespace in element-only content is not data; xsl:strip-space strips more (XSLT 2.0 §4.3).
+                        bool strip = (dtd is not null && dtd.IsElementOnly(elementName))
+                                     || (stripWhitespace is not null && !preserve &&
+                                         stripWhitespace(reader.NamespaceURI ?? string.Empty, reader.LocalName));
                         frames.Push(new SpaceFrame(preserve, strip));
                     }
 
@@ -515,6 +544,12 @@ internal sealed class TinyTreeBuilder : IResultReceiver
 
                 case XmlNodeType.DocumentType:
                     builder.AddUnparsedEntities(reader.Value, reader.BaseURI);
+                    DtdInfo parsed = DtdInfo.Parse(reader.Value);
+                    dtd = parsed.IsEmpty ? null : parsed;
+                    if (parsed.DeclaresIds)
+                    {
+                        builder.FlagIdInformation();
+                    }
                     break;
 
                 case XmlNodeType.XmlDeclaration:

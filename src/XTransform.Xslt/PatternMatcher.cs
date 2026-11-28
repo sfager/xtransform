@@ -407,6 +407,21 @@ internal static class PatternMatcher
             return false;
         }
 
+        // A tree with ID information (a DTD, or xml:id) says which attributes are IDs.
+        TinyTree idTree = node.Handle.Tree;
+        if (idTree.HasIdInformation)
+        {
+            foreach (string id in ids)
+            {
+                if (idTree.IdMap.TryGetValue(id, out int owner) && owner == node.Handle.Index)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         // XSLT 2.0 §15.5.2: without schema typing, treat an attribute named 'id' as the ID.
         foreach (XdmNode attr in node.Axis(Axis.Attribute))
         {
@@ -428,7 +443,9 @@ internal static class PatternMatcher
             return false;
         }
 
-        XdmSequence values = pattern.ValueLiteral is not null
+        XdmSequence values = pattern.ValueAtomic is not null
+            ? XdmSequence.Of(pattern.ValueAtomic)
+            : pattern.ValueLiteral is not null
             ? XdmSequence.Of(XdmAtomicValue.String(pattern.ValueLiteral))
             : pattern.VariableRef is QName variable ? run.LookupVariable(variable) : XdmSequence.Empty;
         string name = pattern.KeyName.Prefix.Length > 0 ? pattern.KeyName.Prefix + ":" + pattern.KeyName.LocalName : pattern.KeyName.LocalName;
@@ -445,15 +462,50 @@ internal static class PatternMatcher
         return false;
     }
 
+    // id(...) or key(...) followed by a path (XSLT 2.0 §5.5.2): the node matches the steps, and the node they lead back to, or an
+    // ancestor of it after a //, is one the id or key function returns.
     private static bool MatchIdKeyWithPath(IdKeyWithPathAst pattern, XdmNode node, DynamicContext context)
     {
-        // Not implemented beyond id("literal")/foo in P3-07; proper id/key support lands in P3-11.
-        _ = context;
-        if (pattern.Head is IdPatternAst idp && MatchId(idp, node, context))
+        if (pattern.TailSteps.IsEmpty)
         {
-            return true;
+            return false;
         }
 
-        return false;
+        context = context.WithCurrentItem(node, 1, 1);
+        int last = pattern.TailSteps.Length - 1;
+        if (!MatchStep(pattern.TailSteps[last], node, context))
+        {
+            return false;
+        }
+
+        XdmNode current = node;
+        for (int i = last - 1; i >= 0; i--)
+        {
+            XdmNode? up = AscendMatching(pattern.TailSteps[i], current, pattern.TailSteps[i + 1].Combinator, context);
+            if (up is null)
+            {
+                return false;
+            }
+
+            current = up;
+        }
+
+        if (pattern.TailSteps[0].Combinator == StepCombinator.DoubleSlash)
+        {
+            for (XdmNode? ancestor = current.Parent; ancestor is not null; ancestor = ancestor.Parent)
+            {
+                if (MatchHead(pattern.Head, ancestor, context))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        return current.Parent is { } parent && MatchHead(pattern.Head, parent, context);
     }
+
+    private static bool MatchHead(PatternAst head, XdmNode node, DynamicContext context) =>
+        head is IdPatternAst idp ? MatchId(idp, node, context) : head is KeyPatternAst kp && MatchKey(kp, node, context);
 }

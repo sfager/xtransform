@@ -67,8 +67,10 @@ internal sealed partial class TinyTree
         int nsCount,
         string? documentUri = null,
         Dictionary<int, string>? nodeBaseUris = null,
-        Dictionary<string, UnparsedEntity>? unparsedEntities = null)
+        Dictionary<string, UnparsedEntity>? unparsedEntities = null,
+        byte[]? attributeFlags = null)
     {
+        _attributeFlags = attributeFlags;
         UnparsedEntities = unparsedEntities;
         NamePool = namePool;
         BaseUri = baseUri;
@@ -117,6 +119,44 @@ internal sealed partial class TinyTree
 
     /// <summary>Base URI of the document node, or null if unknown.</summary>
     internal string? BaseUri { get; }
+
+    // DtdInfo.IdFlag / IdRefFlag per attribute, null when no attribute is an ID or an IDREF.
+    private readonly byte[]? _attributeFlags;
+    private Dictionary<string, int>? _idMap;
+
+    /// <summary>True when an attribute of this tree is an ID or an IDREF (declared in the DTD, or xml:id).</summary>
+    internal bool HasIdInformation => _attributeFlags is not null;
+
+    /// <summary>The ID / IDREF flags of the attribute at <paramref name="attrIndex"/>.</summary>
+    internal byte GetAttributeFlags(int attrIndex) => _attributeFlags is not null && attrIndex < _attributeFlags.Length ? _attributeFlags[attrIndex] : (byte)0;
+
+    /// <summary>The element that carries each ID of the tree; the first in document order when an ID is repeated.</summary>
+    internal IReadOnlyDictionary<string, int> IdMap
+    {
+        get
+        {
+            Dictionary<string, int>? map = _idMap;
+            if (map is null)
+            {
+                map = new Dictionary<string, int>(StringComparer.Ordinal);
+                for (int a = 0; a < AttributeCount; a++)
+                {
+                    if ((GetAttributeFlags(a) & DtdInfo.IdFlag) != 0)
+                    {
+                        string id = _attrValue[a].Trim();
+                        if (id.Length > 0 && !map.ContainsKey(id))
+                        {
+                            map[id] = _attrParent[a];
+                        }
+                    }
+                }
+
+                _idMap = map;
+            }
+
+            return map;
+        }
+    }
 
     /// <summary>The unparsed entities its DTD declares, by name; null when there are none.</summary>
     internal IReadOnlyDictionary<string, UnparsedEntity>? UnparsedEntities { get; }
