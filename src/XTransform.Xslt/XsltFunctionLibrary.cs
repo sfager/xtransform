@@ -81,15 +81,16 @@ internal sealed class XsltFunctionLibrary : FunctionLibrary
 
     private void RegisterXsltFunctions()
     {
-        Register("key", 2,
+        // The key name is a lexical QName, so key() is bound to the namespaces in scope at the call (XSLT 2.0 §16.4).
+        RegisterBound("key", 2,
             SeqNodeStar(),
             new[] { SeqStringOne(), SeqItemStar() },
-            KeyInvoker);
+            ns => (context, args) => KeyLookup(context, args, top: null, ns));
 
-        Register("key", 3,
+        RegisterBound("key", 3,
             SeqNodeStar(),
             new[] { SeqStringOne(), SeqItemStar(), new SequenceType(ItemType.AnyNode, Occurrence.ExactlyOne) },
-            Key3Invoker);
+            ns => (context, args) => Key3Invoker(context, args, ns));
 
         Register("document", 1,
             SeqNodeStar(),
@@ -187,7 +188,7 @@ internal sealed class XsltFunctionLibrary : FunctionLibrary
         {
             throw new XsltDynamicException(
                 XsltErrors.XTDE1400,
-                $"function-available: the prefix of '{lexical}' has no namespace binding",
+                $"function-available: '{lexical}' is not a lexical QName whose prefix is bound",
                 SourceSpan.None);
         }
 
@@ -222,11 +223,8 @@ internal sealed class XsltFunctionLibrary : FunctionLibrary
         _xslt[MakeKey(BuiltInFunctionLibrary.FnNamespace, localName, arity)] = sig;
     }
 
-    private static IXdmIterator KeyInvoker(DynamicContext context, XdmSequence[] args) =>
-        KeyLookup(context, args, top: null);
-
     // fn:key($name, $value, $top): like key() but searches the tree rooted at $top (XSLT 2.0 §16.4).
-    private static IXdmIterator Key3Invoker(DynamicContext context, XdmSequence[] args)
+    private static IXdmIterator Key3Invoker(DynamicContext context, XdmSequence[] args, IStaticNamespaceResolver ns)
     {
         if (args[2].FirstOrNull() is not XdmNode top)
         {
@@ -236,26 +234,42 @@ internal sealed class XsltFunctionLibrary : FunctionLibrary
                 SourceSpan.None);
         }
 
-        return KeyLookup(context, args, top);
+        return KeyLookup(context, args, top, ns);
     }
 
-    internal static IXdmIterator KeyLookup(DynamicContext context, XdmSequence[] args, XdmNode? top)
+    // ns is the namespace context of the call; a null ns (key() inside a pattern) matches the name leniently and returns
+    // nothing for a key that is not declared.
+    internal static IXdmIterator KeyLookup(DynamicContext context, XdmSequence[] args, XdmNode? top, IStaticNamespaceResolver? ns = null)
     {
         XsltRunState run = GetRun(context);
         string keyName = args[0].FirstOrNull()?.GetStringValue() ?? string.Empty;
         XdmSequence keyValues = args[1];
 
-        if (!TryFindKey(run, keyName, out QName keyQName, out IReadOnlyList<KeyDecl>? keyDecls))
+        QName keyQName;
+        IReadOnlyList<KeyDecl>? keyDecls;
+        if (ns is not null)
+        {
+            // XSLT 2.0 §16.4 (XTDE1260): the name must be a lexical QName whose prefix is bound and that names an xsl:key.
+            string lexical = keyName.Trim();
+            if (!LexicalNames.IsQName(lexical)
+                || !SystemFunctions.TryResolveName(lexical, ns, out string uri, out string local)
+                || !TryFindKey(run, uri, local, out keyQName, out keyDecls))
+            {
+                throw new XsltDynamicException(XsltErrors.XTDE1260, $"'{keyName}' is not the name of an xsl:key declaration", SourceSpan.None);
+            }
+        }
+        else if (!TryFindKey(run, keyName, out keyQName, out keyDecls))
         {
             return XTransform.Xdm.Iterators.EmptyIterator.Instance;
         }
 
-        // The tree searched is the one containing the context item, or the one rooted at the third argument.
+        // The tree searched is the one containing the context item, or the one rooted at the third argument. XTDE1270: it
+        // must exist and be rooted at a document node.
         XdmNode? node = top ?? context.ContextItem as XdmNode;
         TinyTree? tree = node?.Handle.Tree;
-        if (tree is null)
+        if (tree is null || tree.GetKind(0) != XdmNodeKind.Document)
         {
-            return XTransform.Xdm.Iterators.EmptyIterator.Instance;
+            throw new XsltDynamicException(XsltErrors.XTDE1270, "key() needs a node in a tree whose root is a document node", SourceSpan.None);
         }
 
         KeyIndex index = run.GetOrBuildKeyIndex(tree, keyQName, keyDecls!, context);
@@ -284,6 +298,25 @@ internal sealed class XsltFunctionLibrary : FunctionLibrary
 
     // The key name is a QName resolved with the namespaces in scope of the call; the function has no static
     // context here, so a prefixed name is matched on prefix and local name against the declarations.
+    // The same, with the name already resolved to a namespace and a local name.
+    private static bool TryFindKey(XsltRunState run, string uri, string local, out QName key, out IReadOnlyList<KeyDecl>? decls)
+    {
+        foreach (KeyValuePair<QName, IReadOnlyList<KeyDecl>> entry in run.Stylesheet.Keys)
+        {
+            if (string.Equals(entry.Key.LocalName, local, System.StringComparison.Ordinal) &&
+                string.Equals(entry.Key.NamespaceUri, uri, System.StringComparison.Ordinal))
+            {
+                key = entry.Key;
+                decls = entry.Value;
+                return true;
+            }
+        }
+
+        key = default;
+        decls = null;
+        return false;
+    }
+
     private static bool TryFindKey(XsltRunState run, string keyName, out QName key, out IReadOnlyList<KeyDecl>? decls)
     {
         int colon = keyName.IndexOf(':');

@@ -54,6 +54,7 @@ internal static class StylesheetCompiler
         SchemaFeatureValidator.Validate(assembly, bag);
         AttributeSetCycleValidator.Validate(assembly, bag);
         AttributeSetReferenceValidator.Validate(assembly, bag);
+        CharacterMapValidator.Validate(assembly, bag);
         DeclarationTable declarations = DeclarationCollector.Collect(assembly, bag);
         NameBindingValidator.Validate(declarations, bag);
 

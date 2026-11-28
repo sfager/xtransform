@@ -136,7 +136,7 @@ internal abstract class ExpressionNode
     /// <param name="context">The current dynamic context.</param>
     /// <returns>The effective boolean value of the sequence.</returns>
     /// <exception cref="XPathDynamicException">
-    /// Thrown with error code <see cref="XPathErrors.XPTY0004"/> when EBV is undefined for the sequence.
+    /// Thrown with error code <see cref="XPathErrors.FORG0006"/> when EBV is undefined for the sequence.
     /// </exception>
     public virtual bool EffectiveBooleanValue(DynamicContext context)
     {
@@ -154,12 +154,12 @@ internal abstract class ExpressionNode
             return true;   // any node → true
         }
 
-        // First item is atomic. If a second item exists, EBV is undefined → XPTY0004.
+        // First item is atomic. If a second item exists, EBV is undefined → FORG0006.
         XdmItem? second = iter.Next();
         if (second is not null)
         {
             throw new XPathDynamicException(
-                XPathErrors.XPTY0004,
+                XPathErrors.FORG0006,
                 "Effective boolean value is only defined for an empty sequence, a single node, or a single atomic of a Boolean/string/numeric type",
                 Location);
         }
@@ -173,7 +173,7 @@ internal abstract class ExpressionNode
     /// <param name="value">The singleton atomic value.</param>
     /// <returns>The effective boolean value.</returns>
     /// <exception cref="XPathDynamicException">
-    /// Thrown with <see cref="XPathErrors.XPTY0004"/> when EBV is not defined for the atomic type.
+    /// Thrown with <see cref="XPathErrors.FORG0006"/> when EBV is not defined for the atomic type.
     /// </exception>
     private static bool EffectiveBooleanOfAtomic(XdmAtomicValue value)
     {
@@ -202,7 +202,7 @@ internal abstract class ExpressionNode
         }
 
         throw new XPathDynamicException(
-            XPathErrors.XPTY0004,
+            XPathErrors.FORG0006,
             $"Effective boolean value is not defined for an atomic of type {value.TypeCode}",
             SourceSpan.None);
     }

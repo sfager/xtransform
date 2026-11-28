@@ -113,6 +113,13 @@ internal static class GeneralComparison
         return false;
     }
 
+    // XPath 2.0 §3.5.2: a pair of atomic values that cannot be compared is a type error, not a mismatch.
+    private static XPathDynamicException NotComparable(XdmAtomicValue left, XdmAtomicValue right, SourceSpan location) =>
+        new XPathDynamicException(
+            XPathErrors.XPTY0004,
+            $"Cannot compare xs:{CastTable.GetXsLocalName(left.TypeCode)} with xs:{CastTable.GetXsLocalName(right.TypeCode)}.",
+            location);
+
     private static bool EvaluatePair(
         GeneralComparisonOp op,
         XdmAtomicValue left,
@@ -124,13 +131,13 @@ internal static class GeneralComparison
             case GeneralComparisonOp.Equals:
             {
                 bool? result = ComparisonOperators.ValueEqual(left, right);
-                return result.HasValue && result.Value;
+                return result ?? throw NotComparable(left, right, location);
             }
 
             case GeneralComparisonOp.NotEquals:
             {
                 bool? result = ComparisonOperators.ValueEqual(left, right);
-                return result.HasValue && !result.Value;
+                return !(result ?? throw NotComparable(left, right, location));
             }
 
             default:
@@ -138,7 +145,7 @@ internal static class GeneralComparison
                 int? cmp = ComparisonOperators.ValueCompare(left, right);
                 if (!cmp.HasValue)
                 {
-                    return false;
+                    throw NotComparable(left, right, location);
                 }
                 return op switch
                 {

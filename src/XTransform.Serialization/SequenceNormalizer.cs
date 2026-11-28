@@ -3,7 +3,7 @@
 //   * adjacent atomic values are joined with a single space (each becomes a text node);
 //   * empty text nodes are dropped (and do not count as content);
 //   * attribute / namespace nodes are only legal before any child content of the open
-//     element — late ones are dropped with an XTDE0410 warning;
+//     element — a late one is the non-recoverable error XTDE0410;
 //   * an attribute / namespace node with no open element (i.e. destined for a document
 //     node) raises XTDE0420.
 
@@ -48,7 +48,7 @@ internal sealed class SequenceNormalizer : IResultReceiver
     /// <summary>The sink events are forwarded to.</summary>
     public IResultReceiver Downstream => _downstream;
 
-    /// <summary>Non-fatal diagnostics collected during normalisation (XTDE0410).</summary>
+    /// <summary>Non-fatal diagnostics collected during normalisation (none at present: XTDE0410 is an error).</summary>
     public IReadOnlyList<Diagnostic> Diagnostics => _diagnostics;
 
     /// <inheritdoc/>
@@ -89,12 +89,10 @@ internal sealed class SequenceNormalizer : IResultReceiver
 
         if (CurrentHasContent())
         {
-            _diagnostics.Add(new Diagnostic(
-                DiagnosticSeverity.Warning,
+            throw new XsltDynamicException(
                 XsltErrors.XTDE0410,
-                $"xsl:namespace emitted after content on current element — dropped (prefix '{prefix}')",
-                SourceSpan.None));
-            return;
+                $"A namespace node (prefix '{prefix}') follows content of the element it belongs to",
+                SourceSpan.None);
         }
 
         _downstream.Namespace(prefix, uri);
@@ -114,12 +112,10 @@ internal sealed class SequenceNormalizer : IResultReceiver
 
         if (CurrentHasContent())
         {
-            _diagnostics.Add(new Diagnostic(
-                DiagnosticSeverity.Warning,
+            throw new XsltDynamicException(
                 XsltErrors.XTDE0410,
-                "Attribute emitted after content on current element — dropped",
-                location));
-            return;
+                "An attribute node follows content of the element it belongs to",
+                location);
         }
 
         List<PendingAttribute> pending = _pendingAttributes.Peek();

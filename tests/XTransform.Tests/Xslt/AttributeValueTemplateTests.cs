@@ -62,12 +62,12 @@ internal sealed class AttributeValueTemplateTests
     }
 
     [Test]
-    public void Parse_UnmatchedOpenBrace_ThrowsXtse0370()
+    public void Parse_UnmatchedOpenBrace_ThrowsXtse0350()
     {
         // Arrange + Act + Assert
         XsltStaticException ex = Assert.Throws<XsltStaticException>(
             () => AttributeValueTemplate.Parse("abc{def", Loc))!;
-        Assert.That(ex.Errors.Single().Code, Is.EqualTo(XsltErrors.XTSE0370));
+        Assert.That(ex.Errors.Single().Code, Is.EqualTo(XsltErrors.XTSE0350));
     }
 
     [Test]

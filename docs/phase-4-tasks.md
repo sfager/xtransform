@@ -605,7 +605,7 @@ reader / processor / compiler layer that owns the rule. Cite the spec section fo
 
 ## P4-24 Dynamic and type error catalogue (XTDE*, XTTE*, XTRE*)
 
-- [ ] Done
+- [x] Done
 
 **Scope.** The same exercise for run-time errors the engine does not raise today
 (`XTDE0820`, `XTDE0830`, `XTDE1260`, `XTDE0560`, `XTDE0410` as an error where specified,
@@ -613,6 +613,8 @@ reader / processor / compiler layer that owns the rule. Cite the spec section fo
 `XPTY0004` cases from XPath 2.0 function-conversion rules.
 
 **Acceptance.** Table-driven tests as in P4-23; `error` set ≥ 85% passing.
+
+**Result (branch `p4-24-dynamic-errors`).** The `error` set passes **348 of 396** in scope (87.9%, was 294, 74.2%). Core shard: **4,815 of 6,010** (4,729 before this task; no test that passed before fails now, checked run by run after each batch); QT3 unchanged (13,916 passed, 0 failed); the real-world corpus is byte for byte unchanged. Three batches, each with table-driven tests in `tests/XTransform.Tests/Xslt/DynamicErrorCases/` or `StaticErrorCases/`. **Dynamic and type errors:** the names of constructed nodes (`XTDE0820`, `0830`, `0850`, `0855`, `0860`, `0890`); `key()` with an undeclared name (`XTDE1260`) or no context node (`XTDE1270`); a general comparison of values that cannot be compared (`XPTY0004`), `treat as` (`XPDY0050`), the effective boolean value and `fn:sum` / `min` / `max` / `avg` over incompatible values (`FORG0006`), `name()` / `local-name()` / `namespace-uri()` on a non-node (`XPTY0004`), a day that does not exist in its month (`FORG0001`); malformed names given to `system-property`, `function-available`, `element-available` and `type-available`; `apply-templates` selecting a non-node (`XTTE0520`, with `XTTE0510` kept for a context item that is not a node); an attribute or namespace node after content (`XTDE0410`, which used to be dropped with a warning). **Static errors left from P4-23:** decimal `version` and `priority` (`XTSE0110`, `0530`), an unmatched `{` in an AVT (`XTSE0350`), duplicate functions (`XTSE0770`), `select` together with content on `xsl:attribute`, `xsl:comment`, `xsl:processing-instruction`, `xsl:perform-sort` and `xsl:key` (`XTSE0840`, `0940`, `0880`, `1040`, `1205`), character maps and the output method (`XTSE1570`, `1580`, `1590`, `1600`), collations (`XTSE0125`, `1210`, `1220`), conflicting `input-type-annotations` (`XTSE0265`, checked in the linker) and a prefixed `processing-instruction()` test in a pattern (`XTSE0340`). Unit tests that pinned the old codes were updated to the codes the specs give. **Left over:** 11 tests need `xsl:namespace` (P4-14), 12 need `xsl:result-document` (P4-16), the `xsl:namespace-alias` cases (`XTSE0808` .. `0812`) belong to P4-14, `XTDE1370` / `1380` (`unparsed-entity-uri()` and `unparsed-entity-public-id()` with no context node, or a node outside a document) are not raised yet; `error-1270b` / `1270c` cannot pass because every constructed tree is rooted at a document node (see `implementation-defined.md`); `error-0010bb` and `character-map-901` stay known failures (they expect a static error under forwards-compatible processing or use XSLT 3.0 constructs); the rest are single cases (`XTDE0030`, `0047`, `0420`, `0640`, `1160`, `1430`, `1450`, `FODC0002`). `xslt-baseline.json` (core floor 4,729 → 4,815 passed of 6,010) and `known-failures/xslt-g3.txt` are updated; the `unicode-90` figures and entries were not re-measured. `eng/check-xslt-baseline.sh` was not run, because the run is split into groups.
 
 ## P4-25 Backwards-compatibility mode
 

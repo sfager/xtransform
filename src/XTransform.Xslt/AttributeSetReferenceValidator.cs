@@ -107,23 +107,7 @@ internal static class AttributeSetReferenceValidator
     private static bool IsUsingElement(string localName) =>
         localName == "copy" || localName == "element" || localName == "attribute-set";
 
-    private static bool IsNCName(string value)
-    {
-        if (value.Length == 0 || !XmlConvert.IsStartNCNameChar(value[0]))
-        {
-            return false;
-        }
-
-        for (int i = 1; i < value.Length; i++)
-        {
-            if (!XmlConvert.IsNCNameChar(value[i]))
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
+    private static bool IsNCName(string value) => LexicalNames.IsNCName(value);
 
     private static string? GetAttribute(StylesheetElement element, string localName, string namespaceUri)
     {
