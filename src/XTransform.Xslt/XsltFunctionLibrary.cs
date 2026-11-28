@@ -143,6 +143,12 @@ internal sealed class XsltFunctionLibrary : FunctionLibrary
         RegisterBound("format-number", 3, SeqStringOne(), new[] { SeqAnyAtomicZeroOrOne(), SeqStringOne(), SeqStringOne() },
             ns => (context, args) => FormatNumber(context, args, ns));
 
+        // XSLT 2.0 §16.5 format-dateTime / format-date / format-time: 2- and 5-argument forms; an empty value
+        // gives the empty sequence.
+        RegisterDateFormat("format-dateTime", XdmTypeCode.DateTime);
+        RegisterDateFormat("format-date", XdmTypeCode.Date);
+        RegisterDateFormat("format-time", XdmTypeCode.Time);
+
         // Functions that read a lexical QName argument are bound to the namespaces in scope at the call.
         RegisterBound("system-property", 1, SeqStringOne(), new[] { SeqStringOne() },
             ns => (context, args) => new XTransform.Xdm.Iterators.SingleItemIterator(XdmAtomicValue.String(
@@ -416,6 +422,30 @@ internal sealed class XsltFunctionLibrary : FunctionLibrary
 
         string picture = args[1].FirstOrNull()?.GetStringValue() ?? string.Empty;
         string text = NumberPictureFormatter.Format(format, value, picture, SourceSpan.None);
+        return new XTransform.Xdm.Iterators.SingleItemIterator(XdmAtomicValue.String(text));
+    }
+
+    private void RegisterDateFormat(string localName, XdmTypeCode valueType)
+    {
+        SequenceType value = new SequenceType(ItemType.Atomic(valueType), Occurrence.ZeroOrOne);
+        SequenceType optional = SeqStringZeroOrOne();
+        SequenceType resultType = SeqStringZeroOrOne();
+        Register(localName, 2, resultType, new[] { value, SeqStringOne() }, FormatDateTimeInvoker);
+        Register(localName, 5, resultType, new[] { value, SeqStringOne(), optional, optional, optional }, FormatDateTimeInvoker);
+    }
+
+    private static IXdmIterator FormatDateTimeInvoker(DynamicContext context, XdmSequence[] args)
+    {
+        if (args[0].FirstOrNull() is not XdmAtomicValue value)
+        {
+            return XTransform.Xdm.Iterators.EmptyIterator.Instance;
+        }
+
+        string picture = args[1].FirstOrNull()?.GetStringValue() ?? string.Empty;
+        string? language = args.Length > 2 ? args[2].FirstOrNull()?.GetStringValue() : null;
+        string? calendar = args.Length > 3 ? args[3].FirstOrNull()?.GetStringValue() : null;
+        string? country = args.Length > 4 ? args[4].FirstOrNull()?.GetStringValue() : null;
+        string text = DateTimeFormatter.Format(value.AsDateTime(), picture, language, calendar, country, SourceSpan.None);
         return new XTransform.Xdm.Iterators.SingleItemIterator(XdmAtomicValue.String(text));
     }
 

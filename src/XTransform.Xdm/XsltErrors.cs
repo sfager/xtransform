@@ -101,6 +101,12 @@ public static class XsltErrors
     /// <summary>XTRE0270: an element matches conflicting xsl:strip-space and xsl:preserve-space declarations. Recoverable. (XSLT 2.0 §4.4)</summary>
     public static readonly QName XTRE0270 = new QName("err", XPathErrors.Namespace, "XTRE0270");
 
+    /// <summary>XTDE1350: a date or time picture refers to a component the value does not have, such as a year in a time. (XSLT 2.0 §16.5.1)</summary>
+    public static readonly QName XTDE1350 = new QName("err", XPathErrors.Namespace, "XTDE1350");
+
+    /// <summary>XTDE1340: the picture string of format-date, format-time or format-dateTime is invalid (or an unsupported-argument value is malformed). (XSLT 2.0 §16.5.1)</summary>
+    public static readonly QName XTDE1340 = new QName("err", XPathErrors.Namespace, "XTDE1340");
+
     /// <summary>XTSE0090: an element has an attribute that is not allowed on it. (XSLT 2.0 §3.7)</summary>
     public static readonly QName XTSE0090 = new QName("err", XPathErrors.Namespace, "XTSE0090");
 

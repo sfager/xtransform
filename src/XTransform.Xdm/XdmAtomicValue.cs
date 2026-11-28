@@ -340,9 +340,15 @@ public sealed class XdmAtomicValue : XdmItem, IEquatable<XdmAtomicValue>
             case XdmTypeCode.Float:
                 return FormatFloat((float)_payload);
 
+            case XdmTypeCode.YearMonthDuration:
+            {
+                // F&O §17.1.2: the canonical form of a zero xs:yearMonthDuration is "P0M" (not "PT0S").
+                XsdDuration ym = (XsdDuration)_payload;
+                return ym.Months == 0 ? "P0M" : ym.ToString();
+            }
+
             case XdmTypeCode.Duration:
             case XdmTypeCode.DayTimeDuration:
-            case XdmTypeCode.YearMonthDuration:
                 return ((XsdDuration)_payload).ToString();
 
             case XdmTypeCode.DateTime:

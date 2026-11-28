@@ -576,76 +576,118 @@ internal static class ArithmeticOperators
 
     // ── dateTime / date / time + duration ────────────────────────────────────
 
+    // F&O Appendix E (Adding durations to dateTimes): the months of the duration are added first, with the day
+    // clamped to the end of the new month; then the seconds are added to the time of day and whole days carry
+    // into the date. xs:time keeps only the time of day (the days wrap).
     private static XdmAtomicValue AddDateTimeDuration(XdmAtomicValue dateTime, XdmAtomicValue duration, SourceSpan location)
     {
-        // F&O §10.7 simplified: apply the duration's months and then seconds component.
         XsdDateTime dt = dateTime.AsDateTime();
         XsdDuration dur = duration.AsDuration();
-
-        // Apply year-month part first (months offset)
-        long newYear = dt.Year;
-        int newMonth = dt.Month;
-        int newDay = dt.Day;
-        int newHour = dt.Hour;
-        int newMinute = dt.Minute;
-        decimal newSecond = dt.Second.Value;
-
-        if (dur.Months != 0)
+        if (dt.Kind is not (XsdDateTimeKind.DateTime or XsdDateTimeKind.Date or XsdDateTimeKind.Time))
         {
-            int totalMonths = (int)newYear * 12 + (newMonth - 1) + dur.Months;
-            newYear = totalMonths / 12;
-            newMonth = totalMonths % 12 + 1;
-            if (newMonth <= 0)
-            {
-                newMonth += 12;
-                newYear--;
-            }
-            // Clamp day to end of new month
-            int daysInMonth = DaysInMonth(newYear, newMonth);
-            if (newDay > daysInMonth)
-            {
-                newDay = daysInMonth;
-            }
+            throw new XPathDynamicException(
+                XPathErrors.XPTY0004,
+                "A duration can only be added to xs:dateTime, xs:date or xs:time.",
+                location);
         }
 
-        // Apply seconds part (convert to seconds offset then add)
-        if (dur.Seconds.Value != 0m)
+        bool hasDate = dt.Kind != XsdDateTimeKind.Time;
+        long year = dt.Year;
+        int month = dt.Month;
+        int day = dt.Day;
+
+        if (hasDate)
         {
-            decimal totalSecs = (decimal)(newDay - 1) * 86400m
-                + (decimal)newHour * 3600m
-                + (decimal)newMinute * 60m
-                + newSecond
-                + dur.Seconds.Value;
-
-            // Normalize day overflows
-            int daysOffset = (int)(totalSecs / 86400m);
-            if (totalSecs < 0m && totalSecs % 86400m != 0m)
+            // XSD years have no year zero: -1 is 1 BC, which is year 0 in astronomical numbering.
+            long astronomical = year < 0 ? year + 1 : year;
+            if (dur.Months != 0)
             {
-                daysOffset--;
+                long total = (astronomical * 12) + (month - 1) + dur.Months;
+                astronomical = FloorDiv(total, 12);
+                month = (int)(total - (astronomical * 12)) + 1;
+                day = Math.Min(day, DaysInMonth(astronomical, month));
             }
-            totalSecs -= daysOffset * 86400m;
 
-            int dayOfYear = DayOfYear(newYear, newMonth, newDay) + daysOffset;
-            NormalizeYearDay(ref newYear, ref dayOfYear);
-            MonthDay(newYear, dayOfYear, out newMonth, out newDay);
+            // Seconds: add to the time of day, then carry whole days into the date.
+            decimal seconds = (dt.Hour * 3600m) + (dt.Minute * 60m) + dt.Second.Value + dur.Seconds.Value;
+            if (dt.Kind == XsdDateTimeKind.Date)
+            {
+                // An xs:date is the dateTime at 00:00:00.
+                seconds = dur.Seconds.Value;
+            }
 
-            long sFloor = (long)Math.Floor((double)totalSecs);
-            newHour = (int)(sFloor / 3600);
-            newMinute = (int)((sFloor % 3600) / 60);
-            newSecond = totalSecs - (decimal)(newHour * 3600 + newMinute * 60);
+            decimal wholeDays = Math.Floor(seconds / 86400m);
+            if (wholeDays != 0m)
+            {
+                long ordinal = CivilToDays(astronomical, month, day) + (long)wholeDays;
+                DaysToCivil(ordinal, out astronomical, out month, out day);
+            }
+
+            year = astronomical <= 0 ? astronomical - 1 : astronomical;
+            return Rebuild(dt, year, month, day, seconds - (wholeDays * 86400m));
+        }
+
+        decimal timeSeconds = (dt.Hour * 3600m) + (dt.Minute * 60m) + dt.Second.Value + dur.Seconds.Value;
+        decimal days = Math.Floor(timeSeconds / 86400m);
+        return Rebuild(dt, year, month, day, timeSeconds - (days * 86400m));
+    }
+
+    private static XdmAtomicValue Rebuild(XsdDateTime original, long year, int month, int day, decimal secondsOfDay)
+    {
+        int hour = (int)Math.Floor(secondsOfDay / 3600m);
+        secondsOfDay -= hour * 3600m;
+        int minute = (int)Math.Floor(secondsOfDay / 60m);
+        secondsOfDay -= minute * 60m;
+
+        // An xs:date has no time of day; keep the original (zero) time fields.
+        if (original.Kind == XsdDateTimeKind.Date)
+        {
+            hour = original.Hour;
+            minute = original.Minute;
+            secondsOfDay = original.Second.Value;
         }
 
         XsdDateTime result = new XsdDateTime(
-            dt.Kind,
-            newYear,
-            newMonth,
-            newDay,
-            newHour,
-            newMinute,
-            new XsdDecimal(newSecond),
-            dt.TimezoneMinutes);
-
+            original.Kind,
+            year,
+            month,
+            day,
+            hour,
+            minute,
+            new XsdDecimal(secondsOfDay),
+            original.TimezoneMinutes);
         return XdmAtomicValue.DateTimeValue(result);
+    }
+
+    private static long FloorDiv(long a, long b)
+    {
+        long q = a / b;
+        return (a % b != 0 && ((a < 0) != (b < 0))) ? q - 1 : q;
+    }
+
+    // Days since 1970-01-01 for a proleptic Gregorian date in astronomical year numbering.
+    private static long CivilToDays(long year, int month, int day)
+    {
+        long y = month <= 2 ? year - 1 : year;
+        long era = FloorDiv(y, 400);
+        long yoe = y - (era * 400);
+        long doy = (((153 * (month + (month > 2 ? -3 : 9))) + 2) / 5) + day - 1;
+        long doe = (yoe * 365) + (yoe / 4) - (yoe / 100) + doy;
+        return (era * 146097) + doe - 719468;
+    }
+
+    private static void DaysToCivil(long days, out long year, out int month, out int day)
+    {
+        long z = days + 719468;
+        long era = FloorDiv(z, 146097);
+        long doe = z - (era * 146097);
+        long yoe = (doe - (doe / 1460) + (doe / 36524) - (doe / 146096)) / 365;
+        long y = yoe + (era * 400);
+        long doy = doe - ((365 * yoe) + (yoe / 4) - (yoe / 100));
+        long mp = ((5 * doy) + 2) / 153;
+        day = (int)(doy - (((153 * mp) + 2) / 5) + 1);
+        month = (int)(mp < 10 ? mp + 3 : mp - 9);
+        year = month <= 2 ? y + 1 : y;
     }
 
     // F&O §10.7.4: dateTime - dateTime → xs:dayTimeDuration (difference in seconds)
