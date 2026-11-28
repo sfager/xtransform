@@ -190,12 +190,15 @@ internal static class StylesheetReader
             element.DeclaredVersion = declaredHere!;
         }
 
-        // Handle unknown xsl:* elements (XTSE0805 outside forwards-compatible mode;
+        // Handle unknown xsl:* elements (XTSE0010 outside forwards-compatible mode;
         // XTSE0150 warning inside). XSLT 2.0 §3.7.
         if (element.IsUnknownXsltElement)
         {
+            // Only an effective version above 2.0 is forwards-compatible; a lower one is backwards-compatible and still rejects an
+            // unknown element (XSLT 2.0 §3.9).
             bool forwardsCompatible = !string.IsNullOrEmpty(currentEffective) &&
-                                      !string.Equals(currentEffective, "2.0", System.StringComparison.Ordinal);
+                                      double.TryParse(currentEffective!.Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double numericVersion) &&
+                                      numericVersion > 2.0;
             if (forwardsCompatible)
             {
                 diagnostics.Warning(
@@ -206,7 +209,7 @@ internal static class StylesheetReader
             else
             {
                 diagnostics.Error(
-                    XsltErrors.XTSE0805,
+                    XsltErrors.XTSE0010,
                     $"Unknown XSLT element xsl:{element.Name.LocalName}",
                     location);
             }

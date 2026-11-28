@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Text.RegularExpressions;
 using NUnit.Framework;
 using XTransform.Xdm;
 
@@ -322,7 +323,7 @@ internal sealed class XsltNextMatchTests
     }
 
     [Test]
-    public void Include_AModuleThatIncludesItself_RaisesXtse0210()
+    public void Include_AModuleThatIncludesItself_RaisesXtse0180()
     {
         Dictionary<string, string> files = new Dictionary<string, string>
         {
@@ -331,14 +332,18 @@ internal sealed class XsltNextMatchTests
 
         XsltStaticException ex = Assert.Throws<XsltStaticException>(() => RunFiles(files))!;
 
-        Assert.That(ex.ErrorCode, Is.EqualTo(XsltErrors.XTSE0210));
+        Assert.That(ex.ErrorCode, Is.EqualTo(XsltErrors.XTSE0180));
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
 
-    private static string Module(string body) =>
-        "<xsl:stylesheet version='2.0' xmlns:xsl='http://www.w3.org/1999/XSL/Transform' xmlns:xs='http://www.w3.org/2001/XMLSchema'>" +
-        "<xsl:output method='text'/>" + body + "</xsl:stylesheet>";
+    // xsl:import elements must come first in a module (XSLT 2.0 §3.10.2), so the output declaration goes after any leading ones.
+    private static string Module(string body)
+    {
+        Match imports = Regex.Match(body, @"^(\s*<xsl:import [^>]*/>)*");
+        return "<xsl:stylesheet version='2.0' xmlns:xsl='http://www.w3.org/1999/XSL/Transform' xmlns:xs='http://www.w3.org/2001/XMLSchema'>" +
+            imports.Value + "<xsl:output method='text'/>" + body.Substring(imports.Length) + "</xsl:stylesheet>";
+    }
 
     private static string Run(string body) => RunFiles(new Dictionary<string, string> { ["main.xsl"] = Module(body) });
 

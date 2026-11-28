@@ -48,6 +48,12 @@ internal static class StylesheetCompiler
             }
         }
 
+        StylesheetAttributeValidator.Validate(assembly, bag);
+        StylesheetStructureValidator.Validate(assembly, bag);
+        StylesheetValueValidator.Validate(assembly, bag);
+        SchemaFeatureValidator.Validate(assembly, bag);
+        AttributeSetCycleValidator.Validate(assembly, bag);
+        AttributeSetReferenceValidator.Validate(assembly, bag);
         DeclarationTable declarations = DeclarationCollector.Collect(assembly, bag);
         NameBindingValidator.Validate(declarations, bag);
 

@@ -16,11 +16,26 @@ public static class XsltErrors
     /// <summary>It is a static error if two xsl:output declarations with the same name and import precedence specify different values for the same attribute. (XSLT 2.0 §20)</summary>
     public static readonly QName XTSE1560 = new QName("err", XPathErrors.Namespace, "XTSE1560");
 
+    /// <summary>It is a static error if a basic (non-schema-aware) processor encounters xsl:import-schema. (XSLT 2.0 §3.12)</summary>
+    public static readonly QName XTSE1650 = new QName("err", XPathErrors.Namespace, "XTSE1650");
+
+    /// <summary>It is a static error if a basic (non-schema-aware) processor encounters a type attribute, or a validation or default-validation attribute other than strip. (XSLT 2.0 §3.12)</summary>
+    public static readonly QName XTSE1660 = new QName("err", XPathErrors.Namespace, "XTSE1660");
+
     /// <summary>Serialization error: the requested output encoding is not supported. (Serialization 1.0 §3)</summary>
     public static readonly QName SESU0007 = new QName("err", XPathErrors.Namespace, "SESU0007");
 
     /// <summary>It is a static error if the value of the version attribute on xsl:stylesheet is not a valid xs:decimal. (XSLT 2.0 §3.6)</summary>
     public static readonly QName XTSE0110 = new QName("err", XPathErrors.Namespace, "XTSE0110");
+
+    /// <summary>It is a static error if the xsl:stylesheet or xsl:transform element has text content other than whitespace. (XSLT 2.0 §3.6)</summary>
+    public static readonly QName XTSE0120 = new QName("err", XPathErrors.Namespace, "XTSE0120");
+
+    /// <summary>It is a static error if an xsl:include element is not a top-level element. (XSLT 2.0 §3.10.1)</summary>
+    public static readonly QName XTSE0170 = new QName("err", XPathErrors.Namespace, "XTSE0170");
+
+    /// <summary>It is a static error if a stylesheet module directly or indirectly includes itself. (XSLT 2.0 §3.11.1)</summary>
+    public static readonly QName XTSE0180 = new QName("err", XPathErrors.Namespace, "XTSE0180");
 
     /// <summary>It is a static error if a child element of xsl:stylesheet/xsl:transform is in a null namespace. (XSLT 2.0 §3.6)</summary>
     public static readonly QName XTSE0130 = new QName("err", XPathErrors.Namespace, "XTSE0130");
@@ -30,6 +45,12 @@ public static class XsltErrors
 
     /// <summary>It is a static error if a stylesheet module referenced by xsl:include or xsl:import cannot be retrieved or is not a valid stylesheet module. (XSLT 2.0 §3.11)</summary>
     public static readonly QName XTSE0165 = new QName("err", XPathErrors.Namespace, "XTSE0165");
+
+    /// <summary>It is a static error if an xsl:import element is not a top-level element. (XSLT 2.0 §3.10.2)</summary>
+    public static readonly QName XTSE0190 = new QName("err", XPathErrors.Namespace, "XTSE0190");
+
+    /// <summary>It is a static error if an xsl:import child does not precede all other element children of xsl:stylesheet, including xsl:include and user-defined data elements. (XSLT 2.0 §3.10.2)</summary>
+    public static readonly QName XTSE0200 = new QName("err", XPathErrors.Namespace, "XTSE0200");
 
     /// <summary>It is a static error if a stylesheet module directly or indirectly includes or imports itself. (XSLT 2.0 §3.11)</summary>
     public static readonly QName XTSE0210 = new QName("err", XPathErrors.Namespace, "XTSE0210");
@@ -42,6 +63,12 @@ public static class XsltErrors
 
     /// <summary>It is a static error if a stylesheet contains an xsl:apply-templates whose mode attribute refers to a mode that is not used by any template rule. (XSLT 2.0 §6.4)</summary>
     public static readonly QName XTSE0680 = new QName("err", XPathErrors.Namespace, "XTSE0680");
+
+    /// <summary>It is a static error if a name in a use-attribute-sets attribute is not the name of an xsl:attribute-set declared in the stylesheet. (XSLT 2.0 §10.2)</summary>
+    public static readonly QName XTSE0710 = new QName("err", XPathErrors.Namespace, "XTSE0710");
+
+    /// <summary>It is a static error if an xsl:attribute-set directly or indirectly references itself through its use-attribute-sets attribute. (XSLT 2.0 §10.2)</summary>
+    public static readonly QName XTSE0720 = new QName("err", XPathErrors.Namespace, "XTSE0720");
 
     /// <summary>It is a static error if the name attribute of an xsl:function element does not have a prefix (functions must live in a namespace). (XSLT 2.0 §10.3)</summary>
     public static readonly QName XTSE0740 = new QName("err", XPathErrors.Namespace, "XTSE0740");
@@ -96,7 +123,10 @@ public static class XsltErrors
     public static readonly QName XTDE1150 = new QName("err", XPathErrors.Namespace, "XTDE1150");
     /// <summary>XTSE1130: xsl:analyze-string has neither xsl:matching-substring nor xsl:non-matching-substring. (XSLT 2.0 §15.1)</summary>
     public static readonly QName XTSE1130 = new QName("err", XPathErrors.Namespace, "XTSE1130");
-    /// <summary>XTSE0280: a name test in xsl:strip-space / xsl:preserve-space uses an undeclared prefix. (XSLT 2.0 §4.3)</summary>
+    /// <summary>It is a static error if an XSLT element that must be empty has any content other than comments or processing instructions, including whitespace preserved by xml:space. (XSLT 2.0 §3.1)</summary>
+    public static readonly QName XTSE0260 = new QName("err", XPathErrors.Namespace, "XTSE0260");
+
+    /// <summary>XTSE0280: a prefixed lexical QName in an attribute (or a name test in xsl:strip-space / xsl:preserve-space) uses a prefix with no namespace declaration in scope. (XSLT 2.0 §5.1.1)</summary>
     public static readonly QName XTSE0280 = new QName("err", XPathErrors.Namespace, "XTSE0280");
     /// <summary>XTRE0270: an element matches conflicting xsl:strip-space and xsl:preserve-space declarations. Recoverable. (XSLT 2.0 §4.4)</summary>
     public static readonly QName XTRE0270 = new QName("err", XPathErrors.Namespace, "XTRE0270");
@@ -124,6 +154,12 @@ public static class XsltErrors
 
     /// <summary>XTSE0760: an xsl:param of an xsl:function has a default value. (XSLT 2.0 §10.3)</summary>
     public static readonly QName XTSE0760 = new QName("err", XPathErrors.Namespace, "XTSE0760");
+
+    /// <summary>It is a static error if an xsl:template has neither a match nor a name attribute, or has a mode or priority attribute without a match attribute. (XSLT 2.0 §6)</summary>
+    public static readonly QName XTSE0500 = new QName("err", XPathErrors.Namespace, "XTSE0500");
+
+    /// <summary>XTSE0550: the mode list of an xsl:template is empty, repeats a token, contains an invalid token, or combines #all with another value. (XSLT 2.0 §6.5)</summary>
+    public static readonly QName XTSE0550 = new QName("err", XPathErrors.Namespace, "XTSE0550");
 
     /// <summary>XTSE0580: two parameters of one template or function have the same name. (XSLT 2.0 §9.2)</summary>
     public static readonly QName XTSE0580 = new QName("err", XPathErrors.Namespace, "XTSE0580");
