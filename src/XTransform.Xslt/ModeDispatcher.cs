@@ -49,9 +49,63 @@ internal static class ModeDispatcher
         InvokeRule(context, receiver, run, chosen, withParams, callSite);
     }
 
+    /// <summary>
+    /// <c>xsl:next-match</c> (<paramref name="importsOnly"/> false) and <c>xsl:apply-imports</c> (true): runs the best rule of the
+    /// current rule's mode that ranks below the current rule, or among the modules the current rule's module imports,
+    /// for the context node; the built-in rule when there is none (XSLT 2.0 §6.7).
+    /// </summary>
+    public static void DispatchNext(
+        DynamicContext context,
+        IResultReceiver receiver,
+        XsltRunState run,
+        TemplateRule current,
+        bool importsOnly,
+        IReadOnlyList<WithParamInstruction> withParams,
+        SourceSpan callSite)
+    {
+        QName savedMode = run.CurrentMode;
+        run.CurrentMode = current.Mode;
+        try
+        {
+            TemplateRule? chosen = null;
+            if (context.ContextItem is XdmNode node && run.Stylesheet.Modes.TryGetValue(current.Mode, out ModeTable? table))
+            {
+                chosen = importsOnly
+                    ? FindMatchingRule(
+                        table,
+                        node,
+                        context,
+                        after: null,
+                        minPrecedence: run.Stylesheet.Assembly.GetImportSubtreeStart(current.ImportPrecedence),
+                        maxPrecedenceExclusive: current.ImportPrecedence)
+                    : FindMatchingRule(table, node, context, after: current);
+            }
+
+            if (chosen is null)
+            {
+                BuiltInRules.Apply(context, receiver, run, withParams, callSite);
+                return;
+            }
+
+            InvokeRule(context, receiver, run, chosen, withParams, callSite);
+        }
+        finally
+        {
+            run.CurrentMode = savedMode;
+        }
+    }
+
     // ── Candidate assembly + first-match selection ─────────────────────────
 
-    private static TemplateRule? FindMatchingRule(ModeTable table, XdmNode node, DynamicContext context)
+    // after: only rules that rank below this one (xsl:next-match); the precedence window limits the rules to those of
+    // imported modules (xsl:apply-imports). With the defaults every rule is a candidate.
+    private static TemplateRule? FindMatchingRule(
+        ModeTable table,
+        XdmNode node,
+        DynamicContext context,
+        TemplateRule? after = null,
+        int minPrecedence = int.MinValue,
+        int maxPrecedenceExclusive = int.MaxValue)
     {
         // Within each bucket the ModeCompiler has already sorted by
         // (precedence desc, priority desc, ordinal desc) so the first matching rule wins.
@@ -132,6 +186,14 @@ internal static class ModeDispatcher
             }
 
             cursors[bestBucket]++;
+            // Alternatives of one template that share an explicit priority attribute are one rule;
+            // alternatives with default priorities are separate rules, even when the priorities are equal (§6.4).
+            if ((after is not null && (!RankGreater(after, best) || (ReferenceEquals(after.Source, best.Source) && after.Source.Priority is not null))) ||
+                best.ImportPrecedence < minPrecedence || best.ImportPrecedence >= maxPrecedenceExclusive)
+            {
+                continue;
+            }
+
             if (PatternMatcher.Matches(best.Pattern, node, context))
             {
                 return best;
@@ -175,6 +237,16 @@ internal static class ModeDispatcher
                 callSite);
         }
 
-        TemplateInvoker.Invoke(context, receiver, run, compiled, rule.Source, withParams, callSite);
+        // The rule becomes the current template rule for the duration of its body (xsl:next-match, xsl:apply-imports).
+        TemplateRule? savedRule = run.CurrentRule;
+        run.CurrentRule = rule;
+        try
+        {
+            TemplateInvoker.Invoke(context, receiver, run, compiled, rule.Source, withParams, callSite);
+        }
+        finally
+        {
+            run.CurrentRule = savedRule;
+        }
     }
 }

@@ -112,18 +112,8 @@ internal static class DeclarationCollector
         HashSet<QName> declaredModes,
         DiagnosticBag bag)
     {
-        bool hasXslVersion = false;
-        for (int i = 0; i < root.Attributes.Count; i++)
-        {
-            StylesheetAttribute a = root.Attributes[i];
-            if (string.Equals(a.Name.NamespaceUri, XsltNamespace.Uri, StringComparison.Ordinal) &&
-                string.Equals(a.Name.LocalName, "version", StringComparison.Ordinal))
-            {
-                hasXslVersion = true;
-            }
-        }
-
-        if (!hasXslVersion)
+        StylesheetElement? template = SimplifiedStylesheet.CreateTemplate(root);
+        if (template is null)
         {
             bag.Error(
                 XsltErrors.XTSE0150,
@@ -132,10 +122,6 @@ internal static class DeclarationCollector
             return;
         }
 
-        StylesheetElement template = new StylesheetElement(
-            new QName("xsl", XsltNamespace.Uri, "template"), root.InScopeNamespaces, root.Location);
-        template.AppendAttribute(new StylesheetAttribute(new QName(string.Empty, string.Empty, "match"), "/", root.Location));
-        template.AppendChild(root);
         CollectTemplate(template, precedence, templates, namedTemplates, declaredModes, bag);
     }
 

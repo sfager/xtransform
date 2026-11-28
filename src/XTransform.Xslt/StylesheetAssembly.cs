@@ -9,11 +9,12 @@ namespace XTransform.Xslt;
 internal sealed class StylesheetModuleEntry
 {
     /// <summary>Initializes an entry.</summary>
-    public StylesheetModuleEntry(StylesheetModule module, int importPrecedence, bool isPrimary)
+    public StylesheetModuleEntry(StylesheetModule module, int importPrecedence, bool isPrimary, int? importSubtreeStart = null)
     {
         Module = module;
         ImportPrecedence = importPrecedence;
         IsPrimary = isPrimary;
+        ImportSubtreeStart = importSubtreeStart ?? importPrecedence;
     }
 
     /// <summary>The processed <see cref="StylesheetModule"/>.</summary>
@@ -24,6 +25,9 @@ internal sealed class StylesheetModuleEntry
 
     /// <summary>True for the top-level primary module; false for everything loaded under it.</summary>
     public bool IsPrimary { get; }
+
+    /// <summary>The lowest import precedence of the modules this module imports; equals its own precedence when it imports none.</summary>
+    public int ImportSubtreeStart { get; }
 }
 
 /// <summary>
@@ -44,6 +48,25 @@ internal sealed class StylesheetAssembly
 
     /// <summary>The primary (top-level) module.</summary>
     public StylesheetModuleEntry Primary { get; }
+
+    /// <summary>
+    /// The lowest import precedence among the modules imported (directly or indirectly) by the module that has
+    /// <paramref name="precedence"/>; the modules <c>xsl:apply-imports</c> may reach have precedences from this
+    /// value up to but not including <paramref name="precedence"/>.
+    /// </summary>
+    public int GetImportSubtreeStart(int precedence)
+    {
+        int start = precedence;
+        foreach (StylesheetModuleEntry entry in Modules)
+        {
+            if (entry.ImportPrecedence == precedence && entry.ImportSubtreeStart < start)
+            {
+                start = entry.ImportSubtreeStart;
+            }
+        }
+
+        return start;
+    }
 
     /// <summary>Every module in the assembly, in load (post-order) order.</summary>
     public IReadOnlyList<StylesheetModuleEntry> Modules { get; }

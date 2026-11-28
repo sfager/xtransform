@@ -224,10 +224,11 @@ internal static class InstructionCompiler
             "analyze-string" => CompileAnalyzeString(element, scope, bag),
             "perform-sort" => CompilePerformSort(element, scope, bag),
             "for-each-group" => CompileForEachGroup(element, scope, bag),
+            "next-match" => CompileNextRule(element, scope, bag, importsOnly: false),
+            "apply-imports" => CompileNextRule(element, scope, bag, importsOnly: true),
             // Deferred to later tasks:
             "message" or "result-document" or
-            "next-match" or "fallback" or
-            "apply-imports" => null,
+            "fallback" => null,
             _ => null,
         };
     }
@@ -1207,6 +1208,47 @@ internal static class InstructionCompiler
         List<SortKey> sorts = CompileSortKeys(element, scope, bag);
         XsltInstruction body = CompileChildren(element, scope, bag);
         return new ForEachGroupInstruction(select!, method, key, pattern, collation, sorts, body, element.Location);
+    }
+
+    // ── xsl:next-match / xsl:apply-imports (XSLT 2.0 §6.7) ──────────────────────
+
+    private static XsltInstruction? CompileNextRule(StylesheetElement element, XsltCompileScope scope, DiagnosticBag bag, bool importsOnly)
+    {
+        string name = importsOnly ? "xsl:apply-imports" : "xsl:next-match";
+
+        // The content is xsl:with-param (and xsl:fallback, which is ignored); anything else is an error.
+        bool ok = true;
+        for (int i = 0; i < element.Children.Count; i++)
+        {
+            StylesheetNode node = element.Children[i];
+            if (node is StylesheetText text)
+            {
+                if (!text.IsWhitespaceOnly)
+                {
+                    bag.Error(XsltErrors.XTSE0010, $"{name} cannot contain text", element.Location);
+                    ok = false;
+                }
+
+                continue;
+            }
+
+            if (node is StylesheetElement child &&
+                !(child.IsXsltElement &&
+                  (string.Equals(child.Name.LocalName, "with-param", StringComparison.Ordinal) ||
+                   string.Equals(child.Name.LocalName, "fallback", StringComparison.Ordinal))))
+            {
+                bag.Error(XsltErrors.XTSE0010, $"{name} can only contain xsl:with-param and xsl:fallback", child.Location);
+                ok = false;
+            }
+        }
+
+        if (!ok)
+        {
+            return null;
+        }
+
+        List<WithParamInstruction> withParams = CollectWithParams(element, scope, bag);
+        return new NextRuleInstruction(importsOnly, withParams, element.Location);
     }
 
     // ── apply-templates / call-template ────────────────────────────────────

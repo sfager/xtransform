@@ -86,13 +86,15 @@ internal static class StylesheetLinker
         List<StylesheetModuleEntry> flat,
         bool isPrimary)
     {
+        // Everything this module imports (directly or not) gets a precedence in [subtreeStart, own precedence).
+        int subtreeStart = precedence;
         for (int i = 0; i < node.Imports.Count; i++)
         {
             AssignPrecedence(node.Imports[i], ref precedence, flat, isPrimary: false);
         }
 
         int myPrecedence = precedence++;
-        flat.Add(new StylesheetModuleEntry(node.Module, myPrecedence, isPrimary));
+        flat.Add(new StylesheetModuleEntry(node.Module, myPrecedence, isPrimary, subtreeStart));
 
         // Modules included into this one keep the same precedence — append them as entries
         // after this node so later lookups can walk the flat list in precedence order.
@@ -101,7 +103,7 @@ internal static class StylesheetLinker
             ModuleNode include = node.Includes[i];
             // The included module may itself contain imports; those have already been
             // threaded into node.Imports during loading (see LoadImportTree).
-            flat.Add(new StylesheetModuleEntry(include.Module, myPrecedence, isPrimary: false));
+            flat.Add(new StylesheetModuleEntry(include.Module, myPrecedence, isPrimary: false, subtreeStart));
         }
     }
 
@@ -111,7 +113,6 @@ internal static class StylesheetLinker
     {
         private readonly IResourceResolver _resolver;
         private readonly HashSet<string> _loading = new HashSet<string>(StringComparer.Ordinal);
-        private readonly HashSet<string> _includedIntoOwner = new HashSet<string>(StringComparer.Ordinal);
 
         public LinkerState(IResourceResolver resolver)
         {
@@ -168,10 +169,16 @@ internal static class StylesheetLinker
                 return;
             }
 
+            // The top-level elements as they are after includes are expanded: an xsl:include is replaced by the
+            // top-level elements of the included module, at its position (XSLT 2.0 §3.11.1), so that declaration
+            // order, and with it the choice among rules of equal precedence and priority, follows the text.
+            List<StylesheetNode> expanded = new List<StylesheetNode>(element.Children.Count);
             for (int i = 0; i < element.Children.Count; i++)
             {
-                if (element.Children[i] is not StylesheetElement child || !child.IsXsltElement)
+                StylesheetNode current = element.Children[i];
+                if (current is not StylesheetElement child || !child.IsXsltElement)
                 {
+                    expanded.Add(current);
                     continue;
                 }
 
@@ -181,28 +188,57 @@ internal static class StylesheetLinker
                     Uri target = ResolveHref(child, currentBase);
                     ModuleNode importedNode = LoadImportTree(target, child.Location);
                     node.Imports.Add(importedNode);
+                    expanded.Add(current);
                 }
                 else if (string.Equals(local, "include", StringComparison.Ordinal))
                 {
                     Uri target = ResolveHref(child, currentBase);
-                    string key = target.OriginalString;
-                    if (!_includedIntoOwner.Add(key))
-                    {
-                        throw Xtse0210(child.Location, target);
-                    }
-
                     ModuleNode includedNode = LoadImportTree(target, child.Location);
-                    node.Includes.Add(includedNode);
-                    // Any xsl:import under the included module contributes to this module's
-                    // import tree (spec §3.11.1 — includes act as textual inserts).
+
+                    // Any xsl:import under the included module contributes to this module's import tree.
                     for (int j = 0; j < includedNode.Imports.Count; j++)
                     {
                         node.Imports.Add(includedNode.Imports[j]);
                     }
+
+                    // The included module's own includes were expanded when it was loaded. A simplified stylesheet
+                    // module contributes its implicit template (XTSE0150 if its root lacks xsl:version).
+                    StylesheetElement includedRoot = includedNode.Module.Root;
+                    if (!SimplifiedStylesheet.IsStylesheetElement(includedRoot))
+                    {
+                        StylesheetElement? implicitTemplate = SimplifiedStylesheet.CreateTemplate(includedRoot);
+                        if (implicitTemplate is null)
+                        {
+                            throw new XsltStaticException(new Diagnostic[]
+                            {
+                                new Diagnostic(
+                                    DiagnosticSeverity.Error,
+                                    XsltErrors.XTSE0150,
+                                    $"The included module '{target}' is not a stylesheet: its literal result element root has no xsl:version",
+                                    child.Location),
+                            });
+                        }
+
+                        expanded.Add(implicitTemplate);
+                    }
+                    else
+                    {
+                        for (int j = 0; j < includedRoot.Children.Count; j++)
+                        {
+                            expanded.Add(includedRoot.Children[j]);
+                        }
+                    }
                 }
+                else
+                {
+                    expanded.Add(current);
+                }
+
                 // xsl:import must come before anything else except other xsl:import; §3.6.
                 // Compiler-level ordering checks live in P3-04.
             }
+
+            element.ReplaceChildren(expanded);
         }
 
         private static Uri ResolveHref(StylesheetElement element, Uri currentBase)

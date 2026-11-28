@@ -1773,6 +1773,7 @@ internal static class XPathParser
                 string.Equals(kindName, "schema-attribute", StringComparison.Ordinal))
             {
                 QName? nameArg = null;
+                QName? typeArg = null;
                 if (Kind != TokenKind.RightParen)
                 {
                     if (Kind == TokenKind.Star)
@@ -1797,13 +1798,15 @@ internal static class XPathParser
                         throw PatternError($"Expected name or * in {kindName}() test");
                     }
 
-                    // Skip optional second type argument (schema-aware, out of scope)
+                    // The optional type argument: kept so the default priority is right and so that a type an
+                    // untyped node cannot have does not match (schema-aware typing is out of scope).
                     if (Kind == TokenKind.Comma)
                     {
                         Consume();
                         if (Kind == TokenKind.Name)
                         {
-                            Consume();
+                            Token typeToken = Consume();
+                            typeArg = ResolveQName(typeToken.Text!, "http://www.w3.org/2001/XMLSchema", typeToken);
                             TryConsume(TokenKind.QuestionMark);
                         }
                         else if (Kind == TokenKind.Star)
@@ -1812,8 +1815,9 @@ internal static class XPathParser
                         }
                     }
                 }
+
                 Expect(TokenKind.RightParen);
-                return new KindTestAst(_baseSpan.WithRange(start, Current.Start - start), nodeKind, nameArg, null);
+                return new KindTestAst(_baseSpan.WithRange(start, Current.Start - start), nodeKind, nameArg, null, typeArg);
             }
 
             Expect(TokenKind.RightParen);
