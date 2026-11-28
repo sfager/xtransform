@@ -239,7 +239,7 @@ internal sealed class XsltSortTests
     public void PerformSort_OfNodes_KeepsTheNodesInSortedOrder()
     {
         string xsl =
-            "<xsl:template match='/'><out><xsl:perform-sort select='/d/w'><xsl:sort select='.' order='descending'/></xsl:perform-sort></out></xsl:template>";
+            "<xsl:template match='/' exclude-result-prefixes='xs'><out><xsl:perform-sort select='/d/w'><xsl:sort select='.' order='descending'/></xsl:perform-sort></out></xsl:template>";
 
         Assert.That(Run(xsl, "<d><w>b</w><w>a</w><w>c</w></d>"), Is.EqualTo("<out><w>c</w><w>b</w><w>a</w></out>"));
     }

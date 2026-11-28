@@ -266,7 +266,7 @@ internal sealed class XsltRunState
     {
         NamespaceBindingsResolver resolver = new NamespaceBindingsResolver(
             decl.Element.InScopeNamespaces,
-            defaultElementNamespace: string.Empty,
+            defaultElementNamespace: decl.Element.XPathDefaultNamespace,
             defaultFunctionNamespace: BuiltInFunctionLibrary.FnNamespace);
 
         // The pattern was parsed and its predicates compiled when the stylesheet was compiled.

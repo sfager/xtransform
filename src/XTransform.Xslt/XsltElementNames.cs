@@ -22,7 +22,7 @@ internal static class XsltElementNames
         "for-each", "for-each-group",
         "value-of", "text", "sequence",
         "copy", "copy-of",
-        "element", "attribute", "comment", "processing-instruction", "document",
+        "element", "attribute", "comment", "processing-instruction", "document", "namespace",
         "with-param",
         "result-document", "message",
         "analyze-string", "matching-substring", "non-matching-substring",

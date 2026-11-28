@@ -63,13 +63,20 @@ internal sealed class NamePool
 {
     public const int NoName = -1;
 
-    public int Allocate(string namespaceUri, string localName);   // returns existing code if present
-    public int Allocate(QName name);
+    public int Allocate(string namespaceUri, string localName);   // returns existing code if present; the code of the name with no prefix
+    public int Allocate(string prefix, string namespaceUri, string localName);   // a name written with a prefix has a code of its own
+    public int Allocate(QName name);                               // keeps name.Prefix
     public bool TryGetCode(string namespaceUri, string localName, out int code);
 
     public string GetNamespaceUri(int nameCode);
     public string GetLocalName(int nameCode);
-    public QName GetQName(int nameCode, string prefix = "");
+    public QName GetQName(int nameCode, string prefix = "");     // the prefix the name was allocated with, unless one is given
+
+    /// <summary>
+    /// The code of the same expanded name with no prefix. Two codes name the same expanded name exactly when their canonical codes
+    /// are equal; name tests compare canonical codes. Lock-free.
+    /// </summary>
+    public int Canonical(int nameCode);
 
     /// <summary>Code for the namespace URI alone, used by "ns:*" name tests.</summary>
     public int GetUriCode(int nameCode);

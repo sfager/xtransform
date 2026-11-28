@@ -113,6 +113,7 @@ internal static class StylesheetLinker
     {
         private readonly IResourceResolver _resolver;
         private readonly HashSet<string> _loading = new HashSet<string>(StringComparer.Ordinal);
+        private string? _inputTypeAnnotations;
 
         public LinkerState(IResourceResolver resolver)
         {
@@ -123,13 +124,14 @@ internal static class StylesheetLinker
         /// Loads <paramref name="uri"/> and its xsl:include / xsl:import graph, returning the
         /// tree node that represents this module.
         /// </summary>
-        public ModuleNode LoadImportTree(Uri uri, SourceSpan requestLocation, StylesheetModule? preRead = null)
+        public ModuleNode LoadImportTree(Uri uri, SourceSpan requestLocation, StylesheetModule? preRead = null, bool requestedByInclude = false)
         {
             string key = uri.OriginalString;
 
             if (_loading.Contains(key))
             {
-                throw Xtse0210(requestLocation, uri);
+                // XSLT 2.0 §3.11.1: a module that includes itself is XTSE0180; §3.11.2: one that imports itself is XTSE0210.
+                throw requestedByInclude ? Xtse0180(requestLocation, uri) : Xtse0210(requestLocation, uri);
             }
 
             _loading.Add(key);
@@ -137,6 +139,7 @@ internal static class StylesheetLinker
             {
                 StylesheetModule module = preRead ?? ReadModule(uri, requestLocation);
                 StylesheetModule processed = StylesheetProcessor.Process(module);
+                CheckInputTypeAnnotations(processed.Root, requestLocation);
 
                 ModuleNode node = new ModuleNode(processed, uri);
 
@@ -173,11 +176,13 @@ internal static class StylesheetLinker
             // top-level elements of the included module, at its position (XSLT 2.0 §3.11.1), so that declaration
             // order, and with it the choice among rules of equal precedence and priority, follows the text.
             List<StylesheetNode> expanded = new List<StylesheetNode>(element.Children.Count);
+            bool seenOtherElement = false;
             for (int i = 0; i < element.Children.Count; i++)
             {
                 StylesheetNode current = element.Children[i];
                 if (current is not StylesheetElement child || !child.IsXsltElement)
                 {
+                    seenOtherElement |= current is StylesheetElement;
                     expanded.Add(current);
                     continue;
                 }
@@ -185,6 +190,9 @@ internal static class StylesheetLinker
                 string local = child.Name.LocalName;
                 if (string.Equals(local, "import", StringComparison.Ordinal))
                 {
+                    RequireImportFirst(child, seenOtherElement);
+                    RequireKnownAttributes(child, element);
+                    RequireEmpty(child);
                     Uri target = ResolveHref(child, currentBase);
                     ModuleNode importedNode = LoadImportTree(target, child.Location);
                     node.Imports.Add(importedNode);
@@ -192,8 +200,11 @@ internal static class StylesheetLinker
                 }
                 else if (string.Equals(local, "include", StringComparison.Ordinal))
                 {
+                    seenOtherElement = true;
+                    RequireKnownAttributes(child, element);
+                    RequireEmpty(child);
                     Uri target = ResolveHref(child, currentBase);
-                    ModuleNode includedNode = LoadImportTree(target, child.Location);
+                    ModuleNode includedNode = LoadImportTree(target, child.Location, requestedByInclude: true);
 
                     // Any xsl:import under the included module contributes to this module's import tree.
                     for (int j = 0; j < includedNode.Imports.Count; j++)
@@ -231,6 +242,7 @@ internal static class StylesheetLinker
                 }
                 else
                 {
+                    seenOtherElement = true;
                     expanded.Add(current);
                 }
 
@@ -239,6 +251,93 @@ internal static class StylesheetLinker
             }
 
             element.ReplaceChildren(expanded);
+        }
+
+        // XSLT 2.0 §3.6 (XTSE0265): input-type-annotations may be strip in some modules and unspecified in others, but not
+        // strip in one and preserve in another.
+        private void CheckInputTypeAnnotations(StylesheetElement root, SourceSpan location)
+        {
+            string? value = null;
+            foreach (StylesheetAttribute attribute in root.Attributes)
+            {
+                if (attribute.Name.NamespaceUri.Length == 0 && attribute.Name.LocalName == "input-type-annotations")
+                {
+                    value = attribute.Value.Trim();
+                }
+            }
+
+            if (value != "strip" && value != "preserve")
+            {
+                return;
+            }
+
+            _inputTypeAnnotations ??= value;
+            if (_inputTypeAnnotations != value)
+            {
+                throw new XsltStaticException(new Diagnostic[]
+                {
+                    new Diagnostic(
+                        DiagnosticSeverity.Error,
+                        XsltErrors.XTSE0265,
+                        "input-type-annotations is strip in one stylesheet module and preserve in another",
+                        root.Location),
+                });
+            }
+        }
+
+        // XSLT 2.0 §3.1 (XTSE0090): xsl:include and xsl:import take only href and the standard attributes. The validators no longer
+        // see them once they are expanded, so the check is made here, unless the module is forwards-compatible (§3.9).
+        private static void RequireKnownAttributes(StylesheetElement directive, StylesheetElement moduleRoot)
+        {
+            if (StylesheetAttributeValidator.IsForwardsCompatible(moduleRoot.DeclaredVersion))
+            {
+                return;
+            }
+
+            DiagnosticBag bag = new DiagnosticBag();
+            StylesheetAttributeValidator.CheckXsltElement(directive, bag);
+            if (bag.HasErrors)
+            {
+                throw new XsltStaticException(bag.ToList());
+            }
+        }
+
+        // XSLT 2.0 §3.10.2 (XTSE0200): xsl:import children must precede every other element child of the stylesheet element,
+        // including xsl:include and user-defined data elements. This runs before the import is loaded.
+        private static void RequireImportFirst(StylesheetElement import, bool seenOtherElement)
+        {
+            if (!seenOtherElement)
+            {
+                return;
+            }
+
+            throw new XsltStaticException(new Diagnostic[]
+            {
+                new Diagnostic(
+                    DiagnosticSeverity.Error,
+                    XsltErrors.XTSE0200,
+                    "xsl:import must precede all other element children of xsl:stylesheet",
+                    import.Location),
+            });
+        }
+
+        // XSLT 2.0 §3.1 (XTSE0260): xsl:include and xsl:import must be empty. The include is replaced by the included module's
+        // declarations below, so this is the last point at which its content is visible.
+        private static void RequireEmpty(StylesheetElement element)
+        {
+            if (element.Children.Count == 0)
+            {
+                return;
+            }
+
+            throw new XsltStaticException(new Diagnostic[]
+            {
+                new Diagnostic(
+                    DiagnosticSeverity.Error,
+                    XsltErrors.XTSE0260,
+                    $"xsl:{element.Name.LocalName} must be empty",
+                    element.Location),
+            });
         }
 
         private static Uri ResolveHref(StylesheetElement element, Uri currentBase)
@@ -309,6 +408,18 @@ internal static class StylesheetLinker
                     DiagnosticSeverity.Error,
                     XsltErrors.XTSE0165,
                     $"Cannot retrieve stylesheet module at {uri}: {reason}",
+                    location),
+            });
+        }
+
+        private static XsltStaticException Xtse0180(SourceSpan location, Uri uri)
+        {
+            return new XsltStaticException(new Diagnostic[]
+            {
+                new Diagnostic(
+                    DiagnosticSeverity.Error,
+                    XsltErrors.XTSE0180,
+                    $"Circular reference: stylesheet module {uri} includes itself, directly or indirectly",
                     location),
             });
         }

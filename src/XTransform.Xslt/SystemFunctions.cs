@@ -44,9 +44,18 @@ internal static class SystemFunctions
 
     // ── Name resolution shared by the *-available functions and system-property ──
 
-    /// <summary>Resolves a lexical QName with the namespaces in scope at the call; false if its prefix is unbound.</summary>
+    /// <summary>Resolves a lexical QName with the namespaces in scope at the call; false if it is not a lexical QName or its prefix is unbound.</summary>
     internal static bool TryResolveName(string lexical, IStaticNamespaceResolver ns, out string uri, out string local)
     {
+        // A name that is not a lexical QName cannot be resolved (XTDE1390, XTDE1400, XTDE1425, XTDE1440, XTDE1260).
+        lexical = lexical.Trim();
+        if (!LexicalNames.IsQName(lexical))
+        {
+            uri = string.Empty;
+            local = lexical;
+            return false;
+        }
+
         int colon = lexical.IndexOf(':');
         local = colon < 0 ? lexical : lexical.Substring(colon + 1);
         if (colon < 0)
@@ -68,7 +77,7 @@ internal static class SystemFunctions
         {
             throw new XsltDynamicException(
                 XsltErrors.XTDE1390,
-                $"system-property: the prefix of '{lexical}' has no namespace binding",
+                $"system-property: '{lexical}' is not a lexical QName whose prefix is bound",
                 SourceSpan.None);
         }
 
@@ -100,7 +109,7 @@ internal static class SystemFunctions
         {
             throw new XsltDynamicException(
                 XsltErrors.XTDE1440,
-                $"element-available: the prefix of '{lexical}' has no namespace binding",
+                $"element-available: '{lexical}' is not a lexical QName whose prefix is bound",
                 SourceSpan.None);
         }
 
@@ -114,7 +123,7 @@ internal static class SystemFunctions
         {
             throw new XsltDynamicException(
                 XsltErrors.XTDE1425,
-                $"type-available: the prefix of '{lexical}' has no namespace binding",
+                $"type-available: '{lexical}' is not a lexical QName whose prefix is bound",
                 SourceSpan.None);
         }
 

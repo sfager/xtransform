@@ -62,7 +62,7 @@ internal sealed class AttributeValueTemplate
     /// Parses <paramref name="value"/> as an attribute value template. The <paramref name="location"/>
     /// is used in <see cref="XsltStaticException"/> diagnostics for unmatched braces.
     /// </summary>
-    /// <exception cref="XsltStaticException">XTSE0370 for unmatched <c>{</c> or <c>}</c>.</exception>
+    /// <exception cref="XsltStaticException">XTSE0350 for an unmatched <c>{</c>, XTSE0370 for an unmatched <c>}</c>.</exception>
     public static AttributeValueTemplate Parse(string value, SourceSpan location)
     {
         List<AvtPart> parts = new List<AvtPart>();
@@ -132,7 +132,7 @@ internal sealed class AttributeValueTemplate
 
                 if (cursor >= length)
                 {
-                    throw Xtse0370(location, "Unmatched '{' in attribute value template");
+                    throw Xtse0350(location, "Unmatched '{' in attribute value template");
                 }
 
                 string exprText = value.Substring(exprStart, cursor - exprStart);
@@ -168,6 +168,15 @@ internal sealed class AttributeValueTemplate
         }
 
         return new AttributeValueTemplate(parts);
+    }
+
+    // XSLT 2.0 §5.6.1: an unmatched left curly bracket is XTSE0350, an unmatched right one XTSE0370.
+    private static XsltStaticException Xtse0350(SourceSpan location, string message)
+    {
+        return new XsltStaticException(new Diagnostic[]
+        {
+            new Diagnostic(DiagnosticSeverity.Error, XsltErrors.XTSE0350, message, location),
+        });
     }
 
     private static XsltStaticException Xtse0370(SourceSpan location, string message)

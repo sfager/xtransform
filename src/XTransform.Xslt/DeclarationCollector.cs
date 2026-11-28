@@ -32,6 +32,7 @@ internal static class DeclarationCollector
         List<TemplateDecl> templates = new List<TemplateDecl>();
         HashSet<QName> declaredModes = new HashSet<QName>();
         Dictionary<QName, List<KeyDecl>> keys = new Dictionary<QName, List<KeyDecl>>();
+        NamespaceAliasTable.Builder namespaceAliases = NamespaceAliasTable.CreateBuilder();
         List<DecimalFormatDecl> decimalFormats = new List<DecimalFormatDecl>();
         List<WhitespaceRule> whitespaceRules = new List<WhitespaceRule>();
 
@@ -87,6 +88,10 @@ internal static class DeclarationCollector
                         CollectKey(child, entry.ImportPrecedence, keys, bag);
                         break;
 
+                    case "namespace-alias":
+                        CollectNamespaceAlias(child, entry.ImportPrecedence, namespaceAliases, bag);
+                        break;
+
                     // Other top-level declarations (attribute-set, decimal-format,
                     // character-map, namespace-alias, output, strip-space, preserve-space,
                     // import-schema) are collected in later tasks — P3-04 stays tight.
@@ -103,7 +108,51 @@ internal static class DeclarationCollector
             keyGroups[group.Key] = group.Value;
         }
 
-        return new DeclarationTable(globals, templates, namedTemplates, functions, declaredModes, keyGroups, new WhitespaceTable(whitespaceRules), DecimalFormatTable.Build(decimalFormats, bag));
+        return new DeclarationTable(globals, templates, namedTemplates, functions, declaredModes, keyGroups, new WhitespaceTable(whitespaceRules), DecimalFormatTable.Build(decimalFormats, bag), namespaceAliases.Build());
+    }
+
+    // XSLT 2.0 §11.1.4: stylesheet-prefix and result-prefix each name a prefix in scope, or #default for the default namespace.
+    private static void CollectNamespaceAlias(StylesheetElement element, int precedence, NamespaceAliasTable.Builder aliases, DiagnosticBag bag)
+    {
+        string? stylesheetPrefix = GetAttribute(element, "stylesheet-prefix")?.Trim();
+        string? resultPrefix = GetAttribute(element, "result-prefix")?.Trim();
+        if (stylesheetPrefix is null || resultPrefix is null)
+        {
+            return;
+        }
+
+        if (!TryResolveAliasPrefix(element, stylesheetPrefix, out string stylesheetUri, out _, bag)
+            || !TryResolveAliasPrefix(element, resultPrefix, out string resultUri, out string resultPrefixName, bag))
+        {
+            return;
+        }
+
+        if (!aliases.Add(stylesheetUri, resultUri, resultPrefixName, precedence))
+        {
+            bag.Error(XsltErrors.XTSE0810, $"The namespace '{stylesheetUri}' is aliased to two different namespaces at the same import precedence", element.Location);
+        }
+    }
+
+    private static bool TryResolveAliasPrefix(StylesheetElement element, string value, out string uri, out string prefix, DiagnosticBag bag)
+    {
+        // #default is the default namespace, which is the null namespace when none is declared (XSLT 2.0 §11.1.4).
+        prefix = value == "#default" ? string.Empty : value;
+        string? bound = element.InScopeNamespaces.Resolve(prefix);
+        if (value == "#default")
+        {
+            uri = bound ?? string.Empty;
+            return true;
+        }
+
+        if (bound is null || bound.Length == 0)
+        {
+            uri = string.Empty;
+            bag.Error(XsltErrors.XTSE0812, $"'{value}' in xsl:namespace-alias is not bound to a namespace in scope", element.Location);
+            return false;
+        }
+
+        uri = bound;
+        return true;
     }
 
     // The implicit template of a simplified stylesheet. The literal result element must carry xsl:version (XTSE0150).
@@ -339,9 +388,23 @@ internal static class DeclarationCollector
 
         string? match = GetAttribute(element, "match");
         string? use = GetAttribute(element, "use");
-        if (match is null || use is null)
+        if (match is null)
         {
-            bag.Error(XsltErrors.XTSE0010, "xsl:key requires both match and use attributes", element.Location);
+            bag.Error(XsltErrors.XTSE0010, "xsl:key requires a match attribute", element.Location);
+            return;
+        }
+
+        // XSLT 2.0 §16.3 (XTSE1205): exactly one of the use attribute and the content.
+        bool hasContent = element.Children.Count > 0;
+        if ((use is null && !hasContent) || (use is not null && hasContent))
+        {
+            bag.Error(XsltErrors.XTSE1205, "xsl:key must have either a use attribute or content, not both and not neither", element.Location);
+            return;
+        }
+
+        if (use is null)
+        {
+            bag.Error(XsltErrors.XTSE0010, "xsl:key with content instead of a use attribute is not supported", element.Location);
             return;
         }
 
@@ -557,7 +620,7 @@ internal static class DeclarationCollector
             if (existing.ImportPrecedence == precedence)
             {
                 bag.Error(
-                    XsltErrors.XTSE0660,
+                    XsltErrors.XTSE0770,
                     $"Duplicate xsl:function '{name.ClarkName}#{arity}' at the same import precedence",
                     element.Location);
                 return;

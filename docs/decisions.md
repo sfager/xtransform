@@ -56,6 +56,9 @@ dependency is `year_component_values` with `satisfied="false"` for "support year
 expects an overflow error from a processor that lacks that support, and XTransform supports both, so it is out of
 scope.
 
+An `on-multiple-match` dependency with value `error` is out of scope: it describes a processor that raises XTRE0540,
+and XTransform recovers (docs/implementation-defined.md, XSLT 2.0 §6.4). Tests that expect recovery stay in.
+
 Update a pin only in a dedicated commit that records the before/after pass-rates.
 
 ## D3. Error model

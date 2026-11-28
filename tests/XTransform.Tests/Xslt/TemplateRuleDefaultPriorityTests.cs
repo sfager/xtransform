@@ -32,7 +32,7 @@ internal sealed class TemplateRuleDefaultPriorityTests
     public static readonly IEnumerable<TestCaseData> Cases = new[]
     {
         // ── Priority 0.5: rooted or multi-step or with predicates ────────────
-        new TestCaseData("/", 0.5).SetName("root"),
+        new TestCaseData("/", -0.5).SetName("root"),
         new TestCaseData("/foo", 0.5).SetName("rooted-single"),
         new TestCaseData("/foo/bar", 0.5).SetName("rooted-two-steps"),
         new TestCaseData("//foo", 0.5).SetName("descendant-foo"),

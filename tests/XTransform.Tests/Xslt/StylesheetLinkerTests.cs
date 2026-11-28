@@ -126,13 +126,61 @@ internal sealed class StylesheetLinkerTests
     }
 
     [Test]
-    public void Link_CircularInclude_RaisesXtse0210()
+    public void Link_CircularInclude_RaisesXtse0180()
     {
         // Arrange
         InMemoryResolver resolver = new InMemoryResolver
         {
             ["a.xsl"] = Wrap("<xsl:include href='b.xsl'/>"),
             ["b.xsl"] = Wrap("<xsl:include href='a.xsl'/>"),
+        };
+
+        // Act + Assert
+        XsltStaticException ex = Assert.Throws<XsltStaticException>(
+            () => StylesheetLinker.Link(UriFor("a.xsl"), resolver))!;
+        Assert.That(ex.Errors.Single().Code, Is.EqualTo(XsltErrors.XTSE0180));
+    }
+
+    [Test]
+    public void Link_ModuleThatIncludesItself_RaisesXtse0180()
+    {
+        // Arrange
+        InMemoryResolver resolver = new InMemoryResolver
+        {
+            ["a.xsl"] = Wrap("<xsl:include href='a.xsl'/>"),
+        };
+
+        // Act + Assert
+        XsltStaticException ex = Assert.Throws<XsltStaticException>(
+            () => StylesheetLinker.Link(UriFor("a.xsl"), resolver))!;
+        Assert.That(ex.Errors.Single().Code, Is.EqualTo(XsltErrors.XTSE0180));
+    }
+
+    [Test]
+    public void Link_IndirectCircularInclude_RaisesXtse0180()
+    {
+        // Arrange — a includes b, b includes c, c includes b.
+        InMemoryResolver resolver = new InMemoryResolver
+        {
+            ["a.xsl"] = Wrap("<xsl:include href='b.xsl'/>"),
+            ["b.xsl"] = Wrap("<xsl:include href='c.xsl'/>"),
+            ["c.xsl"] = Wrap("<xsl:include href='b.xsl'/>"),
+        };
+
+        // Act + Assert
+        XsltStaticException ex = Assert.Throws<XsltStaticException>(
+            () => StylesheetLinker.Link(UriFor("a.xsl"), resolver))!;
+        Assert.That(ex.Errors.Single().Code, Is.EqualTo(XsltErrors.XTSE0180));
+    }
+
+    [Test]
+    public void Link_CycleClosedByAnImport_RaisesXtse0210()
+    {
+        // Arrange — a includes b, and b imports a: the request that closes the cycle is an import.
+        InMemoryResolver resolver = new InMemoryResolver
+        {
+            ["a.xsl"] = Wrap("<xsl:include href='b.xsl'/>"),
+            ["b.xsl"] = Wrap("<xsl:import href='a.xsl'/>"),
         };
 
         // Act + Assert

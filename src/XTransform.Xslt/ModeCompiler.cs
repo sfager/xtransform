@@ -47,7 +47,7 @@ internal static class ModeCompiler
             {
                 NamespaceBindingsResolver resolver = new NamespaceBindingsResolver(
                     decl.Element.InScopeNamespaces,
-                    defaultElementNamespace: string.Empty,
+                    defaultElementNamespace: decl.Element.XPathDefaultNamespace,
                     defaultFunctionNamespace: BuiltInFunctionLibrary.FnNamespace);
                 parsed = XPathParser.ParsePattern(decl.MatchPattern, decl.Location, resolver);
 

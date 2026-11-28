@@ -43,9 +43,8 @@ internal sealed class XsltConstructorTests
             "<xsl:template match='/'>" +
             "<xsl:element name='n:x' namespace='urn:runtime' xmlns:n='urn:static'/>" +
             "</xsl:template>");
-        // XmlWriter picks the shortest-serialisation prefix form; the element's name and
-        // namespace are what matter, not the chosen prefix.
-        AssertOutput(xsl, "<doc/>", "<x xmlns=\"urn:runtime\" />");
+        // The prefix written in the name is kept (XSLT 2.0 §11.2.1); the namespace comes from the namespace attribute.
+        AssertOutput(xsl, "<doc/>", "<n:x xmlns:n=\"urn:runtime\" />");
     }
 
     // ── xsl:attribute ───────────────────────────────────────────────────────
@@ -71,19 +70,16 @@ internal sealed class XsltConstructorTests
     }
 
     [Test]
-    public void Attribute_AfterContent_IsDroppedWithXtde0410()
+    public void Attribute_AfterContent_RaisesXtde0410()
     {
         string xsl = Wrap(
             "<xsl:template match='/'>" +
             "<out><child/><xsl:attribute name='late' select='&quot;val&quot;'/></out>" +
             "</xsl:template>");
 
-        string output = Transform(xsl, "<doc/>", out IReadOnlyList<Diagnostic> diagnostics);
-        Assert.Multiple(() =>
-        {
-            Assert.That(output, Is.EqualTo("<out><child /></out>"));
-            Assert.That(diagnostics.Any(d => d.Code == XsltErrors.XTDE0410), Is.True);
-        });
+        XsltDynamicException ex = Assert.Throws<XsltDynamicException>(() => Transform(xsl, "<doc/>", out _))!;
+
+        Assert.That(ex.ErrorCode, Is.EqualTo(XsltErrors.XTDE0410));
     }
 
     // ── xsl:comment ─────────────────────────────────────────────────────────

@@ -119,7 +119,7 @@ internal sealed partial class TinyTree
             int nc = handle.IsAttribute
                 ? GetAttributeNameCode(handle.Index)
                 : handle.IsNamespace
-                    ? NamePool.NoName  // namespace nodes are anonymous in the name-code sense
+                    ? NamePool.Allocate(string.Empty, GetNamespacePrefix(handle.Index))  // XDM: the name of a namespace node is its prefix
                     : GetNameCode(handle.Index);
 
             if (!test.Matches(handle.NodeKind, nc, NamePool))

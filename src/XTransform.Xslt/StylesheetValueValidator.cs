@@ -1,0 +1,371 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Xml;
+using XTransform.Xdm;
+
+namespace XTransform.Xslt;
+
+/// <summary>
+/// Checks the lexical form of attribute values that the XSLT 2.0 schema types as a QName, a <c>yes</c> / <c>no</c>
+/// flag or an enumeration (XSLT 2.0 §3.1, §6.5, §9, §10, §16, §20; XTSE0020). Attributes that are attribute value
+/// templates are checked only when they contain no braces. In a forwards-compatible region the flags also accept
+/// the XSLT 3.0 spellings (<c>true</c>, <c>false</c>, <c>1</c>, <c>0</c>).
+/// </summary>
+internal static class StylesheetValueValidator
+{
+    private enum Kind
+    {
+        QName,
+        YesNo,
+        Enum,
+        TemplateMode,
+        ApplyMode,
+        Priority,
+    }
+
+    private sealed class Rule
+    {
+        public Rule(Kind kind, bool avt = false, params string[] values)
+        {
+            Kind = kind;
+            Avt = avt;
+            Values = values;
+        }
+
+        public Kind Kind { get; }
+
+        public bool Avt { get; }
+
+        public string[] Values { get; }
+    }
+
+    private static readonly char[] s_braces = { '{', '}' };
+
+    private static readonly char[] s_whitespace = { ' ', '\t', '\r', '\n' };
+
+    private static readonly Dictionary<string, Dictionary<string, Rule>> s_rules = Build();
+
+    /// <summary>Reports XTSE0020 for each attribute value that is not valid for its type.</summary>
+    public static void Validate(StylesheetAssembly assembly, DiagnosticBag bag)
+    {
+        for (int i = 0; i < assembly.Modules.Count; i++)
+        {
+            Visit(assembly.Modules[i].Module.Root, null, null, bag);
+        }
+
+        CheckAcrossDeclarations(assembly, bag);
+    }
+
+    private static void Visit(StylesheetElement element, StylesheetElement? parent, string? inheritedVersion, DiagnosticBag bag)
+    {
+        // An element in the XSLT namespace that XSLT 2.0 does not define is ignored with its content under forwards-compatible
+        // processing (§3.9); the reader reports it otherwise.
+        if (element.IsUnknownXsltElement)
+        {
+            return;
+        }
+
+        string? version = element.DeclaredVersion.Length != 0 ? element.DeclaredVersion : inheritedVersion;
+        bool forwards = IsForwardsCompatible(version);
+
+        if (element.IsXsltElement)
+        {
+            string name = element.Name.LocalName;
+            CheckVersion(element, bag);
+            CheckCollations(element, name, bag);
+            if (s_rules.TryGetValue(name, out Dictionary<string, Rule>? rules))
+            {
+                foreach (StylesheetAttribute attribute in element.Attributes)
+                {
+                    if (attribute.Name.NamespaceUri.Length == 0 && rules.TryGetValue(attribute.Name.LocalName, out Rule? rule))
+                    {
+                        CheckValue(element, attribute, rule, forwards, bag);
+                    }
+                }
+            }
+
+            // XSLT 2.0 §10.1.2: tunnel parameters exist only on template parameters.
+            if (name == "param" && !forwards && !IsTemplateParam(parent))
+            {
+                string? tunnel = GetAttribute(element, "tunnel");
+                if (tunnel is not null && IsYes(tunnel))
+                {
+                    bag.Error(XsltErrors.XTSE0020, "tunnel=\"yes\" is allowed only on a parameter of a template", element.Location);
+                }
+            }
+        }
+
+        foreach (StylesheetNode child in element.Children)
+        {
+            if (child is StylesheetElement childElement)
+            {
+                Visit(childElement, element, version, bag);
+            }
+        }
+    }
+
+    // XSLT 2.0 §3.6.1 (XTSE0125): a default-collation list must contain a recognised URI; §16.3 (XTSE1210): so must a key's collation.
+    private static void CheckCollations(StylesheetElement element, string name, DiagnosticBag bag)
+    {
+        string? defaults = GetAttribute(element, "default-collation");
+        if (defaults is not null)
+        {
+            bool any = false;
+            foreach (string uri in defaults.Split(s_whitespace, StringSplitOptions.RemoveEmptyEntries))
+            {
+                any |= CollationUris.IsRecognised(uri);
+            }
+
+            if (!any)
+            {
+                bag.Error(XsltErrors.XTSE0125, $"None of the collations in default-collation='{defaults}' is recognised", element.Location);
+            }
+        }
+
+        string? collation = name == "key" ? GetAttribute(element, "collation") : null;
+        if (collation is not null && !CollationUris.IsRecognised(collation))
+        {
+            bag.Error(XsltErrors.XTSE1210, $"The collation '{collation}' of xsl:key is not recognised", element.Location);
+        }
+    }
+
+    // XSLT 2.0 §16.3 (XTSE1220): xsl:key declarations with one name must agree on the collation.
+    private static void CheckAcrossDeclarations(StylesheetAssembly assembly, DiagnosticBag bag)
+    {
+        Dictionary<QName, string> keyCollations = new Dictionary<QName, string>();
+        HashSet<StylesheetElement> seen = new HashSet<StylesheetElement>();
+        for (int i = 0; i < assembly.Modules.Count; i++)
+        {
+            StylesheetElement root = assembly.Modules[i].Module.Root;
+            foreach (StylesheetNode child in root.Children)
+            {
+                if (child is StylesheetElement key
+                    && key.IsXsltElement
+                    && key.Name.LocalName == "key"
+                    && seen.Add(key)
+                    && GetAttribute(key, "name") is string keyName
+                    && LexicalQNameParser.TryResolve(keyName.Trim(), key.InScopeNamespaces, out QName qname, out _))
+                {
+                    string collation = GetAttribute(key, "collation")?.Trim() ?? CollationUris.Codepoint;
+                    if (keyCollations.TryGetValue(qname, out string? existing))
+                    {
+                        if (existing != collation)
+                        {
+                            bag.Error(XsltErrors.XTSE1220, $"The xsl:key declarations named '{keyName}' have different collations", key.Location);
+                        }
+                    }
+                    else
+                    {
+                        keyCollations[qname] = collation;
+                    }
+                }
+            }
+        }
+    }
+
+    // XSLT 2.0 §3.6 (XTSE0110): the version attribute is an xs:decimal; on a literal result element it is xsl:version.
+    private static void CheckVersion(StylesheetElement element, DiagnosticBag bag)
+    {
+        foreach (StylesheetAttribute attribute in element.Attributes)
+        {
+            if (attribute.Name.LocalName == "version" && attribute.Name.NamespaceUri.Length == 0 && !IsDecimal(attribute.Value.Trim()))
+            {
+                bag.Error(XsltErrors.XTSE0110, $"'{attribute.Value}' is not a valid version number", attribute.Location);
+            }
+        }
+    }
+
+    private static void CheckValue(StylesheetElement element, StylesheetAttribute attribute, Rule rule, bool forwards, DiagnosticBag bag)
+    {
+        string value = attribute.Value.Trim();
+        if (rule.Avt && value.IndexOfAny(s_braces) >= 0)
+        {
+            return;
+        }
+
+        bool valid = rule.Kind switch
+        {
+            Kind.QName => IsQName(value),
+            Kind.YesNo => IsYesNo(value, forwards),
+            Kind.Enum => Array.IndexOf(rule.Values, value) >= 0,
+            Kind.TemplateMode => IsTemplateMode(value),
+            Kind.ApplyMode => value == "#default" || value == "#current" || IsQName(value),
+            Kind.Priority => IsDecimal(value),
+            _ => true,
+        };
+
+        if (valid)
+        {
+            CheckPrefixes(element, attribute, value, rule, bag);
+            return;
+        }
+
+        bag.Error(
+            rule.Kind == Kind.TemplateMode ? XsltErrors.XTSE0550 : rule.Kind == Kind.Priority ? XsltErrors.XTSE0530 : XsltErrors.XTSE0020,
+            $"xsl:{element.Name.LocalName}: '{attribute.Value}' is not a valid value for the attribute '{attribute.Name.LocalName}'",
+            attribute.Location);
+    }
+
+    // XSLT 2.0 §5.1.1 (XTSE0280): the prefix of a lexical QName in an attribute must be declared on the element or an ancestor.
+    private static void CheckPrefixes(StylesheetElement element, StylesheetAttribute attribute, string value, Rule rule, DiagnosticBag bag)
+    {
+        if (rule.Kind == Kind.Enum || rule.Kind == Kind.YesNo)
+        {
+            return;
+        }
+
+        foreach (string token in value.Split(s_whitespace, StringSplitOptions.RemoveEmptyEntries))
+        {
+            int colon = token.IndexOf(':');
+            if (token[0] == '#' || colon <= 0)
+            {
+                continue;
+            }
+
+            string prefix = token.Substring(0, colon);
+            if (element.InScopeNamespaces.Resolve(prefix) is null)
+            {
+                bag.Error(
+                    XsltErrors.XTSE0280,
+                    $"xsl:{element.Name.LocalName}: the prefix '{prefix}' in the attribute '{attribute.Name.LocalName}' is not declared",
+                    attribute.Location);
+            }
+        }
+    }
+    // xs:decimal lexical form: an optional sign and digits with at most one decimal point, no exponent.
+    private static bool IsDecimal(string value)
+    {
+        int i = value.Length > 0 && (value[0] == '+' || value[0] == '-') ? 1 : 0;
+        int digits = 0;
+        bool point = false;
+        for (; i < value.Length; i++)
+        {
+            if (value[i] >= '0' && value[i] <= '9')
+            {
+                digits++;
+            }
+            else if (value[i] == '.' && !point)
+            {
+                point = true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        return digits > 0;
+    }
+
+    private static bool IsQName(string value) => LexicalNames.IsQName(value);
+
+    private static bool IsNCName(string value) => LexicalNames.IsNCName(value);
+
+    // XSLT 2.0 §6.5 (XTSE0550): "#all" alone, or a non-empty whitespace-separated list of distinct QNames and "#default".
+    private static bool IsTemplateMode(string value)
+    {
+        string[] tokens = value.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+        if (tokens.Length == 0)
+        {
+            return false;
+        }
+
+        HashSet<string> seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (string token in tokens)
+        {
+            if ((token != "#all" && token != "#default" && !IsQName(token)) || !seen.Add(token))
+            {
+                return false;
+            }
+        }
+
+        return !seen.Contains("#all") || tokens.Length == 1;
+    }
+
+    private static bool IsYesNo(string value, bool forwards) =>
+        value == "yes" || value == "no" || (forwards && (value == "true" || value == "false" || value == "1" || value == "0"));
+
+    private static bool IsYes(string value)
+    {
+        string v = value.Trim();
+        return v == "yes" || v == "true" || v == "1";
+    }
+
+    private static bool IsTemplateParam(StylesheetElement? parent) =>
+        parent is not null && parent.IsXsltElement && parent.Name.LocalName == "template";
+
+    private static string? GetAttribute(StylesheetElement element, string localName)
+    {
+        foreach (StylesheetAttribute attribute in element.Attributes)
+        {
+            if (attribute.Name.NamespaceUri.Length == 0 && string.Equals(attribute.Name.LocalName, localName, StringComparison.Ordinal))
+            {
+                return attribute.Value;
+            }
+        }
+
+        return null;
+    }
+
+    private static bool IsForwardsCompatible(string? version) =>
+        !string.IsNullOrEmpty(version)
+        && double.TryParse(version!.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out double v)
+        && v > 2.0;
+
+    private static Dictionary<string, Dictionary<string, Rule>> Build()
+    {
+        Dictionary<string, Dictionary<string, Rule>> table = new Dictionary<string, Dictionary<string, Rule>>(StringComparer.Ordinal);
+
+        void Add(string elements, string attribute, Rule rule)
+        {
+            foreach (string element in elements.Split(' '))
+            {
+                if (!table.TryGetValue(element, out Dictionary<string, Rule>? rules))
+                {
+                    rules = new Dictionary<string, Rule>(StringComparer.Ordinal);
+                    table[element] = rules;
+                }
+
+                rules[attribute] = rule;
+            }
+        }
+
+        // QName-valued names (XSLT 2.0 §3.1: a name that is not an AVT is a lexical QName).
+        Add("attribute-set key template call-template variable param with-param function decimal-format character-map output", "name", new Rule(Kind.QName));
+        Add("template", "mode", new Rule(Kind.TemplateMode));
+        Add("apply-templates", "mode", new Rule(Kind.ApplyMode));
+        Add("template", "priority", new Rule(Kind.Priority));
+
+        // Flags (yes | no).
+        Add("param with-param", "tunnel", new Rule(Kind.YesNo));
+        Add("param", "required", new Rule(Kind.YesNo));
+        Add("copy copy-of", "copy-namespaces", new Rule(Kind.YesNo));
+        Add("copy element", "inherit-namespaces", new Rule(Kind.YesNo));
+        Add("value-of text", "disable-output-escaping", new Rule(Kind.YesNo));
+        Add("message", "terminate", new Rule(Kind.YesNo, avt: true));
+        Add("sort", "stable", new Rule(Kind.YesNo, avt: true));
+        Add("output", "omit-xml-declaration", new Rule(Kind.YesNo));
+        Add("output", "indent", new Rule(Kind.YesNo));
+        Add("output", "byte-order-mark", new Rule(Kind.YesNo));
+        Add("output", "escape-uri-attributes", new Rule(Kind.YesNo));
+        Add("output", "include-content-type", new Rule(Kind.YesNo));
+        Add("output", "undeclare-prefixes", new Rule(Kind.YesNo));
+        Add("result-document", "omit-xml-declaration", new Rule(Kind.YesNo, avt: true));
+        Add("result-document", "indent", new Rule(Kind.YesNo, avt: true));
+        Add("result-document", "byte-order-mark", new Rule(Kind.YesNo, avt: true));
+        Add("result-document", "escape-uri-attributes", new Rule(Kind.YesNo, avt: true));
+        Add("result-document", "include-content-type", new Rule(Kind.YesNo, avt: true));
+        Add("result-document", "undeclare-prefixes", new Rule(Kind.YesNo, avt: true));
+
+        // Enumerations.
+        Add("output", "standalone", new Rule(Kind.Enum, false, "yes", "no", "omit"));
+        Add("result-document", "standalone", new Rule(Kind.Enum, true, "yes", "no", "omit"));
+        Add("sort", "order", new Rule(Kind.Enum, true, "ascending", "descending"));
+        Add("sort", "case-order", new Rule(Kind.Enum, true, "upper-first", "lower-first"));
+        Add("number", "level", new Rule(Kind.Enum, false, "single", "multiple", "any"));
+        Add("copy copy-of element attribute document result-document", "validation", new Rule(Kind.Enum, false, "strict", "lax", "preserve", "strip"));
+
+        return table;
+    }
+}

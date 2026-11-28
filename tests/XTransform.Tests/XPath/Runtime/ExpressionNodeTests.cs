@@ -238,7 +238,7 @@ internal sealed class ExpressionNodeTests
     // ── EffectiveBooleanValue — error cases ───────────────────────────────────
 
     [Test]
-    public void EffectiveBooleanValue_TwoAtomics_ThrowsXPTY0004()
+    public void EffectiveBooleanValue_TwoAtomics_ThrowsFORG0006()
     {
         // Arrange — two integers: EBV on a sequence with more than one atomic is undefined
         FixedExpressionNode node = new FixedExpressionNode(
@@ -249,11 +249,11 @@ internal sealed class ExpressionNodeTests
         // Act / Assert
         XPathDynamicException ex = Assert.Throws<XPathDynamicException>(
             () => node.EffectiveBooleanValue(ctx))!;
-        Assert.That(ex.ErrorCode, Is.EqualTo(XPathErrors.XPTY0004));
+        Assert.That(ex.ErrorCode, Is.EqualTo(XPathErrors.FORG0006));
     }
 
     [Test]
-    public void EffectiveBooleanValue_QNameAtomic_ThrowsXPTY0004()
+    public void EffectiveBooleanValue_QNameAtomic_ThrowsFORG0006()
     {
         // Arrange — xs:QName has no defined EBV (F&O §15.1.1)
         FixedExpressionNode node = new FixedExpressionNode(
@@ -263,6 +263,6 @@ internal sealed class ExpressionNodeTests
         // Act / Assert
         XPathDynamicException ex = Assert.Throws<XPathDynamicException>(
             () => node.EffectiveBooleanValue(ctx))!;
-        Assert.That(ex.ErrorCode, Is.EqualTo(XPathErrors.XPTY0004));
+        Assert.That(ex.ErrorCode, Is.EqualTo(XPathErrors.FORG0006));
     }
 }

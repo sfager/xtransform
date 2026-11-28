@@ -391,12 +391,12 @@ internal sealed class NumericFunctionTests
     }
 
     [Test]
-    public void FnSum_NonNumeric_RaisesXPTY0004()
+    public void FnSum_NonNumeric_RaisesFORG0006()
     {
         // Arrange / Act / Assert
         XPathDynamicException ex = Assert.Throws<XPathDynamicException>(
             () => DrainExpr("fn:sum((1, 'x'))"))!;
-        Assert.That(ex.ErrorCode, Is.EqualTo(XPathErrors.XPTY0004));
+        Assert.That(ex.ErrorCode, Is.EqualTo(XPathErrors.FORG0006));
     }
 
     // =========================================================================

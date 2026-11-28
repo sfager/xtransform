@@ -48,6 +48,13 @@ internal static class StylesheetCompiler
             }
         }
 
+        StylesheetAttributeValidator.Validate(assembly, bag);
+        StylesheetStructureValidator.Validate(assembly, bag);
+        StylesheetValueValidator.Validate(assembly, bag);
+        SchemaFeatureValidator.Validate(assembly, bag);
+        AttributeSetCycleValidator.Validate(assembly, bag);
+        AttributeSetReferenceValidator.Validate(assembly, bag);
+        CharacterMapValidator.Validate(assembly, bag);
         DeclarationTable declarations = DeclarationCollector.Collect(assembly, bag);
         NameBindingValidator.Validate(declarations, bag);
 
@@ -157,7 +164,7 @@ internal static class StylesheetCompiler
             {
                 NamespaceBindingsResolver resolver = new NamespaceBindingsResolver(
                     key.Element.InScopeNamespaces,
-                    defaultElementNamespace: string.Empty,
+                    defaultElementNamespace: key.Element.XPathDefaultNamespace,
                     defaultFunctionNamespace: BuiltInFunctionLibrary.FnNamespace);
                 PatternAst pattern = XPathParser.ParsePattern(key.MatchPattern, key.Location, resolver);
                 patterns.Register(pattern, resolver, functions, key.Location, bag);

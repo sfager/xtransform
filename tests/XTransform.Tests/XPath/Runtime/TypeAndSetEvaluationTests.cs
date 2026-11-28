@@ -189,12 +189,12 @@ internal sealed class TypeAndSetEvaluationTests
     }
 
     [Test]
-    public void Treat_Mismatch_ThrowsXpty0004()
+    public void Treat_Mismatch_ThrowsXpdy0050()
     {
         CompiledExpression ce = Compile("5 treat as xs:string");
         XPathDynamicException ex = Assert.Throws<XPathDynamicException>(
             () => ce.Root.EvaluateItem(RootCtx(ce)))!;
-        Assert.That(ex.ErrorCode, Is.EqualTo(XPathErrors.XPTY0004));
+        Assert.That(ex.ErrorCode, Is.EqualTo(XPathErrors.XPDY0050));
     }
 
     [Test]
