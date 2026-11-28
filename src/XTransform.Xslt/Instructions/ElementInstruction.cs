@@ -47,22 +47,16 @@ internal sealed class ElementInstruction : XsltInstruction
     /// <inheritdoc/>
     public override void Execute(DynamicContext context, IResultReceiver receiver, XsltRunState run)
     {
-        string lexical = Name.Stringify(context, run);
+        string lexical = Name.Stringify(context, run).Trim();
         string? explicitNs = Namespace?.Stringify(context, run);
 
-        int colon = lexical.IndexOf(':');
-        string prefix;
-        string local;
-        if (colon < 0)
+        // XSLT 2.0 §11.2 (XTDE0820): the name must be a lexical QName.
+        if (!LexicalNames.IsQName(lexical))
         {
-            prefix = string.Empty;
-            local = lexical;
+            throw new XsltDynamicException(XsltErrors.XTDE0820, $"'{lexical}' is not a lexical QName, so it cannot name an element", Location);
         }
-        else
-        {
-            prefix = lexical.Substring(0, colon);
-            local = lexical.Substring(colon + 1);
-        }
+
+        LexicalNames.Split(lexical, out string prefix, out string local);
 
         string ns;
         if (explicitNs is not null)
@@ -75,10 +69,12 @@ internal sealed class ElementInstruction : XsltInstruction
         }
         else
         {
-            ns = StaticScope.Resolve(prefix) ?? string.Empty;
+            // XTDE0830: with no namespace attribute, the prefix must be bound where the instruction is.
+            ns = StaticScope.Resolve(prefix)
+                ?? throw new XsltDynamicException(XsltErrors.XTDE0830, $"The prefix '{prefix}' of the element name '{lexical}' has no namespace declaration in scope", Location);
         }
 
-        int nameCode = run.NamePool.Allocate(ns, local);
+        int nameCode = run.NamePool.Allocate(prefix, ns, local);
         receiver.StartElement(nameCode, Location);
         Body.Execute(context, receiver, run);
         receiver.EndElement();

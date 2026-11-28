@@ -140,6 +140,7 @@ public readonly struct XsdDateTime : IEquatable<XsdDateTime>
                 if (!TryParseTimezone(lexical, ref pos, out timezoneMinutes)) { return false; }
                 if (pos != lexical.Length) { return false; }
                 if (!ValidateDateTimeComponents(hour, minute, second, month, day)) { return false; }
+                if (day > DaysInMonth(year, month)) { return false; }
                 break;
 
             case XsdDateTimeKind.Date:
@@ -153,6 +154,7 @@ public readonly struct XsdDateTime : IEquatable<XsdDateTime>
                 if (pos != lexical.Length) { return false; }
                 if (month < 1 || month > 12) { return false; }
                 if (day < 1 || day > 31) { return false; }
+                if (day > DaysInMonth(year, month)) { return false; }
                 break;
 
             case XsdDateTimeKind.Time:
@@ -195,6 +197,7 @@ public readonly struct XsdDateTime : IEquatable<XsdDateTime>
                 if (pos != lexical.Length) { return false; }
                 if (month < 1 || month > 12) { return false; }
                 if (day < 1 || day > 31) { return false; }
+                if (day > DaysInMonth(2000, month)) { return false; }   // no year: February 29 is allowed
                 break;
 
             case XsdDateTimeKind.GDay:
@@ -538,6 +541,18 @@ public readonly struct XsdDateTime : IEquatable<XsdDateTime>
         }
 
         return hour <= 23 && minute <= 59 && secVal >= 0m && secVal < 61m;
+    }
+
+    // XML Schema Part 2 §3.2.7: the day must exist in the month (leap years included).
+    private static int DaysInMonth(long year, int month)
+    {
+        if (month == 2)
+        {
+            bool leap = (year % 4 == 0 && year % 100 != 0) || year % 400 == 0;
+            return leap ? 29 : 28;
+        }
+
+        return month == 4 || month == 6 || month == 9 || month == 11 ? 30 : 31;
     }
 
     private static bool ValidateDateTimeComponents(int hour, int minute, XsdDecimal second, int month, int day)

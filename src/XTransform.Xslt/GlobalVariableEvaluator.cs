@@ -51,6 +51,13 @@ internal static class GlobalVariableEvaluator
             // External parameter overrides win when present.
             if (decl.IsParam && run.ExternalParameters.TryGetValue(name, out XdmSequence? external))
             {
+                // A supplied parameter value is converted to the as type (XTTE0590).
+                SequenceType? suppliedType = SequenceTypes.ParseOrNull(decl.AsType, decl.Element);
+                if (suppliedType is not null)
+                {
+                    external = SequenceTypes.Convert(external, suppliedType, XsltErrors.XTTE0590, decl.Location, $"The value supplied for parameter ${name.LocalName}");
+                }
+
                 run.Globals[name] = external;
                 return external;
             }
@@ -69,7 +76,7 @@ internal static class GlobalVariableEvaluator
                 // XSLT 2.0 §9.3: the content (a document node when there is no as attribute), else "" or ().
                 if (run.Stylesheet.GlobalBodies.TryGetValue(decl, out VariableValueBody? body))
                 {
-                    ForceReferencedGlobals(decl, CollectText(decl.Element), decls, initialContext, run);
+                    ForceReferencedGlobals(decl.Element, CollectText(decl.Element), decls, initialContext, run, new HashSet<FunctionDecl>());
                     value = body.Evaluate(initialContext, run);
                 }
                 else
@@ -81,7 +88,7 @@ internal static class GlobalVariableEvaluator
             {
                 NamespaceBindingsResolver resolver = new NamespaceBindingsResolver(
                     decl.Element.InScopeNamespaces,
-                    defaultElementNamespace: string.Empty,
+                    defaultElementNamespace: decl.Element.XPathDefaultNamespace,
                     defaultFunctionNamespace: BuiltInFunctionLibrary.FnNamespace);
 
                 Dictionary<QName, SequenceType> externals = new Dictionary<QName, SequenceType>();
@@ -101,7 +108,7 @@ internal static class GlobalVariableEvaluator
                 // reference points at an un-evaluated global, LookupVariable returns Empty —
                 // which would mask cycles. So recursively force-evaluate the dependencies
                 // referenced by this expression before we evaluate it.
-                ForceReferencedGlobals(decl, decl.SelectExpression ?? string.Empty, decls, initialContext, run);
+                ForceReferencedGlobals(decl.Element, decl.SelectExpression ?? string.Empty, decls, initialContext, run, new HashSet<FunctionDecl>());
 
                 DynamicContext ctx = initialContext.WithFrame(ce.SlotCount);
                 int i = 0;
@@ -121,6 +128,18 @@ internal static class GlobalVariableEvaluator
                 value = XdmSequence.From(items);
             }
 
+            // The value of a variable (XTTE0570) or the default of a parameter (XTTE0600) is converted to the as type.
+            SequenceType? valueType = SequenceTypes.ParseOrNull(decl.AsType, decl.Element);
+            if (valueType is not null)
+            {
+                value = SequenceTypes.Convert(
+                    value,
+                    valueType,
+                    decl.IsParam ? XsltErrors.XTTE0600 : XsltErrors.XTTE0570,
+                    decl.Location,
+                    $"The value of ${name.LocalName}");
+            }
+
             run.Globals[name] = value;
             return value;
         }
@@ -138,14 +157,42 @@ internal static class GlobalVariableEvaluator
     /// <see cref="XsltRunState.GlobalsInProgress"/>.
     /// </summary>
     private static void ForceReferencedGlobals(
-        GlobalVariableDecl decl,
+        StylesheetElement scope,
         string text,
         DeclarationTable decls,
         DynamicContext initialContext,
-        XsltRunState run)
+        XsltRunState run,
+        HashSet<FunctionDecl> visitedFunctions,
+        bool viaFunction = false)
     {
         for (int i = 0; i < text.Length; i++)
         {
+            // A call f:name( — the stylesheet function may read globals the text does not mention (XSLT 2.0 §9.5).
+            if (text[i] == '(')
+            {
+                int nameEnd = i;
+                int nameStart = nameEnd;
+                while (nameStart > 0 && IsNameChar(text[nameStart - 1]))
+                {
+                    nameStart--;
+                }
+
+                if (nameStart < nameEnd
+                    && text[nameStart] != '$'
+                    && LexicalQNameParser.TryResolve(text.Substring(nameStart, nameEnd - nameStart), scope.InScopeNamespaces, out QName called, out _))
+                {
+                    foreach (KeyValuePair<FunctionKey, FunctionDecl> kv in decls.Functions)
+                    {
+                        if (kv.Value.Name.Equals(called) && visitedFunctions.Add(kv.Value))
+                        {
+                            ForceReferencedGlobals(kv.Value.Element, CollectText(kv.Value.Element), decls, initialContext, run, visitedFunctions, viaFunction: true);
+                        }
+                    }
+                }
+
+                continue;
+            }
+
             if (text[i] != '$')
             {
                 continue;
@@ -164,12 +211,14 @@ internal static class GlobalVariableEvaluator
             }
 
             string lexical = text.Substring(start, end - start);
-            if (!LexicalQNameParser.TryResolve(lexical, decl.Element.InScopeNamespaces, out QName referenced, out _))
+            if (!LexicalQNameParser.TryResolve(lexical, scope.InScopeNamespaces, out QName referenced, out _))
             {
                 continue;
             }
 
-            if (decls.GlobalVariables.ContainsKey(referenced))
+            // Inside a function the name may be a local parameter that merely shares the global's name, so a global already
+            // being evaluated is not a circular reference there.
+            if (decls.GlobalVariables.ContainsKey(referenced) && !(viaFunction && run.GlobalsInProgress.Contains(referenced)))
             {
                 Evaluate(referenced, decls, initialContext, run);
             }

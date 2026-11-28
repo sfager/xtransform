@@ -81,10 +81,16 @@ internal sealed class XsltFunctionLibrary : FunctionLibrary
 
     private void RegisterXsltFunctions()
     {
-        Register("key", 2,
+        // The key name is a lexical QName, so key() is bound to the namespaces in scope at the call (XSLT 2.0 §16.4).
+        RegisterBound("key", 2,
             SeqNodeStar(),
             new[] { SeqStringOne(), SeqItemStar() },
-            KeyInvoker);
+            ns => (context, args) => KeyLookup(context, args, top: null, ns));
+
+        RegisterBound("key", 3,
+            SeqNodeStar(),
+            new[] { SeqStringOne(), SeqItemStar(), new SequenceType(ItemType.AnyNode, Occurrence.ExactlyOne) },
+            ns => (context, args) => Key3Invoker(context, args, ns));
 
         Register("document", 1,
             SeqNodeStar(),
@@ -106,49 +112,230 @@ internal sealed class XsltFunctionLibrary : FunctionLibrary
             new[] { new SequenceType(ItemType.Atomic(XdmTypeCode.Integer), Occurrence.ExactlyOne) },
             RegexGroupInvoker);
 
+        // XSLT 2.0 §14.1, §14.2: the group being processed by xsl:for-each-group; empty outside one.
+        Register("current-group", 0, new SequenceType(ItemType.AnyItem, Occurrence.ZeroOrMore), System.Array.Empty<SequenceType>(),
+            (context, args) => GetRun(context).CurrentGroup is { } group
+                ? XdmSequence.From(group).GetIterator()
+                : XTransform.Xdm.Iterators.EmptyIterator.Instance);
+        Register("current-grouping-key", 0, new SequenceType(ItemType.Atomic(XdmTypeCode.AnyAtomicType), Occurrence.ZeroOrOne), System.Array.Empty<SequenceType>(),
+            (context, args) => GetRun(context).CurrentGroupingKey is { } key
+                ? new XTransform.Xdm.Iterators.SingleItemIterator(key)
+                : XTransform.Xdm.Iterators.EmptyIterator.Instance);
+
         Register("doc-available", 1,
             SeqBoolOne(),
             new[] { SeqStringOne() },
             DocAvailableInvoker);
+
+        Register("generate-id", 0, SeqStringOne(), System.Array.Empty<SequenceType>(), SystemFunctions.GenerateId0);
+        Register("generate-id", 1, SeqStringOne(),
+            new[] { new SequenceType(ItemType.AnyNode, Occurrence.ZeroOrOne) },
+            SystemFunctions.GenerateId1);
+
+        Register("unparsed-text", 1, SeqStringZeroOrOne(), new[] { SeqStringZeroOrOne() }, SystemFunctions.UnparsedText);
+        Register("unparsed-text", 2, SeqStringZeroOrOne(), new[] { SeqStringZeroOrOne(), SeqStringOne() }, SystemFunctions.UnparsedText);
+        Register("unparsed-text-available", 1, SeqBoolOne(), new[] { SeqStringZeroOrOne() }, SystemFunctions.UnparsedTextAvailable);
+        Register("unparsed-text-available", 2, SeqBoolOne(), new[] { SeqStringZeroOrOne(), SeqStringOne() }, SystemFunctions.UnparsedTextAvailable);
+
+        // No DTD entity data reaches the tree yet (P4-20): every entity is undeclared, so the answer is "".
+        Register("unparsed-entity-uri", 1, SeqStringOne(), new[] { SeqStringOne() },
+            (context, args) => new XTransform.Xdm.Iterators.SingleItemIterator(XdmAtomicValue.String(string.Empty)));
+        Register("unparsed-entity-public-id", 1, SeqStringOne(), new[] { SeqStringOne() },
+            (context, args) => new XTransform.Xdm.Iterators.SingleItemIterator(XdmAtomicValue.String(string.Empty)));
+
+        // fn:current-output-uri() is the empty sequence when the principal result has no URI.
+        Register("current-output-uri", 0, SeqAnyUriZeroOrOne(), System.Array.Empty<SequenceType>(),
+            (context, args) => XTransform.Xdm.Iterators.EmptyIterator.Instance);
+
+        // XSLT 2.0 §16.4 format-number: the 2-argument form uses the unnamed decimal format; the 3-argument form
+        // reads a lexical QName, so it is bound to the namespaces in scope at the call.
+        Register("format-number", 2, SeqStringOne(), new[] { SeqAnyAtomicZeroOrOne(), SeqStringOne() },
+            (context, args) => FormatNumber(context, args, null));
+        RegisterBound("format-number", 3, SeqStringOne(), new[] { SeqAnyAtomicZeroOrOne(), SeqStringOne(), SeqStringOne() },
+            ns => (context, args) => FormatNumber(context, args, ns));
+
+        // XSLT 2.0 §16.5 format-dateTime / format-date / format-time: 2- and 5-argument forms; an empty value
+        // gives the empty sequence.
+        RegisterDateFormat("format-dateTime", XdmTypeCode.DateTime);
+        RegisterDateFormat("format-date", XdmTypeCode.Date);
+        RegisterDateFormat("format-time", XdmTypeCode.Time);
+
+        // Functions that read a lexical QName argument are bound to the namespaces in scope at the call.
+        RegisterBound("system-property", 1, SeqStringOne(), new[] { SeqStringOne() },
+            ns => (context, args) => new XTransform.Xdm.Iterators.SingleItemIterator(XdmAtomicValue.String(
+                SystemFunctions.SystemProperty(args[0].FirstOrNull()?.GetStringValue() ?? string.Empty, ns))));
+        RegisterBound("element-available", 1, SeqBoolOne(), new[] { SeqStringOne() },
+            ns => (context, args) => new XTransform.Xdm.Iterators.SingleItemIterator(XdmAtomicValue.Boolean(
+                SystemFunctions.ElementAvailable(args[0].FirstOrNull()?.GetStringValue() ?? string.Empty, ns))));
+        RegisterBound("type-available", 1, SeqBoolOne(), new[] { SeqStringOne() },
+            ns => (context, args) => new XTransform.Xdm.Iterators.SingleItemIterator(XdmAtomicValue.Boolean(
+                SystemFunctions.TypeAvailable(args[0].FirstOrNull()?.GetStringValue() ?? string.Empty, ns))));
+        RegisterBound("function-available", 1, SeqBoolOne(), new[] { SeqStringOne() },
+            ns => (context, args) => new XTransform.Xdm.Iterators.SingleItemIterator(XdmAtomicValue.Boolean(
+                FunctionAvailable(args[0].FirstOrNull()?.GetStringValue() ?? string.Empty, -1, ns))));
+        RegisterBound("function-available", 2, SeqBoolOne(), new[] { SeqStringOne(), SeqIntegerOne() },
+            ns => (context, args) => new XTransform.Xdm.Iterators.SingleItemIterator(XdmAtomicValue.Boolean(
+                FunctionAvailable(
+                    args[0].FirstOrNull()?.GetStringValue() ?? string.Empty,
+                    (int)((XdmAtomicValue)args[1].FirstOrNull()!).AsInt64(),
+                    ns))));
     }
 
-    private static IXdmIterator KeyInvoker(DynamicContext context, XdmSequence[] args)
+    // XSLT 2.0 §16.6.1: true when a function of that name (and arity, when given) could be called here.
+    private bool FunctionAvailable(string lexical, int arity, IStaticNamespaceResolver ns)
+    {
+        if (!SystemFunctions.TryResolveName(lexical, ns, out string uri, out string local))
+        {
+            throw new XsltDynamicException(
+                XsltErrors.XTDE1400,
+                $"function-available: '{lexical}' is not a lexical QName whose prefix is bound",
+                SourceSpan.None);
+        }
+
+        // An unprefixed name is in the default function namespace.
+        if (lexical.IndexOf(':') < 0)
+        {
+            uri = ns.DefaultFunctionNamespace;
+        }
+
+        QName name = new QName(uri, local);
+        for (int a = arity < 0 ? 0 : arity; a <= (arity < 0 ? 10 : arity); a++)
+        {
+            if (TryResolve(name, a, out _))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void RegisterBound(string localName, int arity, SequenceType returnType, SequenceType[] parameters,
+                               System.Func<IStaticNamespaceResolver, FunctionInvoker> bind)
+    {
+        QName name = new QName("fn", BuiltInFunctionLibrary.FnNamespace, localName);
+        FunctionSignature sig = new FunctionSignature(
+            name, arity, returnType, parameters.ToImmutableArray(),
+            static (_, _) => throw new System.InvalidOperationException("Function needs its static context"))
+        {
+            BindStaticContext = bind,
+        };
+        _xslt[MakeKey(BuiltInFunctionLibrary.FnNamespace, localName, arity)] = sig;
+    }
+
+    // fn:key($name, $value, $top): like key() but searches the tree rooted at $top (XSLT 2.0 §16.4).
+    private static IXdmIterator Key3Invoker(DynamicContext context, XdmSequence[] args, IStaticNamespaceResolver ns)
+    {
+        if (args[2].FirstOrNull() is not XdmNode top)
+        {
+            throw new XsltDynamicException(
+                XsltErrors.XTDE1270,
+                "The third argument of key() must be a single node",
+                SourceSpan.None);
+        }
+
+        return KeyLookup(context, args, top, ns);
+    }
+
+    // ns is the namespace context of the call; a null ns (key() inside a pattern) matches the name leniently and returns
+    // nothing for a key that is not declared.
+    internal static IXdmIterator KeyLookup(DynamicContext context, XdmSequence[] args, XdmNode? top, IStaticNamespaceResolver? ns = null)
     {
         XsltRunState run = GetRun(context);
         string keyName = args[0].FirstOrNull()?.GetStringValue() ?? string.Empty;
         XdmSequence keyValues = args[1];
 
-        // Resolve the key name against the stylesheet's static scope — for P3-11 we take it
-        // as an unprefixed local name; proper QName resolution lands when xsl:key supports
-        // prefixes-in-name.
-        QName keyQName = new QName(string.Empty, string.Empty, keyName);
-
-        if (!run.Stylesheet.Keys.TryGetValue(keyQName, out KeyDecl? keyDecl))
+        QName keyQName;
+        IReadOnlyList<KeyDecl>? keyDecls;
+        if (ns is not null)
+        {
+            // XSLT 2.0 §16.4 (XTDE1260): the name must be a lexical QName whose prefix is bound and that names an xsl:key.
+            string lexical = keyName.Trim();
+            if (!LexicalNames.IsQName(lexical)
+                || !SystemFunctions.TryResolveName(lexical, ns, out string uri, out string local)
+                || !TryFindKey(run, uri, local, out keyQName, out keyDecls))
+            {
+                throw new XsltDynamicException(XsltErrors.XTDE1260, $"'{keyName}' is not the name of an xsl:key declaration", SourceSpan.None);
+            }
+        }
+        else if (!TryFindKey(run, keyName, out keyQName, out keyDecls))
         {
             return XTransform.Xdm.Iterators.EmptyIterator.Instance;
         }
 
-        // Current document comes from the context item; fall back to the primary input.
-        XdmNode? node = context.ContextItem as XdmNode;
+        // The tree searched is the one containing the context item, or the one rooted at the third argument. XTDE1270: it
+        // must exist and be rooted at a document node.
+        XdmNode? node = top ?? context.ContextItem as XdmNode;
         TinyTree? tree = node?.Handle.Tree;
-        if (tree is null)
+        if (tree is null || tree.GetKind(0) != XdmNodeKind.Document)
         {
-            return XTransform.Xdm.Iterators.EmptyIterator.Instance;
+            throw new XsltDynamicException(XsltErrors.XTDE1270, "key() needs a node in a tree whose root is a document node", SourceSpan.None);
         }
 
-        KeyIndex index = run.GetOrBuildKeyIndex(tree, keyQName, keyDecl, context);
+        KeyIndex index = run.GetOrBuildKeyIndex(tree, keyQName, keyDecls!, context);
 
-        List<XdmItem> hits = new List<XdmItem>();
+        List<XdmNode> hits = new List<XdmNode>();
+        HashSet<XdmNode> seen = new HashSet<XdmNode>();
         foreach (XdmItem value in keyValues)
         {
             string v = value.GetStringValue();
             if (index.TryGetValue(v, out IReadOnlyList<XdmNode>? nodes) && nodes is not null)
             {
-                foreach (XdmNode n in nodes) { hits.Add(n); }
+                foreach (XdmNode n in nodes)
+                {
+                    if (seen.Add(n))
+                    {
+                        hits.Add(n);
+                    }
+                }
             }
         }
 
-        return XdmSequence.From(hits).GetIterator();
+        // The result is in document order without duplicates (§16.4).
+        hits.Sort((a, b) => a.CompareDocumentOrder(b));
+        return XdmSequence.From(hits.ConvertAll(n => (XdmItem)n)).GetIterator();
+    }
+
+    // The key name is a QName resolved with the namespaces in scope of the call; the function has no static
+    // context here, so a prefixed name is matched on prefix and local name against the declarations.
+    // The same, with the name already resolved to a namespace and a local name.
+    private static bool TryFindKey(XsltRunState run, string uri, string local, out QName key, out IReadOnlyList<KeyDecl>? decls)
+    {
+        foreach (KeyValuePair<QName, IReadOnlyList<KeyDecl>> entry in run.Stylesheet.Keys)
+        {
+            if (string.Equals(entry.Key.LocalName, local, System.StringComparison.Ordinal) &&
+                string.Equals(entry.Key.NamespaceUri, uri, System.StringComparison.Ordinal))
+            {
+                key = entry.Key;
+                decls = entry.Value;
+                return true;
+            }
+        }
+
+        key = default;
+        decls = null;
+        return false;
+    }
+
+    private static bool TryFindKey(XsltRunState run, string keyName, out QName key, out IReadOnlyList<KeyDecl>? decls)
+    {
+        int colon = keyName.IndexOf(':');
+        string prefix = colon < 0 ? string.Empty : keyName.Substring(0, colon);
+        string local = colon < 0 ? keyName : keyName.Substring(colon + 1);
+        foreach (KeyValuePair<QName, IReadOnlyList<KeyDecl>> entry in run.Stylesheet.Keys)
+        {
+            if (string.Equals(entry.Key.LocalName, local, System.StringComparison.Ordinal) &&
+                string.Equals(entry.Key.Prefix, prefix, System.StringComparison.Ordinal))
+            {
+                key = entry.Key;
+                decls = entry.Value;
+                return true;
+            }
+        }
+
+        key = default;
+        decls = null;
+        return false;
     }
 
     private static IXdmIterator DocumentInvoker(DynamicContext context, XdmSequence[] args)
@@ -219,6 +406,92 @@ internal sealed class XsltFunctionLibrary : FunctionLibrary
         return new XTransform.Xdm.Iterators.SingleItemIterator(current);
     }
 
+    private static bool IsNcName(string text) =>
+        text.Length > 0 && XdmAtomicValue.TryParse(text, XdmTypeCode.NcName, out _);
+
+    // A lexical QName: an NCName, optionally preceded by an NCName and a colon.
+    private static bool IsLexicalQName(string lexical)
+    {
+        int colon = lexical.IndexOf(':');
+        return colon < 0
+            ? IsNcName(lexical)
+            : IsNcName(lexical.Substring(0, colon)) && IsNcName(lexical.Substring(colon + 1));
+    }
+
+    private static XTransform.Xdm.Iterators.SingleItemIterator FormatNumber(DynamicContext context, XdmSequence[] args, IStaticNamespaceResolver? ns)
+    {
+        XsltRunState run = GetRun(context);
+        DecimalFormatTable formats = run.Stylesheet.Declarations.DecimalFormats;
+        DecimalFormat format = formats.Unnamed;
+        if (ns is not null)
+        {
+            string lexical = args[2].FirstOrNull()?.GetStringValue() ?? string.Empty;
+            QName name;
+            if (!SystemFunctions.TryResolveName(lexical, ns, out string uri, out string local) ||
+                !IsLexicalQName(lexical))
+            {
+                throw new XsltDynamicException(
+                    XsltErrors.XTDE1280,
+                    $"format-number: '{lexical}' is not a valid decimal format name",
+                    SourceSpan.None);
+            }
+
+            name = new QName(uri, local);
+            if (!formats.TryGetNamed(name, out DecimalFormat? named) || named is null)
+            {
+                throw new XsltDynamicException(
+                    XsltErrors.XTDE1280,
+                    $"format-number: there is no xsl:decimal-format named '{lexical}'",
+                    SourceSpan.None);
+            }
+
+            format = named;
+        }
+
+        // An empty value is NaN; xs:untypedAtomic is cast to xs:double (F&O §6.2.1).
+        XdmAtomicValue? value = args[0].FirstOrNull() as XdmAtomicValue;
+        if (value is not null && value.TypeCode == XdmTypeCode.UntypedAtomic)
+        {
+            value = CastTable.Cast(value, XdmTypeCode.Double, SourceSpan.None);
+        }
+
+        if (value is not null && !XTransform.XPath.Operators.NumericPromotion.IsNumeric(value.TypeCode))
+        {
+            throw new XsltDynamicException(
+                XPathErrors.XPTY0004,
+                "format-number: the first argument must be numeric",
+                SourceSpan.None);
+        }
+
+        string picture = args[1].FirstOrNull()?.GetStringValue() ?? string.Empty;
+        string text = NumberPictureFormatter.Format(format, value, picture, SourceSpan.None);
+        return new XTransform.Xdm.Iterators.SingleItemIterator(XdmAtomicValue.String(text));
+    }
+
+    private void RegisterDateFormat(string localName, XdmTypeCode valueType)
+    {
+        SequenceType value = new SequenceType(ItemType.Atomic(valueType), Occurrence.ZeroOrOne);
+        SequenceType optional = SeqStringZeroOrOne();
+        SequenceType resultType = SeqStringZeroOrOne();
+        Register(localName, 2, resultType, new[] { value, SeqStringOne() }, FormatDateTimeInvoker);
+        Register(localName, 5, resultType, new[] { value, SeqStringOne(), optional, optional, optional }, FormatDateTimeInvoker);
+    }
+
+    private static IXdmIterator FormatDateTimeInvoker(DynamicContext context, XdmSequence[] args)
+    {
+        if (args[0].FirstOrNull() is not XdmAtomicValue value)
+        {
+            return XTransform.Xdm.Iterators.EmptyIterator.Instance;
+        }
+
+        string picture = args[1].FirstOrNull()?.GetStringValue() ?? string.Empty;
+        string? language = args.Length > 2 ? args[2].FirstOrNull()?.GetStringValue() : null;
+        string? calendar = args.Length > 3 ? args[3].FirstOrNull()?.GetStringValue() : null;
+        string? country = args.Length > 4 ? args[4].FirstOrNull()?.GetStringValue() : null;
+        string text = DateTimeFormatter.Format(value.AsDateTime(), picture, language, calendar, country, SourceSpan.None);
+        return new XTransform.Xdm.Iterators.SingleItemIterator(XdmAtomicValue.String(text));
+    }
+
     private static IXdmIterator DocAvailableInvoker(DynamicContext context, XdmSequence[] args)
     {
         XsltRunState run = GetRun(context);
@@ -262,6 +535,18 @@ internal sealed class XsltFunctionLibrary : FunctionLibrary
 
     private static string MakeKey(string ns, string local, int arity)
         => "{" + ns + "}" + local + "#" + arity;
+
+    private static SequenceType SeqAnyAtomicZeroOrOne() =>
+        new SequenceType(ItemType.Atomic(XdmTypeCode.AnyAtomicType), Occurrence.ZeroOrOne);
+
+    private static SequenceType SeqStringZeroOrOne() =>
+        new SequenceType(ItemType.Atomic(XdmTypeCode.String), Occurrence.ZeroOrOne);
+
+    private static SequenceType SeqAnyUriZeroOrOne() =>
+        new SequenceType(ItemType.Atomic(XdmTypeCode.AnyUri), Occurrence.ZeroOrOne);
+
+    private static SequenceType SeqIntegerOne() =>
+        new SequenceType(ItemType.Atomic(XdmTypeCode.Integer), Occurrence.ExactlyOne);
 
     private static SequenceType SeqStringOne() =>
         new SequenceType(ItemType.Atomic(XdmTypeCode.String), Occurrence.ExactlyOne);
@@ -309,7 +594,34 @@ internal sealed class UserFunctionSlot
                         SourceSpan.None);
                 }
 
-                return _body.Invoke(ctx, args);
+                // The current group, grouping key, template rule and tunnel parameters are empty, and the current mode is the default mode, inside a stylesheet function (XSLT 2.0 §14.1, §6.7, §10.1.2, erratum XT.E19).
+                if (ctx.Run.Tag is not XsltRunState run || (run.CurrentGroup is null && run.CurrentGroupingKey is null && run.CurrentRule is null && run.TunnelParameters.Count == 0 && run.CurrentMode == DeclarationCollector.DefaultMode))
+                {
+                    return _body.Invoke(ctx, args);
+                }
+
+                IReadOnlyDictionary<QName, XdmSequence> savedTunnel = run.TunnelParameters;
+                run.TunnelParameters = XsltRunState.EmptyTunnel;
+                TemplateRule? savedRule = run.CurrentRule;
+                run.CurrentRule = null;
+                QName savedMode = run.CurrentMode;
+                run.CurrentMode = DeclarationCollector.DefaultMode;
+                IReadOnlyList<XdmItem>? savedGroup = run.CurrentGroup;
+                XdmAtomicValue? savedKey = run.CurrentGroupingKey;
+                run.CurrentGroup = null;
+                run.CurrentGroupingKey = null;
+                try
+                {
+                    return _body.Invoke(ctx, args);
+                }
+                finally
+                {
+                    run.CurrentRule = savedRule;
+                    run.CurrentMode = savedMode;
+                    run.TunnelParameters = savedTunnel;
+                    run.CurrentGroup = savedGroup;
+                    run.CurrentGroupingKey = savedKey;
+                }
             });
     }
 

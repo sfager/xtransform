@@ -79,13 +79,7 @@ internal static class NameBindingValidator
             return;
         }
 
-        if (!declaredModes.Contains(mode))
-        {
-            bag.Error(
-                XsltErrors.XTSE0680,
-                $"xsl:apply-templates references mode '{mode.ClarkName}' but no template rule declares it",
-                element.Location);
-        }
+        // XSLT 2.0 has no static error for a mode that no template declares: the built-in rules apply (§6.6).
     }
 
     private static void CheckCallTemplateName(
@@ -106,15 +100,111 @@ internal static class NameBindingValidator
             return;
         }
 
-        if (!namedTemplates.ContainsKey(name))
+        if (!namedTemplates.TryGetValue(name, out TemplateDecl? target))
         {
-            // Spec code is XTSE0690 (unknown named template); we reuse XTSE0680 for now since
-            // its XTSE0690 constant isn't defined yet — later tasks will add it.
             bag.Error(
-                XsltErrors.XTSE0680,
+                XsltErrors.XTSE0650,
                 $"xsl:call-template references unknown template '{name.ClarkName}'",
                 element.Location);
+            return;
         }
+
+        CheckCallParameters(element, target, bag);
+    }
+
+    // XSLT 2.0 §10.1.1: the with-param children of xsl:call-template against the parameters the template declares.
+    private static void CheckCallParameters(StylesheetElement call, TemplateDecl target, DiagnosticBag bag)
+    {
+        // The declared parameters: name, tunnel, required.
+        List<DeclaredParam> declared = new List<DeclaredParam>();
+        for (int i = 0; i < target.Element.Children.Count; i++)
+        {
+            if (target.Element.Children[i] is not StylesheetElement p ||
+                !p.IsXsltElement ||
+                !string.Equals(p.Name.LocalName, "param", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            string? pn = GetAttribute(p, "name");
+            if (pn is null || !LexicalQNameParser.TryResolve(pn, p.InScopeNamespaces, out QName paramName, out _))
+            {
+                continue;
+            }
+
+            declared.Add(new DeclaredParam(
+                paramName,
+                string.Equals(GetAttribute(p, "tunnel")?.Trim(), "yes", StringComparison.Ordinal),
+                string.Equals(GetAttribute(p, "required")?.Trim(), "yes", StringComparison.Ordinal)));
+        }
+
+        // The with-params supplied: their names, split by tunnel.
+        List<QName> supplied = new List<QName>();
+        for (int i = 0; i < call.Children.Count; i++)
+        {
+            if (call.Children[i] is not StylesheetElement w ||
+                !w.IsXsltElement ||
+                !string.Equals(w.Name.LocalName, "with-param", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            string? wn = GetAttribute(w, "name");
+            if (wn is null || !LexicalQNameParser.TryResolve(wn, w.InScopeNamespaces, out QName withName, out _))
+            {
+                continue;
+            }
+
+            if (string.Equals(GetAttribute(w, "tunnel")?.Trim(), "yes", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            supplied.Add(withName);
+
+            // XTSE0680: a non-tunnel with-param needs a non-tunnel parameter of that name.
+            bool matches = false;
+            foreach (DeclaredParam d in declared)
+            {
+                matches |= !d.Tunnel && d.Name.Equals(withName);
+            }
+
+            if (!matches)
+            {
+                bag.Error(
+                    XsltErrors.XTSE0680,
+                    $"xsl:with-param '{withName.ClarkName}' matches no non-tunnel parameter of the template",
+                    w.Location);
+            }
+        }
+
+        // XTSE0690: a required non-tunnel parameter must be supplied.
+        foreach (DeclaredParam d in declared)
+        {
+            if (d.Required && !d.Tunnel && !supplied.Contains(d.Name))
+            {
+                bag.Error(
+                    XsltErrors.XTSE0690,
+                    $"xsl:call-template does not supply the required parameter '{d.Name.ClarkName}'",
+                    call.Location);
+            }
+        }
+    }
+
+    private sealed class DeclaredParam
+    {
+        public DeclaredParam(QName name, bool tunnel, bool required)
+        {
+            Name = name;
+            Tunnel = tunnel;
+            Required = required;
+        }
+
+        public QName Name { get; }
+
+        public bool Tunnel { get; }
+
+        public bool Required { get; }
     }
 
     private static string? GetAttribute(StylesheetElement element, string localName)

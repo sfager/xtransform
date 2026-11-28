@@ -48,27 +48,63 @@ internal sealed class StylesheetLinkerTests
     }
 
     [Test]
-    public void Link_IncludedModule_SharesParentPrecedence()
+    public void Link_IncludedModule_IsSplicedIntoTheIncluderAtTheIncludePosition()
     {
-        // Arrange — a includes b at same precedence.
+        // Arrange — a includes b between two templates; b has a template of its own.
         InMemoryResolver resolver = new InMemoryResolver
         {
-            ["a.xsl"] = Wrap("<xsl:include href='b.xsl'/>"),
-            ["b.xsl"] = Wrap(""),
+            ["a.xsl"] = Wrap("<xsl:template match='x'/><xsl:include href='b.xsl'/><xsl:template match='z'/>"),
+            ["b.xsl"] = Wrap("<xsl:template match='y'/>"),
         };
 
         // Act
         StylesheetAssembly assembly = StylesheetLinker.Link(UriFor("a.xsl"), resolver);
 
-        // Assert
+        // Assert — an include is a textual insert: one module, with b's template between a's two.
+        System.Collections.Generic.List<string> matches = new System.Collections.Generic.List<string>();
+        foreach (StylesheetNode child in assembly.Primary.Module.Root.Children)
+        {
+            if (child is StylesheetElement e && e.IsXsltElement && e.Name.LocalName == "template")
+            {
+                foreach (StylesheetAttribute attr in e.Attributes)
+                {
+                    if (attr.Name.LocalName == "match")
+                    {
+                        matches.Add(attr.Value);
+                    }
+                }
+            }
+        }
+
         Assert.Multiple(() =>
         {
-            Assert.That(assembly.Modules.Count, Is.EqualTo(2));
-            Assert.That(assembly.Modules[0].ImportPrecedence,
-                Is.EqualTo(assembly.Modules[1].ImportPrecedence));
-            Assert.That(assembly.Primary.ImportPrecedence,
-                Is.EqualTo(assembly.Modules[0].ImportPrecedence));
+            Assert.That(assembly.Modules.Count, Is.EqualTo(1));
+            Assert.That(string.Join(",", matches), Is.EqualTo("x,y,z"));
         });
+    }
+
+    [Test]
+    public void Link_IncludeInsideAnIncludedModule_IsAlsoSpliced()
+    {
+        InMemoryResolver resolver = new InMemoryResolver
+        {
+            ["a.xsl"] = Wrap("<xsl:include href='b.xsl'/>"),
+            ["b.xsl"] = Wrap("<xsl:include href='c.xsl'/><xsl:template match='b'/>"),
+            ["c.xsl"] = Wrap("<xsl:template match='c'/>"),
+        };
+
+        StylesheetAssembly assembly = StylesheetLinker.Link(UriFor("a.xsl"), resolver);
+
+        int templates = 0;
+        foreach (StylesheetNode child in assembly.Primary.Module.Root.Children)
+        {
+            if (child is StylesheetElement e && e.IsXsltElement && e.Name.LocalName == "template")
+            {
+                templates++;
+            }
+        }
+
+        Assert.That(templates, Is.EqualTo(2));
     }
 
     // ── Cycle detection ──────────────────────────────────────────────────────
@@ -90,13 +126,61 @@ internal sealed class StylesheetLinkerTests
     }
 
     [Test]
-    public void Link_CircularInclude_RaisesXtse0210()
+    public void Link_CircularInclude_RaisesXtse0180()
     {
         // Arrange
         InMemoryResolver resolver = new InMemoryResolver
         {
             ["a.xsl"] = Wrap("<xsl:include href='b.xsl'/>"),
             ["b.xsl"] = Wrap("<xsl:include href='a.xsl'/>"),
+        };
+
+        // Act + Assert
+        XsltStaticException ex = Assert.Throws<XsltStaticException>(
+            () => StylesheetLinker.Link(UriFor("a.xsl"), resolver))!;
+        Assert.That(ex.Errors.Single().Code, Is.EqualTo(XsltErrors.XTSE0180));
+    }
+
+    [Test]
+    public void Link_ModuleThatIncludesItself_RaisesXtse0180()
+    {
+        // Arrange
+        InMemoryResolver resolver = new InMemoryResolver
+        {
+            ["a.xsl"] = Wrap("<xsl:include href='a.xsl'/>"),
+        };
+
+        // Act + Assert
+        XsltStaticException ex = Assert.Throws<XsltStaticException>(
+            () => StylesheetLinker.Link(UriFor("a.xsl"), resolver))!;
+        Assert.That(ex.Errors.Single().Code, Is.EqualTo(XsltErrors.XTSE0180));
+    }
+
+    [Test]
+    public void Link_IndirectCircularInclude_RaisesXtse0180()
+    {
+        // Arrange — a includes b, b includes c, c includes b.
+        InMemoryResolver resolver = new InMemoryResolver
+        {
+            ["a.xsl"] = Wrap("<xsl:include href='b.xsl'/>"),
+            ["b.xsl"] = Wrap("<xsl:include href='c.xsl'/>"),
+            ["c.xsl"] = Wrap("<xsl:include href='b.xsl'/>"),
+        };
+
+        // Act + Assert
+        XsltStaticException ex = Assert.Throws<XsltStaticException>(
+            () => StylesheetLinker.Link(UriFor("a.xsl"), resolver))!;
+        Assert.That(ex.Errors.Single().Code, Is.EqualTo(XsltErrors.XTSE0180));
+    }
+
+    [Test]
+    public void Link_CycleClosedByAnImport_RaisesXtse0210()
+    {
+        // Arrange — a includes b, and b imports a: the request that closes the cycle is an import.
+        InMemoryResolver resolver = new InMemoryResolver
+        {
+            ["a.xsl"] = Wrap("<xsl:include href='b.xsl'/>"),
+            ["b.xsl"] = Wrap("<xsl:import href='a.xsl'/>"),
         };
 
         // Act + Assert

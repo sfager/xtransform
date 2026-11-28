@@ -213,7 +213,7 @@ DayTimeDuration,Float,N,,
 DayTimeDuration,Double,N,,
 DayTimeDuration,Duration,Y,P1DT2H,P1DT2H
 DayTimeDuration,DayTimeDuration,Y,P1DT2H,P1DT2H
-DayTimeDuration,YearMonthDuration,Y,P1DT2H,PT0S
+DayTimeDuration,YearMonthDuration,Y,P1DT2H,P0M
 DayTimeDuration,DateTime,N,,
 DayTimeDuration,Date,N,,
 DayTimeDuration,Time,N,,

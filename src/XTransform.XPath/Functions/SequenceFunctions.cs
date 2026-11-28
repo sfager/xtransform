@@ -566,6 +566,17 @@ internal static class SequenceFunctions
                 return true;
             }
 
+            // The atomic values are compared with eq, where xs:untypedAtomic counts as xs:string.
+            if (av1.TypeCode == XdmTypeCode.UntypedAtomic)
+            {
+                av1 = XdmAtomicValue.String(av1.GetStringValue());
+            }
+
+            if (av2.TypeCode == XdmTypeCode.UntypedAtomic)
+            {
+                av2 = XdmAtomicValue.String(av2.GetStringValue());
+            }
+
             bool? eq = Operators.ComparisonOperators.ValueEqual(av1, av2);
             return eq == true;
         }

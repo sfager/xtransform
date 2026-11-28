@@ -57,7 +57,7 @@ public sealed class NamePoolTests
     }
 
     [Test]
-    public void Allocate_QNameOverload_ReturnsSameCodeAsUriAndLocal()
+    public void Allocate_QNameOverload_ReturnsAVariantOfTheCodeForUriAndLocal()
     {
         // Arrange
         var pool = new NamePool();
@@ -67,8 +67,36 @@ public sealed class NamePoolTests
         int byParts = pool.Allocate("http://example.com", "foo");
         int byQName = pool.Allocate(qname);
 
-        // Assert
-        Assert.That(byQName, Is.EqualTo(byParts));
+        // Assert: the prefixed name has a code of its own, which maps to the code with no prefix.
+        Assert.Multiple(() =>
+        {
+            Assert.That(byQName, Is.Not.EqualTo(byParts));
+            Assert.That(pool.Canonical(byQName), Is.EqualTo(byParts));
+            Assert.That(pool.Canonical(byParts), Is.EqualTo(byParts));
+            Assert.That(pool.GetQName(byQName).Prefix, Is.EqualTo("px"));
+            Assert.That(pool.GetQName(byParts).Prefix, Is.EqualTo(string.Empty));
+        });
+    }
+
+    [Test]
+    public void Allocate_SameNameWithTwoPrefixes_ShareOneCanonicalCode()
+    {
+        var pool = new NamePool();
+
+        int a = pool.Allocate("a", "urn:x", "n");
+        int b = pool.Allocate("b", "urn:x", "n");
+        int none = pool.Allocate("", "urn:x", "n");
+        int other = pool.Allocate("a", "urn:y", "n");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(a, Is.Not.EqualTo(b));
+            Assert.That(pool.Canonical(a), Is.EqualTo(pool.Canonical(b)).And.EqualTo(none));
+            Assert.That(pool.Canonical(other), Is.Not.EqualTo(none));
+            Assert.That(pool.GetNamespaceUri(a), Is.EqualTo("urn:x"));
+            Assert.That(pool.Allocate("a", "urn:x", "n"), Is.EqualTo(a), "the same prefixed name gives the same code");
+            Assert.That(pool.Canonical(NamePool.NoName), Is.EqualTo(NamePool.NoName));
+        });
     }
 
     // --- TryGetCode ---

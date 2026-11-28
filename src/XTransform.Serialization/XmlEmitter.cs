@@ -30,6 +30,21 @@ internal sealed class XmlEmitter : IResultReceiver, IDisposable
     private readonly HashSet<QName>? _cdata;
     private readonly Stack<bool> _cdataStack = new Stack<bool>();
     private readonly List<RecordedEvent>? _recorded;
+
+    // The namespace declarations written for the open elements, innermost last, and where each open element's start in the lists.
+    // A declaration that an ancestor already made is not written again (XSLT 2.0 §5.7.1 namespace fix-up).
+    private readonly List<string> _declaredPrefixes = new List<string>();
+    private readonly List<string> _declaredUris = new List<string>();
+    private readonly Stack<int> _declarationMarks = new Stack<int>();
+
+    // The start of an element is held until its namespace nodes and attributes are known, so that a prefix that clashes with a
+    // namespace node of the same element can be replaced before anything is written (XSLT 2.0 §5.7.1 namespace fix-up).
+    private bool _hasPendingStart;
+    private int _pendingNameCode;
+    private readonly List<string> _pendingPrefixes = new List<string>();
+    private readonly List<string> _pendingUris = new List<string>();
+    private readonly List<int> _pendingAttributeNames = new List<int>();
+    private readonly List<string> _pendingAttributeValues = new List<string>();
     private int _docDepth;
     private int _elementDepth;
     private bool _headerWritten;
@@ -229,7 +244,7 @@ internal sealed class XmlEmitter : IResultReceiver, IDisposable
                 return;
 
             case XdmNode node when node.NodeKind == XdmNodeKind.Attribute && node.NodeName is QName attrName:
-                Attribute(_pool.Allocate(attrName.NamespaceUri, attrName.LocalName), node.GetStringValue(), SourceSpan.None);
+                Attribute(_pool.Allocate(attrName), node.GetStringValue(), SourceSpan.None);
                 return;
 
             case XdmNode node when node.NodeKind == XdmNodeKind.Namespace && node.NodeName is QName nsName:
@@ -331,18 +346,20 @@ internal sealed class XmlEmitter : IResultReceiver, IDisposable
             Replay(_recorded);
         }
 
+        FlushPendingStart();
         EnsureHeader();
         _writer.Flush();
         _text.Flush();
     }
 
     private static Encoding ResolveEncoding(XmlEmitterOptions options) =>
-        EncodingResolver.Resolve(options.Encoding, options.ByteOrderMark);
+        EncodingResolver.Resolve(options.Encoding, options.ByteOrderMark, characterReferences: true);
 
     // ── Core writers (what actually touches the XmlWriter) ─────────────────
 
     private void CoreStartElement(int nameCode)
     {
+        FlushPendingStart();
         EnsureHeader();
         QName q = _pool.GetQName(nameCode);
         if (_elementDepth == 0 && !_doctypeWritten)
@@ -350,14 +367,200 @@ internal sealed class XmlEmitter : IResultReceiver, IDisposable
             WriteDoctypeBeforeRoot(q);
         }
 
-        _writer.WriteStartElement(q.Prefix, q.LocalName, q.NamespaceUri);
+        _declarationMarks.Push(_declaredPrefixes.Count);
+        _hasPendingStart = true;
+        _pendingNameCode = nameCode;
         _cdataStack.Push(_cdata is not null && _cdata.Contains(q));
         _elementDepth++;
     }
 
     private void CoreNamespace(string prefix, string uri)
     {
-        if (string.IsNullOrEmpty(prefix))
+        prefix ??= string.Empty;
+
+        // The xml prefix is bound to its namespace everywhere and is never declared (Namespaces in XML 1.0 §3).
+        if (prefix == "xml")
+        {
+            return;
+        }
+
+        if (_hasPendingStart)
+        {
+            // A later node for the same prefix replaces an earlier one.
+            int existing = _pendingPrefixes.IndexOf(prefix);
+            if (existing >= 0)
+            {
+                _pendingUris[existing] = uri;
+                return;
+            }
+
+            _pendingPrefixes.Add(prefix);
+            _pendingUris.Add(uri);
+            return;
+        }
+
+        WriteNamespace(prefix, uri);
+    }
+
+    private void CoreAttribute(int nameCode, string value)
+    {
+        if (_hasPendingStart)
+        {
+            _pendingAttributeNames.Add(nameCode);
+            _pendingAttributeValues.Add(value);
+            return;
+        }
+
+        QName q = _pool.GetQName(nameCode);
+        _writer.WriteAttributeString(q.Prefix, q.LocalName, q.NamespaceUri, value);
+    }
+
+    // Writes the held start tag: the namespace nodes the ancestors have not already made, the element name and the attributes,
+    // each with a prefix that agrees with the namespace nodes of this element.
+    private void FlushPendingStart()
+    {
+        if (!_hasPendingStart)
+        {
+            return;
+        }
+
+        _hasPendingStart = false;
+        QName element = _pool.GetQName(_pendingNameCode);
+
+        // The nodes this element really adds: those an ancestor has not already declared.
+        List<string> prefixes = new List<string>();
+        List<string> uris = new List<string>();
+        for (int i = 0; i < _pendingPrefixes.Count; i++)
+        {
+            if (!DeclaredInScope(_pendingPrefixes[i], _pendingUris[i]))
+            {
+                prefixes.Add(_pendingPrefixes[i]);
+                uris.Add(_pendingUris[i]);
+            }
+        }
+
+        // A name whose prefix is bound to another namespace by this element's own nodes takes a prefix that is free.
+        string elementPrefix = element.Prefix;
+        if (element.NamespaceUri.Length > 0 && ClashesWithOwnNode(prefixes, uris, elementPrefix, element.NamespaceUri))
+        {
+            elementPrefix = FreePrefix(prefixes, uris);
+        }
+
+        _writer.WriteStartElement(elementPrefix, element.LocalName, element.NamespaceUri);
+        for (int i = 0; i < prefixes.Count; i++)
+        {
+            WriteNamespace(prefixes[i], uris[i]);
+        }
+
+        // The namespace of the element's own name is declared before the attributes, as written by hand.
+        if (element.NamespaceUri.Length > 0)
+        {
+            WriteNamespace(elementPrefix, element.NamespaceUri);
+        }
+
+        Dictionary<string, string>? renamed = null;
+        for (int i = 0; i < _pendingAttributeNames.Count; i++)
+        {
+            QName attribute = _pool.GetQName(_pendingAttributeNames[i]);
+            string attributePrefix = attribute.Prefix;
+            if (attribute.NamespaceUri.Length > 0 && ClashesWithOwnNode(prefixes, uris, attributePrefix, attribute.NamespaceUri))
+            {
+                renamed ??= new Dictionary<string, string>(StringComparer.Ordinal);
+                if (!renamed.TryGetValue(attribute.NamespaceUri, out string? fresh))
+                {
+                    fresh = FreePrefix(prefixes, uris);
+                    prefixes.Add(fresh);
+                    uris.Add(attribute.NamespaceUri);
+                    renamed[attribute.NamespaceUri] = fresh;
+                }
+
+                attributePrefix = fresh;
+            }
+
+            if (attribute.NamespaceUri.Length > 0 && attributePrefix.Length > 0)
+            {
+                WriteNamespace(attributePrefix, attribute.NamespaceUri);
+            }
+
+            _writer.WriteAttributeString(attributePrefix, attribute.LocalName, attribute.NamespaceUri, _pendingAttributeValues[i]);
+        }
+
+        _pendingPrefixes.Clear();
+        _pendingUris.Clear();
+        _pendingAttributeNames.Clear();
+        _pendingAttributeValues.Clear();
+    }
+
+    // True when an ancestor already declared this prefix for this namespace.
+    private bool DeclaredInScope(string prefix, string uri)
+    {
+        for (int i = _declaredPrefixes.Count - 1; i >= 0; i--)
+        {
+            if (string.Equals(_declaredPrefixes[i], prefix, StringComparison.Ordinal))
+            {
+                return string.Equals(_declaredUris[i], uri, StringComparison.Ordinal);
+            }
+        }
+
+        return false;
+    }
+
+    // True when one of this element's own namespace nodes binds the prefix to a different namespace.
+    private static bool ClashesWithOwnNode(List<string> prefixes, List<string> uris, string prefix, string uri)
+    {
+        int index = prefixes.IndexOf(prefix);
+        return index >= 0 && !string.Equals(uris[index], uri, StringComparison.Ordinal);
+    }
+
+    // ns0, ns1, ...: the first prefix neither this element nor an ancestor binds.
+    private string FreePrefix(List<string> prefixes, List<string> uris)
+    {
+        for (int i = 0; ; i++)
+        {
+            string candidate = "ns" + i.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            if (prefixes.IndexOf(candidate) >= 0)
+            {
+                continue;
+            }
+
+            bool inScope = false;
+            for (int j = 0; j < _declaredPrefixes.Count; j++)
+            {
+                inScope |= string.Equals(_declaredPrefixes[j], candidate, StringComparison.Ordinal);
+            }
+
+            if (!inScope)
+            {
+                return candidate;
+            }
+        }
+    }
+
+    private void WriteNamespace(string prefix, string uri)
+    {
+        // The xml prefix is bound everywhere and never declared.
+        if (prefix == "xml")
+        {
+            return;
+        }
+
+        for (int i = _declaredPrefixes.Count - 1; i >= 0; i--)
+        {
+            if (string.Equals(_declaredPrefixes[i], prefix, StringComparison.Ordinal))
+            {
+                if (string.Equals(_declaredUris[i], uri, StringComparison.Ordinal))
+                {
+                    return;
+                }
+
+                break;
+            }
+        }
+
+        _declaredPrefixes.Add(prefix);
+        _declaredUris.Add(uri);
+
+        if (prefix.Length == 0)
         {
             _writer.WriteAttributeString("xmlns", uri);
         }
@@ -367,25 +570,28 @@ internal sealed class XmlEmitter : IResultReceiver, IDisposable
         }
     }
 
-    private void CoreAttribute(int nameCode, string value)
-    {
-        QName q = _pool.GetQName(nameCode);
-        _writer.WriteAttributeString(q.Prefix, q.LocalName, q.NamespaceUri, value);
-    }
-
     private void CoreEndElement()
     {
+        FlushPendingStart();
         if (_cdataStack.Count > 0)
         {
             _cdataStack.Pop();
         }
 
         _elementDepth--;
+        if (_declarationMarks.Count > 0)
+        {
+            int mark = _declarationMarks.Pop();
+            _declaredPrefixes.RemoveRange(mark, _declaredPrefixes.Count - mark);
+            _declaredUris.RemoveRange(mark, _declaredUris.Count - mark);
+        }
+
         _writer.WriteEndElement();
     }
 
     private void CoreText(string text)
     {
+        FlushPendingStart();
         EnsureHeader();
         if (_cdataStack.Count > 0 && _cdataStack.Peek())
         {
@@ -396,7 +602,6 @@ internal sealed class XmlEmitter : IResultReceiver, IDisposable
             _writer.WriteString(text);
         }
     }
-
     // Serialization 1.0 §7.1: "]]>" inside a CDATA section is split across two sections.
     private void WriteCData(string text)
     {
@@ -418,18 +623,21 @@ internal sealed class XmlEmitter : IResultReceiver, IDisposable
 
     private void CoreComment(string text)
     {
+        FlushPendingStart();
         EnsureHeader();
         _writer.WriteComment(text);
     }
 
     private void CoreProcessingInstruction(string target, string data)
     {
+        FlushPendingStart();
         EnsureHeader();
         _writer.WriteProcessingInstruction(target, data);
     }
 
     private void CoreIndent(int depth)
     {
+        FlushPendingStart();
         _writer.WriteString("\n" + new string(' ', depth * IndentUnit.Length));
     }
 

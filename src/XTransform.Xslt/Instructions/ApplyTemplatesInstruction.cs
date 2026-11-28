@@ -30,16 +30,22 @@ internal sealed class ApplyTemplatesInstruction : XsltInstruction
         ApplyTemplatesMode modeSpec,
         QName mode,
         IReadOnlyList<WithParamInstruction> withParams,
-        SourceSpan location)
+        SourceSpan location,
+        IReadOnlyList<SortKey>? sorts = null,
+        bool selectIsDefault = false)
         : base(location)
     {
         Select = select;
         ModeSpec = modeSpec;
         Mode = mode;
         WithParams = withParams;
+        Sorts = sorts ?? System.Array.Empty<SortKey>();
+        _selectIsDefault = selectIsDefault;
     }
 
     /// <summary>Compiled <c>@select</c> (default: <c>child::node()</c>).</summary>
+    private readonly bool _selectIsDefault;
+
     public BoundExpression Select { get; }
 
     /// <summary>How the mode was declared.</summary>
@@ -47,6 +53,9 @@ internal sealed class ApplyTemplatesInstruction : XsltInstruction
 
     /// <summary>The resolved mode when <see cref="ModeSpec"/> is <see cref="ApplyTemplatesMode.Named"/>.</summary>
     public QName Mode { get; }
+
+    /// <summary>The <c>xsl:sort</c> keys (XSLT 2.0 §13); empty when the items are processed in selection order.</summary>
+    public IReadOnlyList<SortKey> Sorts { get; }
 
     /// <summary>The <c>xsl:with-param</c> bindings.</summary>
     public IReadOnlyList<WithParamInstruction> WithParams { get; }
@@ -56,11 +65,27 @@ internal sealed class ApplyTemplatesInstruction : XsltInstruction
     {
         // Materialise the selection to drive focus/position/size through the loop.
         List<XdmItem> items = new List<XdmItem>();
+        // The default select (child::node()) needs a node as the context item (XSLT 2.0 §6.1).
+        if (_selectIsDefault && context.ContextItem is not XdmNode)
+        {
+            throw new XsltDynamicException(XsltErrors.XTTE0510, "xsl:apply-templates without select requires the context item to be a node", Location);
+        }
+
         IXdmIterator iter = Select.Iterate(context, run);
         XdmItem? item;
         while ((item = iter.Next()) is not null)
         {
+            if (item is not XdmNode)
+            {
+                throw new XsltDynamicException(XsltErrors.XTTE0520, "The sequence selected by xsl:apply-templates must contain only nodes", Location);
+            }
+
             items.Add(item);
+        }
+
+        if (Sorts.Count > 0)
+        {
+            items = ItemSorter.Sort(items, Sorts, context, run);
         }
 
         QName effectiveMode = ModeSpec switch
@@ -71,6 +96,20 @@ internal sealed class ApplyTemplatesInstruction : XsltInstruction
         };
 
         int size = items.Count;
+
+        // The xsl:with-param values are computed once, in the focus of this instruction (XSLT 2.0 §6.5).
+        IReadOnlyList<WithParamInstruction> bound = WithParams;
+        if (WithParams.Count > 0)
+        {
+            List<WithParamInstruction> values = new List<WithParamInstruction>(WithParams.Count);
+            foreach (WithParamInstruction p in WithParams)
+            {
+                values.Add(p.Bind(context, run));
+            }
+
+            bound = values;
+        }
+
         QName savedMode = run.CurrentMode;
         try
         {
@@ -79,7 +118,7 @@ internal sealed class ApplyTemplatesInstruction : XsltInstruction
             {
                 context.CheckCancellation();
                 DynamicContext childCtx = context.WithCurrentItem(items[i], position: i + 1, size: size);
-                ModeDispatcher.Dispatch(childCtx, receiver, run, effectiveMode, WithParams, Location);
+                ModeDispatcher.Dispatch(childCtx, receiver, run, effectiveMode, bound, Location);
             }
         }
         finally

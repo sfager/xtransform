@@ -30,11 +30,10 @@ internal static class PatternMatcher
                 return MatchPath(path, node, context);
 
             case IdPatternAst idp:
-                return MatchId(idp, node);
+                return MatchId(idp, node, context);
 
-            case KeyPatternAst:
-                // fn:key resolution lands in P3-11.
-                return false;
+            case KeyPatternAst kp:
+                return MatchKey(kp, node, context);
 
             case IdKeyWithPathAst ikp:
                 return MatchIdKeyWithPath(ikp, node, context);
@@ -61,6 +60,9 @@ internal static class PatternMatcher
 
     private static bool MatchPath(PathPatternAst path, XdmNode node, DynamicContext context)
     {
+        // current() is the node being matched, also inside the predicates of the steps that precede the last (§5.5.3).
+        context = context.WithCurrentItem(node, 1, 1);
+
         if (path.Steps.IsEmpty)
         {
             // Bare "/" — matches only the document node.
@@ -148,12 +150,24 @@ internal static class PatternMatcher
         return parent;
     }
 
+    // A step is on the attribute axis when it says so (@x) or when its test is an attribute kind test: attribute(), attribute(n).
+    private static bool UsesAttributeAxis(StepPatternAst step) =>
+        step.Axis == Axis.Attribute || (!step.ExplicitChildAxis && step.Test is KindTestAst { Kind: XdmNodeKind.Attribute });
+
     private static bool MatchStep(StepPatternAst step, XdmNode node, DynamicContext context)
     {
         // Axis must agree with the node kind.
-        bool wantAttribute = step.Axis == Axis.Attribute;
+        bool wantAttribute = UsesAttributeAxis(step);
         bool isAttribute = node.NodeKind == XdmNodeKind.Attribute;
         if (wantAttribute != isAttribute)
+        {
+            return false;
+        }
+
+        // A step without an axis is on the child axis, and the document node is nobody's child: match="node()" does
+        // not match it (XSLT 2.0 §5.5.2).
+        // An explicit child:: step never matches it, whatever the test (child::document-node() is legal but matches nothing).
+        if (!wantAttribute && node.NodeKind == XdmNodeKind.Document && (step.ExplicitChildAxis || step.Test is AnyKindTestAst))
         {
             return false;
         }
@@ -196,7 +210,7 @@ internal static class PatternMatcher
         {
             foreach (BoundExpression predicate in predicates)
             {
-                DynamicContext ctx = predicate.Prepare(context, run).WithCurrentItem(node, 1, 1);
+                DynamicContext ctx = predicate.Prepare(context, run).WithContextItem(node, 1, 1);
                 if (!predicate.Root.EffectiveBooleanValue(ctx))
                 {
                     return false;
@@ -214,7 +228,7 @@ internal static class PatternMatcher
         }
         else
         {
-            foreach (XdmNode sibling in parent.Axis(step.Axis == Axis.Attribute ? Axis.Attribute : Axis.Child))
+            foreach (XdmNode sibling in parent.Axis(UsesAttributeAxis(step) ? Axis.Attribute : Axis.Child))
             {
                 if (MatchNodeTest(step.Test, sibling))
                 {
@@ -226,7 +240,7 @@ internal static class PatternMatcher
         IXdmIterator selected = new ArrayIterator(candidates.ToArray());
         foreach (BoundExpression predicate in predicates)
         {
-            DynamicContext ctx = predicate.Prepare(context, run).WithCurrentItem(node, 1, 1);
+            DynamicContext ctx = predicate.Prepare(context, run).WithContextItem(node, 1, 1);
             selected = PredicateApplicator.Apply(selected, predicate.Root, ctx);
         }
 
@@ -306,9 +320,28 @@ internal static class PatternMatcher
         }
     }
 
+    private static bool UntypedTypeMatches(XdmNodeKind kind, QName type)
+    {
+        if (!string.Equals(type.NamespaceUri, "http://www.w3.org/2001/XMLSchema", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        return kind == XdmNodeKind.Element
+            ? type.LocalName is "untyped" or "anyType"
+            : type.LocalName is "untypedAtomic" or "anyAtomicType" or "anySimpleType";
+    }
+
     private static bool MatchKindTest(KindTestAst kt, XdmNode node)
     {
         if (node.NodeKind != kt.Kind)
+        {
+            return false;
+        }
+
+        // A type argument: schema-unaware nodes are xs:untyped (elements) and xs:untypedAtomic (attributes), so only
+        // those types, and their ancestors, can match.
+        if (kt.TypeArg.HasValue && !UntypedTypeMatches(kt.Kind, kt.TypeArg.Value))
         {
             return false;
         }
@@ -347,13 +380,27 @@ internal static class PatternMatcher
 
     // ── id() / key() ───────────────────────────────────────────────────────
 
-    private static bool MatchId(IdPatternAst pattern, XdmNode node)
+    private static bool MatchId(IdPatternAst pattern, XdmNode node, DynamicContext context)
     {
-        if (pattern.IdLiteral is null)
+        // The ids to look for: the literal, or the (space-separated) strings of the variable (XSLT 2.0 §5.5.2).
+        List<string> ids = new List<string>();
+        if (pattern.IdLiteral is not null)
         {
-            // id($var) — resolution requires evaluating the variable; defer (P3-08).
+            ids.AddRange(pattern.IdLiteral.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+        }
+        else if (pattern.VariableRef is QName variable && context.Run.Tag is XsltRunState idRun)
+        {
+            foreach (XdmItem item in idRun.LookupVariable(variable))
+            {
+                ids.AddRange(item.GetStringValue().Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+            }
+        }
+
+        if (ids.Count == 0)
+        {
             return false;
         }
+
 
         if (node.NodeKind != XdmNodeKind.Element)
         {
@@ -366,7 +413,32 @@ internal static class PatternMatcher
             QName? name = attr.NodeName;
             if (name.HasValue && string.Equals(name.Value.LocalName, "id", StringComparison.Ordinal))
             {
-                return string.Equals(attr.GetStringValue(), pattern.IdLiteral, StringComparison.Ordinal);
+                return ids.Contains(attr.GetStringValue());
+            }
+        }
+
+        return false;
+    }
+
+    // key(name, value) pattern (XSLT 2.0 §5.5.2): the node is one of the nodes the key function returns for the value.
+    private static bool MatchKey(KeyPatternAst pattern, XdmNode node, DynamicContext context)
+    {
+        if (context.Run.Tag is not XsltRunState run)
+        {
+            return false;
+        }
+
+        XdmSequence values = pattern.ValueLiteral is not null
+            ? XdmSequence.Of(XdmAtomicValue.String(pattern.ValueLiteral))
+            : pattern.VariableRef is QName variable ? run.LookupVariable(variable) : XdmSequence.Empty;
+        string name = pattern.KeyName.Prefix.Length > 0 ? pattern.KeyName.Prefix + ":" + pattern.KeyName.LocalName : pattern.KeyName.LocalName;
+        DynamicContext at = context.WithCurrentItem(node, position: 1, size: 1);
+        IXdmIterator hits = XsltFunctionLibrary.KeyLookup(at, new[] { XdmSequence.Of(XdmAtomicValue.String(name)), values }, top: null);
+        while (hits.Next() is XdmItem hit)
+        {
+            if (hit is XdmNode hitNode && hitNode.Equals(node))
+            {
+                return true;
             }
         }
 
@@ -377,7 +449,7 @@ internal static class PatternMatcher
     {
         // Not implemented beyond id("literal")/foo in P3-07; proper id/key support lands in P3-11.
         _ = context;
-        if (pattern.Head is IdPatternAst idp && MatchId(idp, node))
+        if (pattern.Head is IdPatternAst idp && MatchId(idp, node, context))
         {
             return true;
         }

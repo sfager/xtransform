@@ -37,7 +37,7 @@ internal static class GlobalBindingValidator
 
             NamespaceBindingsResolver resolver = new NamespaceBindingsResolver(
                 decl.Element.InScopeNamespaces,
-                defaultElementNamespace: string.Empty,
+                defaultElementNamespace: decl.Element.XPathDefaultNamespace,
                 defaultFunctionNamespace: BuiltInFunctionLibrary.FnNamespace);
 
             try

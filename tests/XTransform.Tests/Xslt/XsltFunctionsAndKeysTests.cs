@@ -29,7 +29,7 @@ internal sealed class XsltFunctionsAndKeysTests
             "<xsl:param name='x'/>" +
             "<xsl:sequence select='$x * 2'/>" +
             "</xsl:function>" +
-            "<xsl:template match='/' xmlns:my='urn:my'>" +
+            "<xsl:template match='/' xmlns:my='urn:my' exclude-result-prefixes='my'>" +
             "<r><xsl:value-of select='my:double(21)'/></r>" +
             "</xsl:template>");
         AssertOutput(xsl, "<doc/>", "<r>42</r>");
@@ -47,7 +47,7 @@ internal sealed class XsltFunctionsAndKeysTests
             "<xsl:param name='x'/>" +
             "<xsl:sequence select='$x * 2'/>" +
             "</xsl:function>" +
-            "<xsl:template match='/' xmlns:my='urn:my'>" +
+            "<xsl:template match='/' xmlns:my='urn:my' exclude-result-prefixes='my'>" +
             "<r><xsl:value-of select='my:quad(5)'/></r>" +
             "</xsl:template>");
         AssertOutput(xsl, "<doc/>", "<r>20</r>");

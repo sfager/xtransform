@@ -19,6 +19,9 @@ internal static class DeclarationCollector
     /// <summary>Sentinel value representing the default (unnamed) mode.</summary>
     internal static readonly QName DefaultMode = new QName(string.Empty, string.Empty, string.Empty);
 
+    /// <summary>Marker for <c>mode="#all"</c> on a template: the rule belongs to every mode (XSLT 2.0 §6.5).</summary>
+    internal static readonly QName AllModes = new QName(string.Empty, string.Empty, "#all");
+
 
     /// <summary>Runs the declaration-collection pass and appends diagnostics to <paramref name="bag"/>.</summary>
     public static DeclarationTable Collect(StylesheetAssembly assembly, DiagnosticBag bag)
@@ -28,7 +31,10 @@ internal static class DeclarationCollector
         Dictionary<FunctionKey, FunctionDecl> functions = new Dictionary<FunctionKey, FunctionDecl>();
         List<TemplateDecl> templates = new List<TemplateDecl>();
         HashSet<QName> declaredModes = new HashSet<QName>();
-        Dictionary<QName, KeyDecl> keys = new Dictionary<QName, KeyDecl>();
+        Dictionary<QName, List<KeyDecl>> keys = new Dictionary<QName, List<KeyDecl>>();
+        NamespaceAliasTable.Builder namespaceAliases = NamespaceAliasTable.CreateBuilder();
+        List<DecimalFormatDecl> decimalFormats = new List<DecimalFormatDecl>();
+        List<WhitespaceRule> whitespaceRules = new List<WhitespaceRule>();
 
         // Modules are iterated in load order (post-order). Entries with the same precedence
         // can conflict; higher precedence overrides lower. We process in ascending order and
@@ -41,8 +47,9 @@ internal static class DeclarationCollector
                 (!string.Equals(root.Name.LocalName, "stylesheet", StringComparison.Ordinal) &&
                  !string.Equals(root.Name.LocalName, "transform", StringComparison.Ordinal)))
             {
-                // Simplified stylesheet — root is a literal result element acting as the body
-                // of an implicit xsl:template match="/". No top-level decls to collect here.
+                // XSLT 2.0 §3.7: a simplified stylesheet (the root is a literal result element) is shorthand for a
+                // stylesheet with one xsl:template match="/" whose body is that element.
+                CollectSimplifiedStylesheet(root, entry.ImportPrecedence, templates, namedTemplates, declaredModes, bag);
                 continue;
             }
 
@@ -68,8 +75,21 @@ internal static class DeclarationCollector
                         CollectFunction(child, entry.ImportPrecedence, functions, bag);
                         break;
 
+                    case "strip-space":
+                    case "preserve-space":
+                        CollectWhitespace(child, string.Equals(child.Name.LocalName, "strip-space", StringComparison.Ordinal), entry.ImportPrecedence, whitespaceRules, bag);
+                        break;
+
+                    case "decimal-format":
+                        CollectDecimalFormat(child, entry.ImportPrecedence, decimalFormats, bag);
+                        break;
+
                     case "key":
                         CollectKey(child, entry.ImportPrecedence, keys, bag);
+                        break;
+
+                    case "namespace-alias":
+                        CollectNamespaceAlias(child, entry.ImportPrecedence, namespaceAliases, bag);
                         break;
 
                     // Other top-level declarations (attribute-set, decimal-format,
@@ -81,13 +101,276 @@ internal static class DeclarationCollector
             }
         }
 
-        return new DeclarationTable(globals, templates, namedTemplates, functions, declaredModes, keys);
+        WarnAboutConflictingWhitespaceRules(whitespaceRules, bag);
+        Dictionary<QName, IReadOnlyList<KeyDecl>> keyGroups = new Dictionary<QName, IReadOnlyList<KeyDecl>>();
+        foreach (KeyValuePair<QName, List<KeyDecl>> group in keys)
+        {
+            keyGroups[group.Key] = group.Value;
+        }
+
+        return new DeclarationTable(globals, templates, namedTemplates, functions, declaredModes, keyGroups, new WhitespaceTable(whitespaceRules), DecimalFormatTable.Build(decimalFormats, bag), namespaceAliases.Build());
+    }
+
+    // XSLT 2.0 §11.1.4: stylesheet-prefix and result-prefix each name a prefix in scope, or #default for the default namespace.
+    private static void CollectNamespaceAlias(StylesheetElement element, int precedence, NamespaceAliasTable.Builder aliases, DiagnosticBag bag)
+    {
+        string? stylesheetPrefix = GetAttribute(element, "stylesheet-prefix")?.Trim();
+        string? resultPrefix = GetAttribute(element, "result-prefix")?.Trim();
+        if (stylesheetPrefix is null || resultPrefix is null)
+        {
+            return;
+        }
+
+        if (!TryResolveAliasPrefix(element, stylesheetPrefix, out string stylesheetUri, out _, bag)
+            || !TryResolveAliasPrefix(element, resultPrefix, out string resultUri, out string resultPrefixName, bag))
+        {
+            return;
+        }
+
+        if (!aliases.Add(stylesheetUri, resultUri, resultPrefixName, precedence))
+        {
+            bag.Error(XsltErrors.XTSE0810, $"The namespace '{stylesheetUri}' is aliased to two different namespaces at the same import precedence", element.Location);
+        }
+    }
+
+    private static bool TryResolveAliasPrefix(StylesheetElement element, string value, out string uri, out string prefix, DiagnosticBag bag)
+    {
+        // #default is the default namespace, which is the null namespace when none is declared (XSLT 2.0 §11.1.4).
+        prefix = value == "#default" ? string.Empty : value;
+        string? bound = element.InScopeNamespaces.Resolve(prefix);
+        if (value == "#default")
+        {
+            uri = bound ?? string.Empty;
+            return true;
+        }
+
+        if (bound is null || bound.Length == 0)
+        {
+            uri = string.Empty;
+            bag.Error(XsltErrors.XTSE0812, $"'{value}' in xsl:namespace-alias is not bound to a namespace in scope", element.Location);
+            return false;
+        }
+
+        uri = bound;
+        return true;
+    }
+
+    // The implicit template of a simplified stylesheet. The literal result element must carry xsl:version (XTSE0150).
+    private static void CollectSimplifiedStylesheet(
+        StylesheetElement root,
+        int precedence,
+        List<TemplateDecl> templates,
+        Dictionary<QName, TemplateDecl> namedTemplates,
+        HashSet<QName> declaredModes,
+        DiagnosticBag bag)
+    {
+        StylesheetElement? template = SimplifiedStylesheet.CreateTemplate(root);
+        if (template is null)
+        {
+            bag.Error(
+                XsltErrors.XTSE0150,
+                "A literal result element used as the stylesheet module must have an xsl:version attribute",
+                root.Location);
+            return;
+        }
+
+        CollectTemplate(template, precedence, templates, namedTemplates, declaredModes, bag);
+    }
+
+    // ── xsl:decimal-format (XSLT 2.0 §16.4.1) ──────────────────────────────────
+
+    private static readonly string[] s_decimalFormatProperties =
+    {
+        "decimal-separator", "grouping-separator", "percent", "per-mille", "zero-digit",
+        "digit", "pattern-separator", "minus-sign", "infinity", "NaN",
+    };
+
+    private static readonly string[] s_standardAttributes =
+    {
+        "use-when", "xpath-default-namespace", "exclude-result-prefixes", "extension-element-prefixes", "version",
+    };
+
+    private static void CollectDecimalFormat(
+        StylesheetElement element,
+        int precedence,
+        List<DecimalFormatDecl> decls,
+        DiagnosticBag bag)
+    {
+        // XTSE0090: only the decimal-format properties and the standard attributes are allowed (XSLT 2.0 §3.7).
+        for (int i = 0; i < element.Attributes.Count; i++)
+        {
+            StylesheetAttribute attr = element.Attributes[i];
+            if (attr.Name.NamespaceUri.Length != 0)
+            {
+                continue;
+            }
+
+            string local = attr.Name.LocalName;
+            if (!string.Equals(local, "name", StringComparison.Ordinal) &&
+                Array.IndexOf(s_decimalFormatProperties, local) < 0 &&
+                Array.IndexOf(s_standardAttributes, local) < 0)
+            {
+                bag.Error(XsltErrors.XTSE0090, $"xsl:decimal-format: attribute '{local}' is not allowed", element.Location);
+            }
+        }
+
+        QName? name = null;
+        string? nameAttr = GetAttribute(element, "name");
+        if (nameAttr is not null)
+        {
+            if (!LexicalQNameParser.TryResolve(nameAttr, element.InScopeNamespaces, out QName resolved, out string? why))
+            {
+                bag.Error(XsltErrors.XTSE0020, $"Invalid decimal-format name '{nameAttr}': {why}", element.Location);
+                return;
+            }
+
+            name = resolved;
+        }
+
+        Dictionary<string, string> values = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (string property in s_decimalFormatProperties)
+        {
+            string? value = GetAttribute(element, property);
+            if (value is not null)
+            {
+                values[property] = value;
+            }
+        }
+
+        decls.Add(new DecimalFormatDecl(element, precedence, name, values));
+    }
+
+    // ── xsl:strip-space / xsl:preserve-space (XSLT 2.0 §4.3) ───────────────────
+
+    private static readonly char[] s_whitespaceSeparators = { ' ', '\t', '\n', '\r' };
+
+    private static void CollectWhitespace(
+        StylesheetElement element,
+        bool strip,
+        int precedence,
+        List<WhitespaceRule> rules,
+        DiagnosticBag bag)
+    {
+        string? elements = GetAttribute(element, "elements");
+        if (elements is null)
+        {
+            bag.Error(XsltErrors.XTSE0010, $"xsl:{element.Name.LocalName} requires an elements attribute", element.Location);
+            return;
+        }
+
+        foreach (string token in elements.Split(s_whitespaceSeparators, StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (!TryParseNameTest(token, element, out string? namespaceUri, out string? localName, out QName errorCode, out string? why))
+            {
+                bag.Error(errorCode, why!, element.Location);
+                continue;
+            }
+
+            rules.Add(new WhitespaceRule(strip, namespaceUri, localName, precedence, rules.Count, element.Location));
+        }
+    }
+
+    // NameTest ::= '*' | NCName ':' '*' | '*' ':' NCName | QName | 'Q{' uri '}' ( NCName | '*' ); an
+    // unprefixed name is in no namespace (the default namespace does not apply).
+    private static bool TryParseNameTest(
+        string token,
+        StylesheetElement element,
+        out string? namespaceUri,
+        out string? localName,
+        out QName errorCode,
+        out string? why)
+    {
+        namespaceUri = null;
+        localName = null;
+        errorCode = XsltErrors.XTSE0010;
+        why = null;
+
+        if (token == "*")
+        {
+            return true;
+        }
+
+        if (token.StartsWith("Q{", StringComparison.Ordinal))
+        {
+            int close = token.IndexOf('}');
+            if (close < 0 || close == token.Length - 1)
+            {
+                why = $"Invalid name test '{token}' in xsl:strip-space / xsl:preserve-space";
+                return false;
+            }
+
+            namespaceUri = token.Substring(2, close - 2);
+            string rest = token.Substring(close + 1);
+            localName = rest == "*" ? null : rest;
+            return true;
+        }
+
+        int colon = token.IndexOf(':');
+        if (colon < 0)
+        {
+            namespaceUri = string.Empty;
+            localName = token;
+            return true;
+        }
+
+        string prefix = token.Substring(0, colon);
+        string local = token.Substring(colon + 1);
+        if (local.Length == 0 || prefix.Length == 0)
+        {
+            why = $"Invalid name test '{token}' in xsl:strip-space / xsl:preserve-space";
+            return false;
+        }
+
+        if (prefix != "*")
+        {
+            string? uri = element.InScopeNamespaces.Resolve(prefix);
+            if (uri is null)
+            {
+                errorCode = XsltErrors.XTSE0280;
+                why = $"The prefix '{prefix}' in the name test '{token}' is not declared";
+                return false;
+            }
+
+            namespaceUri = uri;
+        }
+
+        localName = local == "*" ? null : local;
+        if (namespaceUri is null && localName is null)
+        {
+            why = $"Invalid name test '{token}'";
+            return false;
+        }
+
+        return true;
+    }
+
+    // XTRE0270 is recoverable: an element matching a strip and a preserve declaration with the same name test and
+    // import precedence takes the one that comes last; say so rather than do it silently.
+    private static void WarnAboutConflictingWhitespaceRules(List<WhitespaceRule> rules, DiagnosticBag bag)
+    {
+        for (int i = 0; i < rules.Count; i++)
+        {
+            for (int j = i + 1; j < rules.Count; j++)
+            {
+                WhitespaceRule a = rules[i];
+                WhitespaceRule b = rules[j];
+                if (a.Strip != b.Strip && a.Precedence == b.Precedence &&
+                    string.Equals(a.NamespaceUri, b.NamespaceUri, StringComparison.Ordinal) &&
+                    string.Equals(a.LocalName, b.LocalName, StringComparison.Ordinal))
+                {
+                    bag.Warning(
+                        XsltErrors.XTRE0270,
+                        "Conflicting xsl:strip-space and xsl:preserve-space declarations for the same name; the one that appears last is used",
+                        b.Location);
+                }
+            }
+        }
     }
 
     private static void CollectKey(
         StylesheetElement element,
         int precedence,
-        Dictionary<QName, KeyDecl> keys,
+        Dictionary<QName, List<KeyDecl>> keys,
         DiagnosticBag bag)
     {
         string? nameAttr = GetAttribute(element, "name");
@@ -105,19 +388,35 @@ internal static class DeclarationCollector
 
         string? match = GetAttribute(element, "match");
         string? use = GetAttribute(element, "use");
-        if (match is null || use is null)
+        if (match is null)
         {
-            bag.Error(XsltErrors.XTSE0010, "xsl:key requires both match and use attributes", element.Location);
+            bag.Error(XsltErrors.XTSE0010, "xsl:key requires a match attribute", element.Location);
             return;
         }
 
-        // Multiple xsl:key with the same name are allowed; P3-11 keeps the first seen and
-        // relies on union semantics at lookup (XSLT 2.0 §16.2.3). A proper merged-index
-        // implementation is deferred.
-        if (!keys.ContainsKey(name))
+        // XSLT 2.0 §16.3 (XTSE1205): exactly one of the use attribute and the content.
+        bool hasContent = element.Children.Count > 0;
+        if ((use is null && !hasContent) || (use is not null && hasContent))
         {
-            keys[name] = new KeyDecl(element, precedence, name, match, use);
+            bag.Error(XsltErrors.XTSE1205, "xsl:key must have either a use attribute or content, not both and not neither", element.Location);
+            return;
         }
+
+        if (use is null)
+        {
+            bag.Error(XsltErrors.XTSE0010, "xsl:key with content instead of a use attribute is not supported", element.Location);
+            return;
+        }
+
+        // Several xsl:key declarations with the same name are all in effect: the key's index is the
+        // union of what each declaration selects (XSLT 2.0 §16.3).
+        if (!keys.TryGetValue(name, out List<KeyDecl>? group))
+        {
+            group = new List<KeyDecl>();
+            keys[name] = group;
+        }
+
+        group.Add(new KeyDecl(element, precedence, name, match, use));
     }
 
     // ── xsl:variable / xsl:param ────────────────────────────────────────────
@@ -192,7 +491,14 @@ internal static class DeclarationCollector
             }
             else
             {
-                name = n;
+                if (n.NamespaceUri == "http://www.w3.org/1999/XSL/Transform")
+                {
+                    bag.Error(XsltErrors.XTSE0080, $"The template name '{nameAttr}' is in a reserved namespace", element.Location);
+                }
+                else
+                {
+                    name = n;
+                }
             }
         }
 
@@ -202,11 +508,16 @@ internal static class DeclarationCollector
         {
             foreach (string token in modeAttr.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries))
             {
-                if (string.Equals(token, "#default", StringComparison.Ordinal) ||
-                    string.Equals(token, "#all", StringComparison.Ordinal))
+                if (string.Equals(token, "#default", StringComparison.Ordinal))
                 {
-                    // Default mode is represented by the empty-string QName; #all is handled later.
+                    // The default mode is represented by the empty-string QName.
                     modes.Add(DefaultMode);
+                    continue;
+                }
+
+                if (string.Equals(token, "#all", StringComparison.Ordinal))
+                {
+                    modes.Add(AllModes);
                     continue;
                 }
 
@@ -309,7 +620,7 @@ internal static class DeclarationCollector
             if (existing.ImportPrecedence == precedence)
             {
                 bag.Error(
-                    XsltErrors.XTSE0660,
+                    XsltErrors.XTSE0770,
                     $"Duplicate xsl:function '{name.ClarkName}#{arity}' at the same import precedence",
                     element.Location);
                 return;

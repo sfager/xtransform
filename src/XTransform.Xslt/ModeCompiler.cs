@@ -1,8 +1,8 @@
 // XSLT 2.0 §6.2, §6.4 — compile each xsl:template into per-mode TemplateRules and
 // produce one ModeTable per mode. Union patterns are split so every rule has a single,
 // non-union pattern. Priority is either the declared @priority (xs:double) or the pattern's
-// §6.4 default. Buckets are sorted; same-precedence / same-priority ties within a bucket
-// produce an XTRE0540 warning.
+// §6.4 default. Buckets are sorted; a tie between rules of equal precedence and priority is decided at
+// run time (the later rule wins; XTRE0540 is recoverable), since patterns cannot be compared statically.
 
 using System;
 using System.Collections.Generic;
@@ -27,6 +27,7 @@ internal static class ModeCompiler
     {
         Dictionary<QName, ModeTable> modes = new Dictionary<QName, ModeTable>();
         int ordinal = 0;
+        List<TemplateRule> allRules = new List<TemplateRule>();
 
         foreach (TemplateDecl decl in declarations.Templates)
         {
@@ -46,7 +47,7 @@ internal static class ModeCompiler
             {
                 NamespaceBindingsResolver resolver = new NamespaceBindingsResolver(
                     decl.Element.InScopeNamespaces,
-                    defaultElementNamespace: string.Empty,
+                    defaultElementNamespace: decl.Element.XPathDefaultNamespace,
                     defaultFunctionNamespace: BuiltInFunctionLibrary.FnNamespace);
                 parsed = XPathParser.ParsePattern(decl.MatchPattern, decl.Location, resolver);
 
@@ -66,8 +67,27 @@ internal static class ModeCompiler
             // otherwise the pattern's §6.4 default. Each alternative keeps its own default.
             double? declaredPriority = ParseDeclaredPriority(decl.Priority, decl.Location, bag);
 
+            // Rules for mode="#all" belong to every mode: they are added to each mode's table once all tables exist.
+            List<TemplateRule>? allModeRules = null;
             foreach (QName mode in declaredModes)
             {
+                if (mode.Equals(DeclarationCollector.AllModes))
+                {
+                    allModeRules = new List<TemplateRule>();
+                    foreach (PatternAst alt in alternatives)
+                    {
+                        allModeRules.Add(new TemplateRule(
+                            decl,
+                            alt,
+                            declaredPriority ?? alt.DefaultPriority,
+                            decl.ImportPrecedence,
+                            ordinal++,
+                            mode));
+                    }
+
+                    continue;
+                }
+
                 if (!modes.TryGetValue(mode, out ModeTable? table))
                 {
                     table = new ModeTable(mode);
@@ -87,12 +107,49 @@ internal static class ModeCompiler
                     RegisterRule(table, alt, rule);
                 }
             }
+
+            if (allModeRules is not null)
+            {
+                allRules.AddRange(allModeRules);
+            }
+        }
+
+        // mode="#all": the rules go into the table of every mode that has one, and into a table of their own
+        // (under DeclarationCollector.AllModes) that serves any mode without a table of its own.
+        if (allRules.Count > 0)
+        {
+            if (!modes.ContainsKey(DeclarationCollector.DefaultMode))
+            {
+                modes[DeclarationCollector.DefaultMode] = new ModeTable(DeclarationCollector.DefaultMode);
+            }
+
+            ModeTable allTable = new ModeTable(DeclarationCollector.AllModes);
+            modes[DeclarationCollector.AllModes] = allTable;
+            foreach (TemplateRule rule in allRules)
+            {
+                RegisterRule(allTable, rule.Pattern, rule);
+            }
+
+            foreach (KeyValuePair<QName, ModeTable> entry in modes)
+            {
+                if (entry.Key.Equals(DeclarationCollector.AllModes))
+                {
+                    continue;
+                }
+
+                foreach (TemplateRule rule in allRules)
+                {
+                    RegisterRule(
+                        entry.Value,
+                        rule.Pattern,
+                        new TemplateRule(rule.Source, rule.Pattern, rule.Priority, rule.ImportPrecedence, rule.DocumentOrderOrdinal, entry.Key));
+                }
+            }
         }
 
         foreach (ModeTable table in modes.Values)
         {
             table.SortBuckets();
-            DetectConflicts(table, bag);
         }
 
         return modes;
@@ -216,49 +273,6 @@ internal static class ModeCompiler
         new QName(string.Empty, name.NamespaceUri, name.LocalName);
 
     // ── Conflict detection ─────────────────────────────────────────────────
-
-    private static void DetectConflicts(ModeTable table, DiagnosticBag bag)
-    {
-        foreach (List<TemplateRule> bucket in table.ElementsByName.Values)
-        {
-            CheckBucketForConflict(bucket, bag);
-        }
-
-        foreach (List<TemplateRule> bucket in table.AttributesByName.Values)
-        {
-            CheckBucketForConflict(bucket, bag);
-        }
-
-        foreach (List<TemplateRule> bucket in table.ByKind.Values)
-        {
-            CheckBucketForConflict(bucket, bag);
-        }
-
-        CheckBucketForConflict(new List<TemplateRule>(table.ElementWildcard), bag);
-        CheckBucketForConflict(new List<TemplateRule>(table.AttributeWildcard), bag);
-        CheckBucketForConflict(new List<TemplateRule>(table.AnyNode), bag);
-    }
-
-    private static void CheckBucketForConflict(List<TemplateRule> bucket, DiagnosticBag bag)
-    {
-        // After sorting, equal-rank siblings are adjacent. Report once per adjacent pair.
-        HashSet<int> reported = new HashSet<int>();
-        for (int i = 1; i < bucket.Count; i++)
-        {
-            TemplateRule a = bucket[i - 1];
-            TemplateRule b = bucket[i];
-            if (a.ImportPrecedence == b.ImportPrecedence && a.Priority == b.Priority)
-            {
-                if (reported.Add(b.DocumentOrderOrdinal))
-                {
-                    bag.Warning(
-                        XsltErrors.XTRE0540,
-                        $"Template rules with equal import precedence ({a.ImportPrecedence}) and priority ({a.Priority.ToString("G", CultureInfo.InvariantCulture)}) can match the same node; the later rule wins",
-                        b.Location);
-                }
-            }
-        }
-    }
 
     // ── Helpers ────────────────────────────────────────────────────────────
 

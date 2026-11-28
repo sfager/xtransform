@@ -92,7 +92,7 @@ internal static class ComparisonOperators
         // Both dateTime family (same primitive type)
         if (lp == rp && IsDateTimeType(lt))
         {
-            return left.AsDateTime().Equals(right.AsDateTime());
+            return DateTimesEqual(left.AsDateTime(), right.AsDateTime());
         }
 
         // Both hexBinary / base64Binary
@@ -293,9 +293,45 @@ internal static class ComparisonOperators
         }
     }
 
+    private static bool DateTimesEqual(XsdDateTime l, XsdDateTime r)
+    {
+        if (HasInstant(l.Kind) && InstantRange(l, r))
+        {
+            return Instant(l) == Instant(r);
+        }
+
+        return l.Equals(r);
+    }
+
+    // Years far outside any real date would overflow the day count; those values are compared component by component.
+    private static bool InstantRange(XsdDateTime l, XsdDateTime r) =>
+        Math.Abs(l.Year) < 1000000000L && Math.Abs(r.Year) < 1000000000L;
+
+    // xs:dateTime, xs:date and xs:time compare as points on the time line (F&O §10.4): a value with a time zone is
+    // brought to UTC; a value without one has the implicit time zone, taken here to be UTC.
+    private static bool HasInstant(XsdDateTimeKind kind) =>
+        kind is XsdDateTimeKind.DateTime or XsdDateTimeKind.Date or XsdDateTimeKind.Time;
+
+    private static decimal Instant(XsdDateTime v)
+    {
+        // An xs:time is placed on the reference date 1972-12-31; an xs:date is the dateTime at 00:00:00.
+        long days = v.Kind == XsdDateTimeKind.Time
+            ? ArithmeticOperators.CivilToDays(1972, 12, 31)
+            : ArithmeticOperators.CivilToDays(v.Year < 0 ? v.Year + 1 : v.Year, v.Month, v.Day);
+        decimal seconds = v.Kind == XsdDateTimeKind.Date
+            ? 0m
+            : (v.Hour * 3600m) + (v.Minute * 60m) + v.Second.Value;
+        return (days * 86400m) + seconds - ((v.TimezoneMinutes ?? 0) * 60m);
+    }
+
     private static int CompareDateTimes(XsdDateTime l, XsdDateTime r)
     {
-        // Simplified component-by-component comparison (no TZ normalization for P2-05)
+        if (HasInstant(l.Kind) && InstantRange(l, r))
+        {
+            return Instant(l).CompareTo(Instant(r));
+        }
+
+        // The Gregorian partial dates compare component by component.
         int c = l.Year.CompareTo(r.Year);
         if (c != 0) { return c; }
         c = l.Month.CompareTo(r.Month);

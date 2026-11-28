@@ -233,7 +233,8 @@ internal static class NumberFormatter
             startOfWord = c == ' ' || c == '-';
         }
 
-        return sb.ToString();
+        // "and" stays lower case: "Two Thousand and Three".
+        return sb.ToString().Replace(" And ", " and ");
     }
 
     // ── Decimal digit families ───────────────────────────────────────────────────

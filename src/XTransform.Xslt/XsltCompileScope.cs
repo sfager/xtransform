@@ -19,19 +19,24 @@ internal sealed class XsltCompileScope
     private readonly List<QName> _names;
     private readonly Dictionary<QName, SequenceType> _types;
 
-    private XsltCompileScope(List<QName> names, Dictionary<QName, SequenceType> types)
+    private XsltCompileScope(List<QName> names, Dictionary<QName, SequenceType> types, NamespaceAliasTable aliases)
     {
         _names = names;
         _types = types;
+        NamespaceAliases = aliases;
     }
+
+    /// <summary>The xsl:namespace-alias declarations of the stylesheet, which literal result elements apply (XSLT 2.0 §11.1.4).</summary>
+    public NamespaceAliasTable NamespaceAliases { get; }
 
     /// <summary>Creates a root scope with no visible variables.</summary>
     public static XsltCompileScope Empty => new XsltCompileScope(
         new List<QName>(),
-        new Dictionary<QName, SequenceType>());
+        new Dictionary<QName, SequenceType>(),
+        NamespaceAliasTable.Empty);
 
     /// <summary>Creates a root scope seeded with global variables.</summary>
-    public static XsltCompileScope WithGlobals(IEnumerable<QName> globalNames)
+    public static XsltCompileScope WithGlobals(IEnumerable<QName> globalNames, NamespaceAliasTable? aliases = null)
     {
         List<QName> names = new List<QName>();
         Dictionary<QName, SequenceType> types = new Dictionary<QName, SequenceType>();
@@ -41,7 +46,7 @@ internal sealed class XsltCompileScope
             types[name] = SequenceType.AnySequence;
         }
 
-        return new XsltCompileScope(names, types);
+        return new XsltCompileScope(names, types, aliases ?? NamespaceAliasTable.Empty);
     }
 
     /// <summary>Variables visible in slot-allocation order (slots 0..N-1 at runtime).</summary>
@@ -69,7 +74,8 @@ internal sealed class XsltCompileScope
     {
         return new XsltCompileScope(
             new List<QName>(_names),
-            new Dictionary<QName, SequenceType>(_types));
+            new Dictionary<QName, SequenceType>(_types),
+            NamespaceAliases);
     }
 
     /// <summary>Adds a binding visible in this scope and its subsequent children.</summary>

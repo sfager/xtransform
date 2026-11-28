@@ -26,9 +26,10 @@ internal sealed class UseWhenFunctionLibrary : FunctionLibrary
     private UseWhenFunctionLibrary()
     {
         _xslt = new Dictionary<string, FunctionSignature>(System.StringComparer.Ordinal);
-        Register("system-property", 1, SeqStringOne(),
+        RegisterBound("system-property", 1, SeqStringOne(),
                  new[] { SeqStringOne() },
-                 (ctx, args) => new SingleItemIterator(XdmAtomicValue.String(SystemProperty(args[0]))));
+                 ns => (ctx, args) => new SingleItemIterator(XdmAtomicValue.String(
+                     SystemFunctions.SystemProperty(args[0].FirstOrNull()?.GetStringValue() ?? string.Empty, ns))));
         Register("function-available", 1, SeqBoolOne(),
                  new[] { SeqStringOne() },
                  (ctx, args) => new SingleItemIterator(XdmAtomicValue.Boolean(FunctionAvailable(args[0], arity: -1))));
@@ -36,9 +37,14 @@ internal sealed class UseWhenFunctionLibrary : FunctionLibrary
                  new[] { SeqStringOne(), SeqIntOne() },
                  (ctx, args) => new SingleItemIterator(XdmAtomicValue.Boolean(
                      FunctionAvailable(args[0], arity: (int)((XdmAtomicValue)args[1].FirstOrNull()!).AsInt64()))));
-        Register("element-available", 1, SeqBoolOne(),
+        RegisterBound("element-available", 1, SeqBoolOne(),
                  new[] { SeqStringOne() },
-                 (ctx, args) => new SingleItemIterator(XdmAtomicValue.Boolean(ElementAvailable(args[0]))));
+                 ns => (ctx, args) => new SingleItemIterator(XdmAtomicValue.Boolean(
+                     SystemFunctions.ElementAvailable(args[0].FirstOrNull()?.GetStringValue() ?? string.Empty, ns))));
+        RegisterBound("type-available", 1, SeqBoolOne(),
+                 new[] { SeqStringOne() },
+                 ns => (ctx, args) => new SingleItemIterator(XdmAtomicValue.Boolean(
+                     SystemFunctions.TypeAvailable(args[0].FirstOrNull()?.GetStringValue() ?? string.Empty, ns))));
     }
 
     /// <inheritdoc/>
@@ -56,27 +62,6 @@ internal sealed class UseWhenFunctionLibrary : FunctionLibrary
 
         // Fall back to pure XPath built-ins (fn:true, fn:false, fn:not, string functions …).
         return BuiltInFunctionLibrary.Instance.TryResolve(name, arity, out signature);
-    }
-
-    // ── system-property ──────────────────────────────────────────────────────
-
-    // XSLT 2.0 §16.6.3 — unknown properties return an empty string.
-    private static string SystemProperty(XdmSequence arg)
-    {
-        string name = arg.FirstOrNull()?.GetStringValue() ?? string.Empty;
-        return name switch
-        {
-            "xsl:version" => "2.0",
-            "xsl:vendor" => "XTransform",
-            "xsl:vendor-url" => "https://github.com/sfager/xtransform",
-            "xsl:product-name" => "XTransform",
-            "xsl:product-version" => "0.3.0",
-            "xsl:is-schema-aware" => "no",
-            "xsl:supports-serialization" => "yes",
-            "xsl:supports-backwards-compatibility" => "no",
-            "xsl:supports-namespace-axis" => "no",
-            _ => string.Empty,
-        };
     }
 
     // ── function-available ───────────────────────────────────────────────────
@@ -135,28 +120,19 @@ internal sealed class UseWhenFunctionLibrary : FunctionLibrary
         return UseWhenFunctionLibrary.Instance.TryResolve(fnName, arity, out _);
     }
 
-    // ── element-available ────────────────────────────────────────────────────
-
-    // XSLT 2.0 §16.6.2 — true when the lexical QName would resolve to an instruction
-    // that this processor supports.
-    private static bool ElementAvailable(XdmSequence nameArg)
-    {
-        string qname = nameArg.FirstOrNull()?.GetStringValue() ?? string.Empty;
-        if (qname.Length == 0)
-        {
-            return false;
-        }
-
-        int colon = qname.IndexOf(':');
-        string local = colon < 0 ? qname : qname.Substring(colon + 1);
-
-        // For P3-02 we only know about xsl:* elements; literal result elements are always
-        // considered available (§16.6.2). Without a namespace resolver we approximate by
-        // checking the local name against the XSLT 2.0 element registry.
-        return XsltElementNames.IsKnown(local);
-    }
-
     // ── Registration helpers ─────────────────────────────────────────────────
+
+    private void RegisterBound(string localName, int arity, SequenceType returnType,
+                               SequenceType[] parameters, Func<IStaticNamespaceResolver, FunctionInvoker> bind)
+    {
+        QName name = new QName("fn", BuiltInFunctionLibrary.FnNamespace, localName);
+        _xslt[localName + "#" + arity] = new FunctionSignature(
+            name, arity, returnType, parameters.ToImmutableArray(),
+            static (_, _) => throw new InvalidOperationException("Function needs its static context"))
+        {
+            BindStaticContext = bind,
+        };
+    }
 
     private void Register(string localName, int arity, SequenceType returnType,
                           SequenceType[] parameters, FunctionInvoker invoker)

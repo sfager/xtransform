@@ -507,6 +507,12 @@ internal static class XPathCompiler
                 argBuilder.Add(CompileAst(arg));
             }
 
+            // A function that reads a lexical QName argument gets the namespaces in scope at this call.
+            if (signature!.BindStaticContext is not null)
+            {
+                signature = signature with { Invoker = signature.BindStaticContext(_namespaces) };
+            }
+
             return new FunctionCallNode(call.Span, signature!, argBuilder.MoveToImmutable());
         }
 

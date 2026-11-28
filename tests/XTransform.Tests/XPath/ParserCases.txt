@@ -542,12 +542,12 @@ AxisStep(child)
 
 # attribute kind test attribute()
 attribute()
-AxisStep(child)
+AxisStep(attribute)
   KindTest(attribute())
 
 # attribute kind test with name
 attribute(a)
-AxisStep(child)
+AxisStep(attribute)
   KindTest(attribute(a))
 
 # text kind test

@@ -90,6 +90,13 @@ internal static class FunctionConversion
             return CastTable.Cast(value, target, location);
         }
 
+        // A value whose type is already a subtype of the target is kept as it is: xs:integer for xs:decimal is
+        // subtype substitution, not numeric promotion (XPath 2.0 §3.1.5.2).
+        if (CastTable.IsSubtypeOf(value.TypeCode, target))
+        {
+            return value;
+        }
+
         // Numeric promotion: widen when target is broader (F&O §3.1.5 rule 3).
         if (NumericPromotion.IsNumeric(value.TypeCode) && NumericPromotion.IsNumeric(target))
         {

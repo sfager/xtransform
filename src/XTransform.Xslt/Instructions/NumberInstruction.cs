@@ -89,7 +89,7 @@ internal sealed class NumberInstruction : XsltInstruction
         string text = NumberFormatter.Format(numbers, format, lang, letterValue, ordinal, groupingSeparator, groupingSize);
         if (text.Length > 0)
         {
-            receiver.Text(text);
+            receiver.EmitTextNode(text);
         }
     }
 

@@ -47,26 +47,50 @@ internal sealed class AttributeInstruction : XsltInstruction
     /// <inheritdoc/>
     public override void Execute(DynamicContext context, IResultReceiver receiver, XsltRunState run)
     {
-        string lexical = Name.Stringify(context, run);
+        string lexical = Name.Stringify(context, run).Trim();
         string? explicitNs = Namespace?.Stringify(context, run);
 
-        int colon = lexical.IndexOf(':');
-        string prefix = colon < 0 ? string.Empty : lexical.Substring(0, colon);
-        string local = colon < 0 ? lexical : lexical.Substring(colon + 1);
+        // XSLT 2.0 §11.3.1 (XTDE0850): the name must be a lexical QName.
+        if (!LexicalNames.IsQName(lexical))
+        {
+            throw new XsltDynamicException(XsltErrors.XTDE0850, $"'{lexical}' is not a lexical QName, so it cannot name an attribute", Location);
+        }
+
+        LexicalNames.Split(lexical, out string prefix, out string local);
 
         string ns;
         if (explicitNs is not null)
         {
             ns = explicitNs;
+
+            // XSLT 2.0 §11.3.1: the attribute is in the namespace given, even when its prefix is bound to another one in
+            // the stylesheet, and an attribute in a namespace needs a prefix. The prefix is implementation-defined here:
+            // the name's own when the stylesheet binds it to that namespace or not at all, otherwise a generated one.
+            if (ns.Length > 0)
+            {
+                string? bound = prefix.Length > 0 ? StaticScope.Resolve(prefix) : null;
+                if (prefix.Length == 0 || (bound is not null && !string.Equals(bound, ns, System.StringComparison.Ordinal)))
+                {
+                    prefix = GeneratedPrefix();
+                }
+            }
         }
         else if (prefix.Length == 0)
         {
+            // XTDE0855: an attribute named xmlns would declare a namespace.
+            if (local == "xmlns")
+            {
+                throw new XsltDynamicException(XsltErrors.XTDE0855, "An attribute cannot be named xmlns", Location);
+            }
+
             // Attributes with no prefix are in no namespace (XSLT 2.0 §11.3, unlike elements).
             ns = string.Empty;
         }
         else
         {
-            ns = StaticScope.Resolve(prefix) ?? string.Empty;
+            // XTDE0860: with no namespace attribute, the prefix must be bound where the instruction is.
+            ns = StaticScope.Resolve(prefix)
+                ?? throw new XsltDynamicException(XsltErrors.XTDE0860, $"The prefix '{prefix}' of the attribute name '{lexical}' has no namespace declaration in scope", Location);
         }
 
         // Evaluate the value: @select wins; otherwise run the body into a scratch collector.
@@ -74,8 +98,21 @@ internal sealed class AttributeInstruction : XsltInstruction
             ? SelectToString(context, run)
             : BodyToString(context, run);
 
-        int nameCode = run.NamePool.Allocate(ns, local);
+        int nameCode = run.NamePool.Allocate(prefix, ns, local);
         receiver.Attribute(nameCode, value, Location);
+    }
+
+    // ns0, ns1, ...: the first one the stylesheet does not bind where the instruction is.
+    private string GeneratedPrefix()
+    {
+        for (int i = 0; ; i++)
+        {
+            string candidate = "ns" + i.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            if (StaticScope.Resolve(candidate) is null)
+            {
+                return candidate;
+            }
+        }
     }
 
     private string SelectToString(DynamicContext context, XsltRunState run)
@@ -108,28 +145,5 @@ internal sealed class AttributeInstruction : XsltInstruction
         StringCollectingReceiver collector = new StringCollectingReceiver();
         Body.Execute(context, collector, run);
         return collector.Result;
-    }
-
-    private sealed class StringCollectingReceiver : IResultReceiver
-    {
-        private readonly StringBuilder _sb = new StringBuilder();
-        public string Result => _sb.ToString();
-
-        public void StartDocument() { }
-        public void EndDocument() { }
-        public void StartElement(int nameCode, SourceSpan location) { }
-        public void Namespace(string prefix, string uri) { }
-        public void Attribute(int nameCode, string value, SourceSpan location) { }
-        public void EndElement() { }
-        public void Text(string text) => _sb.Append(text);
-        public void Comment(string text) { }
-        public void ProcessingInstruction(string target, string data) { }
-        public void Append(XdmItem item)
-        {
-            if (item is not null)
-            {
-                _sb.Append(item.GetStringValue());
-            }
-        }
     }
 }

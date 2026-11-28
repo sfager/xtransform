@@ -37,6 +37,12 @@ public static class XPathErrors
     /// <summary>It is a type error if, in an axis step (or a rooted path), the context item is not a node.</summary>
     public static readonly QName XPTY0020 = new QName("err", Namespace, "XPTY0020");
 
+    /// <summary>fn:resolve-uri: a URI argument is invalid, or the base is not an absolute URI.</summary>
+    public static readonly QName FORG0002 = new QName("err", Namespace, "FORG0002");
+
+    /// <summary>The static base URI is needed (fn:resolve-uri with one argument, fn:static-base-uri) but is not defined.</summary>
+    public static readonly QName FONS0005 = new QName("err", Namespace, "FONS0005");
+
     /// <summary>It is a dynamic error if the context item is undefined where it is needed.</summary>
     public static readonly QName XPDY0002 = new QName("err", Namespace, "XPDY0002");
 
@@ -120,4 +126,10 @@ public static class XPathErrors
     /// Raised by fn:resolve-QName when the prefix cannot be resolved.
     /// </summary>
     public static readonly QName FONS0004 = new QName("err", Namespace, "FONS0004");
+
+    /// <summary>Dynamic error: the operand of treat as does not match the required sequence type. (XPath 2.0 §3.10.5)</summary>
+    public static readonly QName XPDY0050 = new QName("err", XPathErrors.Namespace, "XPDY0050");
+
+    /// <summary>Invalid argument type: for example fn:min, fn:max or fn:sum over values that cannot be compared or added, or an effective boolean value that is not defined. (F&amp;O §15)</summary>
+    public static readonly QName FORG0006 = new QName("err", XPathErrors.Namespace, "FORG0006");
 }
