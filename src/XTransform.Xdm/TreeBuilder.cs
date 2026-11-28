@@ -49,6 +49,9 @@ internal sealed class TreeBuilder : IResultReceiver
     public void Attribute(int nameCode, string value, SourceSpan location) =>
         _builder.Attribute(nameCode, value, location);
 
+    /// <summary>Sets the base URI of the element that has just started.</summary>
+    public void SetBaseUri(string baseUri) => _builder.SetCurrentBaseUri(baseUri);
+
     /// <inheritdoc/>
     public void EndElement() => _builder.EndElement();
 

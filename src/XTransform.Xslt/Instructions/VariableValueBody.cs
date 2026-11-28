@@ -12,11 +12,15 @@ namespace XTransform.Xslt.Instructions;
 internal sealed class VariableValueBody
 {
     /// <summary>Initializes a body; <paramref name="buildsDocument"/> is true when no <c>as</c> attribute was given.</summary>
-    public VariableValueBody(XsltInstruction body, bool buildsDocument)
+    public VariableValueBody(XsltInstruction body, bool buildsDocument, string? baseUri = null)
     {
         Body = body;
         BuildsDocument = buildsDocument;
+        BaseUri = baseUri;
     }
+
+    /// <summary>The static base URI of the instruction, which is the base URI of the document node built from its content.</summary>
+    public string? BaseUri { get; }
 
     /// <summary>The compiled sequence constructor.</summary>
     public XsltInstruction Body { get; }
@@ -29,7 +33,7 @@ internal sealed class VariableValueBody
     {
         if (BuildsDocument)
         {
-            TreeBuilder tree = new TreeBuilder(run.NamePool);
+            TreeBuilder tree = new TreeBuilder(run.NamePool, BaseUri);
             SequenceNormalizer normalizer = new SequenceNormalizer(tree, run.NamePool);
             normalizer.StartDocument();
             Body.Execute(context, normalizer, run);
@@ -37,7 +41,7 @@ internal sealed class VariableValueBody
             return XdmSequence.Of(tree.Build());
         }
 
-        SequenceResultReceiver sequence = new SequenceResultReceiver(run.NamePool);
+        SequenceResultReceiver sequence = new SequenceResultReceiver(run.NamePool, baseUri: BaseUri);
         Body.Execute(context, sequence, run);
         return sequence.ToSequence();
     }

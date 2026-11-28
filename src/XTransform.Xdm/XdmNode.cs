@@ -132,10 +132,10 @@ public sealed class XdmNode : XdmItem, IEquatable<XdmNode>
     }
 
     /// <summary>Gets the base URI of the document containing this node.</summary>
-    public string? BaseUri => Tree.BaseUri;
+    public string? BaseUri => Handle.IsNamespace ? null : Tree.GetBaseUri(Handle.IsAttribute ? Tree.GetAttributeParent(Handle.Index) : Handle.Index);
 
-    /// <summary>Gets the document URI (same as <see cref="BaseUri"/> for loaded documents).</summary>
-    public string? DocumentUri => Tree.BaseUri;
+    /// <summary>Gets the document URI: where a loaded document came from; null for a node of a constructed tree, and for any node but a document node.</summary>
+    public string? DocumentUri => NodeKind == XdmNodeKind.Document ? Tree.DocumentUri : null;
 
     // ── Typed value ────────────────────────────────────────────────────────────
 

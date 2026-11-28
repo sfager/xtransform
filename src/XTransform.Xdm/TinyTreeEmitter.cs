@@ -105,6 +105,13 @@ internal static class TinyTreeEmitter
 
             case XdmNodeKind.Element:
                 sink.StartElement(tree.GetNameCode(i), SourceSpan.None);
+
+                // A copy keeps the base URI of what it copies: the root of the copy, and any element that had one of its own.
+                if (sink is IBaseUriReceiver baseReceiver && open.Count == 0 && tree.GetBaseUri(i) is { } copiedBase)
+                {
+                    baseReceiver.BaseUri(copiedBase);
+                }
+
                 EmitNamespaces(tree, i, sink);
                 EmitAttributes(tree, i, sink);
                 open.Push(new Frame(i, depth, XdmNodeKind.Element));

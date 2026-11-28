@@ -9,11 +9,12 @@ using XTransform.Xdm;
 namespace XTransform.Xslt;
 
 /// <summary>Receiver that gathers the result sequence rather than serialising it.</summary>
-internal sealed class SequenceResultReceiver : IResultReceiver, ISequenceReceiver
+internal sealed class SequenceResultReceiver : IResultReceiver, ISequenceReceiver, IBaseUriReceiver
 {
     private readonly NamePool _pool;
     private readonly List<XdmItem> _items = new List<XdmItem>();
     private readonly StringBuilder _pendingText = new StringBuilder();
+    private readonly string? _baseUri;
     private TreeBuilder? _current;
     private int _depth;
     private bool _ownsDocument;
@@ -22,9 +23,10 @@ internal sealed class SequenceResultReceiver : IResultReceiver, ISequenceReceive
     private bool _outermostIgnored;
 
     /// <summary>Initializes a receiver whose constructed nodes use <paramref name="pool"/>.</summary>
-    public SequenceResultReceiver(NamePool pool, bool principalResult = false)
+    public SequenceResultReceiver(NamePool pool, bool principalResult = false, string? baseUri = null)
     {
         _pool = pool;
+        _baseUri = baseUri;
         _ignoreOutermostDocument = principalResult;
     }
 
@@ -51,7 +53,7 @@ internal sealed class SequenceResultReceiver : IResultReceiver, ISequenceReceive
         if (_depth == 0 && _current is null)
         {
             FlushText();
-            _current = new TreeBuilder(_pool);
+            _current = new TreeBuilder(_pool, _baseUri);
             _current.StartDocument();
             _ownsDocument = true;
         }
@@ -91,9 +93,19 @@ internal sealed class SequenceResultReceiver : IResultReceiver, ISequenceReceive
     public void StartElement(int nameCode, SourceSpan location)
     {
         FlushText();
-        _current ??= new TreeBuilder(_pool);
+        _current ??= new TreeBuilder(_pool, _baseUri);
         _current.StartElement(nameCode, location);
         _depth++;
+    }
+
+    /// <inheritdoc/>
+    public void BaseUri(string baseUri)
+    {
+        // A copy with no parent keeps the base URI of the node it copies; one inside a constructed parent takes the parent's.
+        if (_current is not null && _depth == 1 && !_ownsDocument)
+        {
+            _current.SetBaseUri(baseUri);
+        }
     }
 
     /// <inheritdoc/>

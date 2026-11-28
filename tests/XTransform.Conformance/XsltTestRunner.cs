@@ -249,6 +249,11 @@ internal static class XsltTestRunner
                 : new MemoryStream(Encoding.UTF8.GetBytes(source.Content ?? string.Empty));
         }
 
+        if (source?.File is not null)
+        {
+            transformer.InputBaseUri = new Uri(source.File);
+        }
+
         if (input is null && transformer.InitialTemplate is null)
         {
             throw new SkipException("no source document and no initial template");
@@ -501,7 +506,10 @@ internal static class XsltResultComparer
         stripped = stripped.Trim();
         try
         {
-            return XElement.Parse("<wrapper>" + stripped + "</wrapper>", LoadOptions.PreserveWhitespace);
+            // Character checks are off so XML 1.1 text (character references to control characters) compares as it is written.
+            XmlReaderSettings settings = new XmlReaderSettings { CheckCharacters = false, DtdProcessing = DtdProcessing.Ignore, XmlResolver = null };
+            using XmlReader reader = XmlReader.Create(new StringReader("<wrapper>" + stripped + "</wrapper>"), settings);
+            return XElement.Load(reader, LoadOptions.PreserveWhitespace);
         }
         catch (XmlException)
         {
@@ -614,8 +622,11 @@ internal static class XsltResultComparer
                 DtdProcessing = DtdProcessing.Ignore,
                 XmlResolver = null,
                 ConformanceLevel = ConformanceLevel.Fragment,
+                CheckCharacters = false,
             };
-            using StringReader sr = new StringReader(actual.Output!);
+            // XML 1.1 output is read as 1.0 with the character checks off.
+            string outputText = Regex.Replace(actual.Output!, @"^(\s*<\?xml\s+version\s*=\s*[""'])1\.1", "${1}1.0");
+            using StringReader sr = new StringReader(outputText);
             using XmlReader reader = XmlReader.Create(sr, settings);
             doc = XTransform.Xslt.XsltInput.Load(reader, pool);
         }

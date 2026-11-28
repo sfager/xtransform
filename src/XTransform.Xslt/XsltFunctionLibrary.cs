@@ -92,15 +92,21 @@ internal sealed class XsltFunctionLibrary : FunctionLibrary
             new[] { SeqStringOne(), SeqItemStar(), new SequenceType(ItemType.AnyNode, Occurrence.ExactlyOne) },
             ns => (context, args) => Key3Invoker(context, args, ns));
 
-        Register("document", 1,
+        // The three document functions resolve a relative URI against the static base URI at the call.
+        RegisterBound("document", 1,
             SeqNodeStar(),
             new[] { SeqItemStar() },
-            DocumentInvoker);
+            ns => (context, args) => DocumentInvoker(context, args, StaticBase(ns, context)));
 
-        Register("doc", 1,
+        RegisterBound("document", 2,
+            SeqNodeStar(),
+            new[] { SeqItemStar(), new SequenceType(ItemType.AnyNode, Occurrence.ExactlyOne) },
+            ns => (context, args) => DocumentInvoker(context, args, StaticBase(ns, context)));
+
+        RegisterBound("doc", 1,
             SeqNodeZeroOrOne(),
-            new[] { SeqStringOne() },
-            DocInvoker);
+            new[] { SeqStringZeroOrOne() },
+            ns => (context, args) => DocInvoker(context, args, StaticBase(ns, context)));
 
         Register("current", 0,
             new SequenceType(ItemType.AnyItem, Occurrence.ExactlyOne),
@@ -122,10 +128,10 @@ internal sealed class XsltFunctionLibrary : FunctionLibrary
                 ? new XTransform.Xdm.Iterators.SingleItemIterator(key)
                 : XTransform.Xdm.Iterators.EmptyIterator.Instance);
 
-        Register("doc-available", 1,
+        RegisterBound("doc-available", 1,
             SeqBoolOne(),
             new[] { SeqStringOne() },
-            DocAvailableInvoker);
+            ns => (context, args) => DocAvailableInvoker(context, args, StaticBase(ns, context)));
 
         Register("generate-id", 0, SeqStringOne(), System.Array.Empty<SequenceType>(), SystemFunctions.GenerateId0);
         Register("generate-id", 1, SeqStringOne(),
@@ -137,11 +143,13 @@ internal sealed class XsltFunctionLibrary : FunctionLibrary
         Register("unparsed-text-available", 1, SeqBoolOne(), new[] { SeqStringZeroOrOne() }, SystemFunctions.UnparsedTextAvailable);
         Register("unparsed-text-available", 2, SeqBoolOne(), new[] { SeqStringZeroOrOne(), SeqStringOne() }, SystemFunctions.UnparsedTextAvailable);
 
-        // No DTD entity data reaches the tree yet (P4-20): every entity is undeclared, so the answer is "".
+        // XSLT 2.0 §16.6.4: the unparsed entities declared by the DTD of the document that holds the context node.
         Register("unparsed-entity-uri", 1, SeqStringOne(), new[] { SeqStringOne() },
-            (context, args) => new XTransform.Xdm.Iterators.SingleItemIterator(XdmAtomicValue.String(string.Empty)));
+            (context, args) => new XTransform.Xdm.Iterators.SingleItemIterator(XdmAtomicValue.String(
+                UnparsedEntityOf(context, args[0], XsltErrors.XTDE1370)?.SystemUri ?? string.Empty)));
         Register("unparsed-entity-public-id", 1, SeqStringOne(), new[] { SeqStringOne() },
-            (context, args) => new XTransform.Xdm.Iterators.SingleItemIterator(XdmAtomicValue.String(string.Empty)));
+            (context, args) => new XTransform.Xdm.Iterators.SingleItemIterator(XdmAtomicValue.String(
+                UnparsedEntityOf(context, args[0], XsltErrors.XTDE1380)?.PublicId ?? string.Empty)));
 
         // fn:current-output-uri() is the empty sequence when the principal result has no URI.
         Register("current-output-uri", 0, SeqAnyUriZeroOrOne(), System.Array.Empty<SequenceType>(),
@@ -159,6 +167,16 @@ internal sealed class XsltFunctionLibrary : FunctionLibrary
         RegisterDateFormat("format-dateTime", XdmTypeCode.DateTime);
         RegisterDateFormat("format-date", XdmTypeCode.Date);
         RegisterDateFormat("format-time", XdmTypeCode.Time);
+
+        // The static base URI depends on where the call is: xml:base on the stylesheet changes it (XSLT 2.0 §3.2).
+        RegisterBound("static-base-uri", 0, SeqAnyUriZeroOrOne(), System.Array.Empty<SequenceType>(),
+            ns => (context, args) => StaticBase(ns, context) is { } baseUri
+                ? new XTransform.Xdm.Iterators.SingleItemIterator(XdmAtomicValue.AnyUri(baseUri))
+                : XTransform.Xdm.Iterators.EmptyIterator.Instance);
+        RegisterBound("resolve-uri", 1, SeqAnyUriZeroOrOne(), new[] { SeqStringZeroOrOne() },
+            ns => (context, args) => StaticBase(ns, context) is { } baseUri
+                ? XTransform.XPath.Functions.UriFunctions.Resolve(args[0], baseUri)
+                : XTransform.XPath.Functions.UriFunctions.FnResolveUri1(context, args));
 
         // Functions that read a lexical QName argument are bound to the namespaces in scope at the call.
         RegisterBound("system-property", 1, SeqStringOne(), new[] { SeqStringOne() },
@@ -180,6 +198,21 @@ internal sealed class XsltFunctionLibrary : FunctionLibrary
                     (int)((XdmAtomicValue)args[1].FirstOrNull()!).AsInt64(),
                     ns))));
     }
+
+    private static UnparsedEntity? UnparsedEntityOf(DynamicContext context, XdmSequence nameArg, QName errorCode)
+    {
+        if (context.ContextItem is not XdmNode node || node.Handle.Tree.GetKind(0) != XdmNodeKind.Document)
+        {
+            throw new XsltDynamicException(errorCode, "The context item must be a node in a tree rooted at a document node", SourceSpan.None);
+        }
+
+        IReadOnlyDictionary<string, UnparsedEntity>? entities = node.Handle.Tree.UnparsedEntities;
+        string name = nameArg.FirstOrNull()?.GetStringValue() ?? string.Empty;
+        return entities is not null && entities.TryGetValue(name, out UnparsedEntity? found) ? found : null;
+    }
+
+    private static string? StaticBase(IStaticNamespaceResolver ns, DynamicContext context) =>
+        (ns as NamespaceBindingsResolver)?.StaticBaseUri ?? context.Run.StaticBaseUri;
 
     // XSLT 2.0 §16.6.1: true when a function of that name (and arity, when given) could be called here.
     private bool FunctionAvailable(string lexical, int arity, IStaticNamespaceResolver ns)
@@ -338,28 +371,37 @@ internal sealed class XsltFunctionLibrary : FunctionLibrary
         return false;
     }
 
-    private static IXdmIterator DocumentInvoker(DynamicContext context, XdmSequence[] args)
+    private static IXdmIterator DocumentInvoker(DynamicContext context, XdmSequence[] args, string? staticBase)
     {
         XsltRunState run = GetRun(context);
-        List<XdmItem> result = new List<XdmItem>();
+        XdmNode? baseNode = args.Length > 1 ? args[1].FirstOrNull() as XdmNode : null;
+        List<XdmNode> found = new List<XdmNode>();
         foreach (XdmItem arg in args[0])
         {
-            string uriStr = arg.GetStringValue();
-            XdmNode? loaded = run.LoadDocument(uriStr);
-            if (loaded is not null)
+            // A node argument is resolved against its own base URI, an atomic value against the stylesheet's (§16.1).
+            string? baseUri = baseNode is not null ? baseNode.BaseUri : arg is XdmNode argNode ? argNode.BaseUri : staticBase;
+            baseUri ??= staticBase;
+            XdmNode? loaded = run.LoadDocument(arg.GetStringValue(), baseUri);
+            if (loaded is not null && !found.Contains(loaded))
             {
-                result.Add(loaded);
+                found.Add(loaded);
             }
         }
 
-        return XdmSequence.From(result).GetIterator();
+        // The result is in document order without duplicates.
+        found.Sort((a, b) => a.CompareDocumentOrder(b));
+        return XdmSequence.From(found.ConvertAll(n => (XdmItem)n)).GetIterator();
     }
 
-    private static IXdmIterator DocInvoker(DynamicContext context, XdmSequence[] args)
+    private static IXdmIterator DocInvoker(DynamicContext context, XdmSequence[] args, string? staticBase)
     {
         XsltRunState run = GetRun(context);
-        string uriStr = args[0].FirstOrNull()?.GetStringValue() ?? string.Empty;
-        XdmNode? loaded = run.LoadDocument(uriStr);
+        if (args[0].FirstOrNull() is not { } uriItem)
+        {
+            return XTransform.Xdm.Iterators.EmptyIterator.Instance;
+        }
+
+        XdmNode? loaded = run.LoadDocument(uriItem.GetStringValue(), staticBase);
         if (loaded is null)
         {
             return XTransform.Xdm.Iterators.EmptyIterator.Instance;
@@ -492,14 +534,14 @@ internal sealed class XsltFunctionLibrary : FunctionLibrary
         return new XTransform.Xdm.Iterators.SingleItemIterator(XdmAtomicValue.String(text));
     }
 
-    private static IXdmIterator DocAvailableInvoker(DynamicContext context, XdmSequence[] args)
+    private static XTransform.Xdm.Iterators.SingleItemIterator DocAvailableInvoker(DynamicContext context, XdmSequence[] args, string? staticBase)
     {
         XsltRunState run = GetRun(context);
         string uriStr = args[0].FirstOrNull()?.GetStringValue() ?? string.Empty;
         bool available;
         try
         {
-            available = run.LoadDocument(uriStr) is not null;
+            available = run.LoadDocument(uriStr, staticBase) is not null;
         }
         catch
         {

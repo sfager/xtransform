@@ -8,12 +8,22 @@ namespace XTransform.Xslt;
 /// <summary>Loads input documents for a transformation into the XDM tree model.</summary>
 internal static class XsltInput
 {
-    /// <summary>Reader settings for source documents: DTDs are ignored, nothing is resolved externally.</summary>
+    /// <summary>The most characters one document may gain from expanding entities, which stops an entity expansion attack.</summary>
+    internal const long MaxCharactersFromEntities = 10_000_000;
+
+    /// <summary>
+    /// Reader settings for source documents: the DTD is parsed, so internal entities are declared, but nothing is resolved externally
+    /// (no external DTD subset, no external entity) and entity expansion is capped.
+    /// </summary>
     public static XmlReaderSettings CreateReaderSettings() => new XmlReaderSettings
     {
-        DtdProcessing = DtdProcessing.Ignore,
+        DtdProcessing = DtdProcessing.Parse,
         XmlResolver = null,
+        MaxCharactersFromEntities = MaxCharactersFromEntities,
     };
+
+    /// <summary>Creates a reader over a source document, which may declare XML 1.1.</summary>
+    public static XmlReader CreateReader(Stream stream, string? baseUri) => Xml11Source.CreateReader(stream, CreateReaderSettings(), baseUri);
 
     /// <summary>Builds a document node from <paramref name="reader"/> using <paramref name="pool"/>.</summary>
     public static XdmNode Load(XmlReader reader, NamePool pool, WhitespaceTable? whitespace = null)
@@ -34,7 +44,7 @@ internal static class XsltInput
     /// <summary>Parses <paramref name="stream"/> (left open) into a document node.</summary>
     public static XdmNode Load(Stream stream, NamePool pool, WhitespaceTable? whitespace = null)
     {
-        using XmlReader reader = XmlReader.Create(stream, CreateReaderSettings());
+        using XmlReader reader = Xml11Source.CreateReader(stream, CreateReaderSettings(), null);
         return Load(reader, pool, whitespace);
     }
 }

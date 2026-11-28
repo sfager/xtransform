@@ -5,10 +5,10 @@
   "xsltCommit": "see eng/test-suites.env",
   "measuredAt": "2026-11-28",
   "coreInScope": 6010,
-  "corePassed": 4919,
+  "corePassed": 5162,
   "unicode90InScope": 1460,
   "unicode90Passed": 192,
   "inScopeCount": 7470,
-  "passed": 5111,
+  "passed": 5354,
   "minimumPassRate": 0.40
 }

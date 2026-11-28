@@ -13,6 +13,9 @@ internal sealed class XmlEmitterOptions
     /// <summary>Output encoding; also names the encoding in the XML declaration. Default UTF-8.</summary>
     public Encoding Encoding { get; init; } = new UTF8Encoding(false);
 
+    /// <summary><c>version</c>: "1.1" writes the XML 1.1 declaration and character references for the control characters.</summary>
+    public string Version { get; init; } = "1.0";
+
     /// <summary><c>indent="yes"</c>: add whitespace between child nodes of elements that contain no text.</summary>
     public bool Indent { get; init; }
 

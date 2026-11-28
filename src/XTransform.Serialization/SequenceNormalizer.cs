@@ -15,7 +15,7 @@ namespace XTransform.Serialization;
 /// <summary>
 /// Receiver filter that normalises the event stream before it reaches a serializer emitter.
 /// </summary>
-internal sealed class SequenceNormalizer : IResultReceiver
+internal sealed class SequenceNormalizer : IResultReceiver, IBaseUriReceiver
 {
     private readonly IResultReceiver _downstream;
     private readonly NamePool? _namePool;
@@ -80,6 +80,9 @@ internal sealed class SequenceNormalizer : IResultReceiver
         _elementInNoNamespace.Push(_namePool is not null && _namePool.GetNamespaceUri(nameCode).Length == 0);
         _downstream.StartElement(nameCode, location);
     }
+
+    /// <inheritdoc/>
+    public void BaseUri(string baseUri) => (_downstream as IBaseUriReceiver)?.BaseUri(baseUri);
 
     /// <inheritdoc/>
     public void Namespace(string prefix, string uri)

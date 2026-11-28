@@ -70,6 +70,12 @@ internal sealed class MultiplexReceiver : IResultReceiver, IDisposable
     }
 
     /// <inheritdoc/>
+    public void BaseUri(string baseUri)
+    {
+        for (int i = 0; i < _sinks.Length; i++) { (_sinks[i] as IBaseUriReceiver)?.BaseUri(baseUri); }
+    }
+
+    /// <inheritdoc/>
     public void Namespace(string prefix, string uri)
     {
         for (int i = 0; i < _sinks.Length; i++) { _sinks[i].Namespace(prefix, uri); }

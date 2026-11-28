@@ -150,6 +150,7 @@ internal static class OutputDeclarationCollector
         {
             Method = ParseMethod(effective, source, bag),
             Encoding = effective.TryGetValue("encoding", out string? enc) ? enc : "utf-8",
+            Version = effective.TryGetValue("version", out string? outputVersion) && outputVersion.Trim() == "1.1" ? "1.1" : "1.0",
             Indent = ParseBool(effective, source, "indent", bag) ?? false,
             OmitXmlDeclaration = ParseBool(effective, source, "omit-xml-declaration", bag) ?? false,
             Standalone = ParseStandalone(effective, source, bag),

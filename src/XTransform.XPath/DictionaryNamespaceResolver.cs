@@ -32,6 +32,12 @@ internal sealed class DictionaryNamespaceResolver : IStaticNamespaceResolver
     /// <inheritdoc/>
     public string? LookupNamespace(string prefix)
     {
+        // The xml prefix is bound by definition (XPath 2.0 §2.1.1).
+        if (prefix == "xml")
+        {
+            return "http://www.w3.org/XML/1998/namespace";
+        }
+
         return _prefixes.TryGetValue(prefix, out string? uri) ? uri : null;
     }
 

@@ -387,4 +387,10 @@ public static class XsltErrors
 
     /// <summary>It is a non-recoverable dynamic error if an element in no namespace has a namespace node for the default namespace. (XSLT 2.0 §5.7.1)</summary>
     public static readonly QName XTDE0440 = new QName("err", XPathErrors.Namespace, "XTDE0440");
+
+    /// <summary>unparsed-entity-uri() was called with no context node, or its root is not a document node. (XSLT 2.0 §16.6.4)</summary>
+    public static readonly QName XTDE1370 = new QName("err", XPathErrors.Namespace, "XTDE1370");
+
+    /// <summary>unparsed-entity-public-id() was called with no context node, or its root is not a document node. (XSLT 2.0 §16.6.4)</summary>
+    public static readonly QName XTDE1380 = new QName("err", XPathErrors.Namespace, "XTDE1380");
 }

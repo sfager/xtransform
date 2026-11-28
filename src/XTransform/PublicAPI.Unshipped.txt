@@ -37,6 +37,8 @@ XTransform.XsltTransformer.BaseOutputUri.get -> System.Uri?
 XTransform.XsltTransformer.BaseOutputUri.set -> void
 XTransform.XsltTransformer.InitialMode.get -> XTransform.Xdm.QName?
 XTransform.XsltTransformer.InitialMode.set -> void
+XTransform.XsltTransformer.InputBaseUri.get -> System.Uri?
+XTransform.XsltTransformer.InputBaseUri.set -> void
 XTransform.XsltTransformer.InitialTemplate.get -> XTransform.Xdm.QName?
 XTransform.XsltTransformer.InitialTemplate.set -> void
 XTransform.XsltTransformer.MaxRecursionDepth.get -> int
