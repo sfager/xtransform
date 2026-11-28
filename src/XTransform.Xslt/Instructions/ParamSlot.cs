@@ -16,7 +16,8 @@ internal sealed class ParamSlot
         bool isRequired,
         SourceSpan location,
         VariableValueBody? defaultBody = null,
-        SequenceType? asType = null)
+        SequenceType? asType = null,
+        bool isTunnel = false)
     {
         Name = name;
         DefaultSelect = defaultSelect;
@@ -24,6 +25,7 @@ internal sealed class ParamSlot
         Location = location;
         DefaultBody = defaultBody;
         AsType = asType;
+        IsTunnel = isTunnel;
     }
 
     /// <summary>The parameter name.</summary>
@@ -37,6 +39,9 @@ internal sealed class ParamSlot
 
     /// <summary>The required type from the <c>as</c> attribute, or null.</summary>
     public SequenceType? AsType { get; }
+
+    /// <summary>True for <c>tunnel="yes"</c>: the value comes from the tunnel context (XSLT 2.0 §10.1.2).</summary>
+    public bool IsTunnel { get; }
 
     /// <summary>True when <c>required="yes"</c>.</summary>
     public bool IsRequired { get; }

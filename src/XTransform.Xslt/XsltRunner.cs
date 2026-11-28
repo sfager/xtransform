@@ -109,12 +109,28 @@ internal static class XsltRunner
             }
         }
         else if (!mode.Equals(DeclarationCollector.DefaultMode) &&
-                 !System.Linq.Enumerable.Contains(compiled.Declarations.DeclaredModes, mode))
+                 !System.Linq.Enumerable.Contains(compiled.Declarations.DeclaredModes, mode) &&
+                 !System.Linq.Enumerable.Contains(compiled.Declarations.DeclaredModes, DeclarationCollector.AllModes))
         {
             throw new XsltDynamicException(
                 XsltErrors.XTDE0045,
                 $"The initial mode '{mode.ClarkName}' is not used by any template rule",
                 SourceSpan.None);
+        }
+
+        // XSLT 2.0 §2.3: a processor cannot supply template parameters, so a required one is an error (XTDE0060).
+        if (entryTemplate is not null)
+        {
+            foreach (ParamSlot slot in compiled.CompiledTemplates[entryTemplate].Parameters)
+            {
+                if (slot.IsRequired && !slot.IsTunnel)
+                {
+                    throw new XsltDynamicException(
+                        XsltErrors.XTDE0060,
+                        $"The initial template has the required parameter '{slot.Name.ClarkName}'",
+                        SourceSpan.None);
+                }
+            }
         }
 
         GlobalVariableEvaluator.EvaluateAll(compiled, rootCtx, run);

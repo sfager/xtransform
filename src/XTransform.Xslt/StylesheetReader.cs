@@ -55,7 +55,7 @@ internal static class StylesheetReader
             }
         }
 
-        root = ReadElement(reader, NamespaceBindings.Root, effectiveVersion: null, moduleUri, diagnostics);
+        root = ReadElement(reader, NamespaceBindings.Root, effectiveVersion: null, xpathDefaultNamespace: string.Empty, moduleUri, diagnostics);
 
         // The reader may have more siblings at the top level if the document is malformed;
         // XmlReader will have thrown already if it's not well-formed XML.
@@ -117,6 +117,7 @@ internal static class StylesheetReader
         XmlReader reader,
         NamespaceBindings parentScope,
         string? effectiveVersion,
+        string xpathDefaultNamespace,
         string? moduleUri,
         DiagnosticBag diagnostics)
     {
@@ -169,6 +170,13 @@ internal static class StylesheetReader
             element.AppendAttribute(new StylesheetAttribute(attrName, raw.Value, raw.Location));
         }
 
+        // xpath-default-namespace (on an XSLT element, or xsl:xpath-default-namespace on a literal result element)
+        // applies to the element and its descendants until overridden (XSLT 2.0 §5.2).
+        string? xpathDefaultHere = name.NamespaceUri == XsltNamespace.Uri
+            ? FindAttribute(element, string.Empty, "xpath-default-namespace")
+            : FindAttribute(element, XsltNamespace.Uri, "xpath-default-namespace");
+        element.XPathDefaultNamespace = xpathDefaultHere is null ? xpathDefaultNamespace : xpathDefaultHere.Trim();
+
         // Effective version: prefer this element's declared version (xsl:version on a literal
         // result element, or version on xsl:stylesheet/xsl:transform), else inherit from ancestor.
         // XSLT 2.0 §3.7: forwards-compatible processing applies when the effective version > 2.0,
@@ -218,7 +226,7 @@ internal static class StylesheetReader
             switch (reader.NodeType)
             {
                 case XmlNodeType.Element:
-                    StylesheetElement child = ReadElement(reader, inScope, currentEffective, moduleUri, diagnostics);
+                    StylesheetElement child = ReadElement(reader, inScope, currentEffective, element.XPathDefaultNamespace, moduleUri, diagnostics);
 
                     // XTSE0130: when a child of xsl:stylesheet/xsl:transform is in no namespace.
                     if (IsTopLevelContainer(element) &&

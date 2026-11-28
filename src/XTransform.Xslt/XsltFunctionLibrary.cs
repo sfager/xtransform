@@ -239,7 +239,7 @@ internal sealed class XsltFunctionLibrary : FunctionLibrary
         return KeyLookup(context, args, top);
     }
 
-    private static IXdmIterator KeyLookup(DynamicContext context, XdmSequence[] args, XdmNode? top)
+    internal static IXdmIterator KeyLookup(DynamicContext context, XdmSequence[] args, XdmNode? top)
     {
         XsltRunState run = GetRun(context);
         string keyName = args[0].FirstOrNull()?.GetStringValue() ?? string.Empty;
@@ -561,14 +561,18 @@ internal sealed class UserFunctionSlot
                         SourceSpan.None);
                 }
 
-                // The current group, grouping key and template rule are empty inside a stylesheet function (XSLT 2.0 §14.1, §6.7).
-                if (ctx.Run.Tag is not XsltRunState run || (run.CurrentGroup is null && run.CurrentGroupingKey is null && run.CurrentRule is null))
+                // The current group, grouping key, template rule and tunnel parameters are empty, and the current mode is the default mode, inside a stylesheet function (XSLT 2.0 §14.1, §6.7, §10.1.2, erratum XT.E19).
+                if (ctx.Run.Tag is not XsltRunState run || (run.CurrentGroup is null && run.CurrentGroupingKey is null && run.CurrentRule is null && run.TunnelParameters.Count == 0 && run.CurrentMode == DeclarationCollector.DefaultMode))
                 {
                     return _body.Invoke(ctx, args);
                 }
 
+                IReadOnlyDictionary<QName, XdmSequence> savedTunnel = run.TunnelParameters;
+                run.TunnelParameters = XsltRunState.EmptyTunnel;
                 TemplateRule? savedRule = run.CurrentRule;
                 run.CurrentRule = null;
+                QName savedMode = run.CurrentMode;
+                run.CurrentMode = DeclarationCollector.DefaultMode;
                 IReadOnlyList<XdmItem>? savedGroup = run.CurrentGroup;
                 XdmAtomicValue? savedKey = run.CurrentGroupingKey;
                 run.CurrentGroup = null;
@@ -580,6 +584,8 @@ internal sealed class UserFunctionSlot
                 finally
                 {
                     run.CurrentRule = savedRule;
+                    run.CurrentMode = savedMode;
+                    run.TunnelParameters = savedTunnel;
                     run.CurrentGroup = savedGroup;
                     run.CurrentGroupingKey = savedKey;
                 }

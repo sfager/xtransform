@@ -5,7 +5,8 @@ namespace XTransform.Xdm.Iterators;
 /// <summary>
 /// Iterator for the <c>descendant</c> and <c>descendant-or-self</c> axes.
 /// Yields nodes in pre-order (document order).
-/// Attribute and namespace nodes have no descendants; the axis is empty for those origins.
+/// Attribute and namespace nodes have no descendants: <c>descendant</c> is empty for those origins and
+/// <c>descendant-or-self</c> yields only the origin.
 /// </summary>
 internal sealed class DescendantAxisIterator : IXdmIterator
 {
@@ -16,6 +17,7 @@ internal sealed class DescendantAxisIterator : IXdmIterator
     private int _current;
     private int _subtreeEnd;
     private int _position;
+    private bool _selfPending;
 
     internal DescendantAxisIterator(TinyTree tree, NodeHandle origin, NodeTest? test, bool includeSelf)
     {
@@ -31,8 +33,10 @@ internal sealed class DescendantAxisIterator : IXdmIterator
     {
         if (!_origin.IsRegularNode)
         {
-            _current = -1;
+            // No descendants, but descendant-or-self still yields the node itself.
+            _current = 0;
             _subtreeEnd = 0;
+            _selfPending = _includeSelf;
             return;
         }
 
@@ -44,6 +48,17 @@ internal sealed class DescendantAxisIterator : IXdmIterator
     /// <inheritdoc/>
     public XdmItem? Next()
     {
+        if (_selfPending)
+        {
+            _selfPending = false;
+            XdmNode? self = _tree.WrapIfMatches(_origin, _test);
+            if (self != null)
+            {
+                _position++;
+                return self;
+            }
+        }
+
         while (_current < _subtreeEnd)
         {
             int idx = _current;

@@ -61,6 +61,9 @@ internal sealed class StylesheetElement : StylesheetNode
     /// </summary>
     public string DeclaredVersion { get; internal set; } = string.Empty;
 
+    /// <summary>The xpath-default-namespace in scope for this element: its own value, else the nearest ancestor's, else empty (XSLT 2.0 §5.2).</summary>
+    public string XPathDefaultNamespace { get; internal set; } = string.Empty;
+
     /// <summary>Attributes declared on this element, excluding namespace declarations.</summary>
     public IReadOnlyList<StylesheetAttribute> Attributes => _attributes;
 

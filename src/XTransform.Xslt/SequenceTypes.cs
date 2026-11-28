@@ -25,7 +25,7 @@ internal static class SequenceTypes
         {
             NamespaceBindingsResolver resolver = new NamespaceBindingsResolver(
                 element.InScopeNamespaces,
-                defaultElementNamespace: string.Empty,
+                defaultElementNamespace: element.XPathDefaultNamespace,
                 defaultFunctionNamespace: BuiltInFunctionLibrary.FnNamespace);
             type = XPathParser.ParseSequenceType(text, element.Location, resolver);
             return true;

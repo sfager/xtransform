@@ -50,6 +50,11 @@ internal sealed class XsltRunState
     /// <summary>The template rule being evaluated (the <c>current template rule</c> of XSLT 2.0 §6.7); null outside any rule, and inside a stylesheet function.</summary>
     internal TemplateRule? CurrentRule { get; set; }
 
+    /// <summary>The tunnel parameters in effect: those passed with tunnel="yes" by the calls that led to the current template (XSLT 2.0 §10.1.2).</summary>
+    internal IReadOnlyDictionary<QName, XdmSequence> TunnelParameters { get; set; } = EmptyTunnel;
+
+    internal static readonly IReadOnlyDictionary<QName, XdmSequence> EmptyTunnel = new Dictionary<QName, XdmSequence>();
+
     /// <summary>The group <c>current-group()</c> returns: set while the body of an xsl:for-each-group runs, null elsewhere (§14.1).</summary>
     public IReadOnlyList<XdmItem>? CurrentGroup { get; set; }
 
@@ -261,7 +266,7 @@ internal sealed class XsltRunState
     {
         NamespaceBindingsResolver resolver = new NamespaceBindingsResolver(
             decl.Element.InScopeNamespaces,
-            defaultElementNamespace: string.Empty,
+            defaultElementNamespace: decl.Element.XPathDefaultNamespace,
             defaultFunctionNamespace: BuiltInFunctionLibrary.FnNamespace);
 
         // The pattern was parsed and its predicates compiled when the stylesheet was compiled.
