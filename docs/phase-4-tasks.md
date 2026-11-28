@@ -410,7 +410,7 @@ Core shard 3,655 → 3,720
 
 ## P4-14 Namespaces: `xsl:namespace`, `xsl:namespace-alias`, namespace fix-up
 
-- [ ] Done
+- [x] Done
 
 **Scope.** `xsl:namespace` (66 tests report it unknown), `xsl:namespace-alias` including
 `#default`, `exclude-result-prefixes` and `extension-element-prefixes` on instructions,
@@ -419,6 +419,8 @@ namespace fix-up of XSLT 2.0 §5.7.1 in `TreeBuilder` and the emitters so serial
 declares the namespaces it uses. `XTDE0430`, `XTDE0440`, `XTSE0165`.
 
 **Acceptance.** `namespace` and `namespace-alias` sets ≥ 85% passing.
+
+**Result (branch `p4-14-namespaces`).** The `namespace` set passes **188 of 213** (88.3%, was 163) and `namespace-alias` **26 of 26** (was 3); `error` rose to 368 of 396 (92.9%). Core shard: **4,919 of 6,010** (4,815 before; no test that passed before fails now); QT3 unchanged (13,916 passed, 0 failed); the real-world corpus is byte for byte unchanged. **Names keep their prefix:** `NamePool` gives a prefixed name a code of its own that maps to one canonical code, so `name()` and the serializer see the prefix and name tests still match across prefixes. **Literal result elements** copy the in-scope namespaces less the XSLT namespace, `exclude-result-prefixes` (including `#all` and `#default`) and `extension-element-prefixes` (`XTSE0808`, `0809`, `1430`). **`xsl:namespace`** (`XTSE0910`, `XTDE0905`, `0920`, `0925`, `0930`), the element-level conflicts `XTDE0430` and `0440`, and **`xsl:namespace-alias`** (`XTSE0810`, `0812`; `#default` with no default namespace means no namespace). **Fix-up:** `XmlEmitter` holds each start tag until its namespace nodes and attributes are known, gives a clashing prefix a free one (`ns0`, `ns1`, ...) and writes a repeated declaration once; every element has an `xml` namespace node and the serializer never declares the prefix. Unit tests that pinned prefix-less names and missing `xml` nodes were updated to the specifications; new tests are in `XsltNamespaceTests` and `XsltNamespaceInstructionTests`. Choices recorded in `implementation-defined.md`; `NamePool` changes in `interfaces.md` and `design.md`. **Left over (25 in `namespace`):** XML 1.1 undeclaration and `inherit-namespaces` / `copy-namespaces` on `xsl:copy` (`namespace-2603` .. `2610`, P4-15), the `XTDE0835` / `0865` checks on an explicit `namespace` attribute, `XTTE0570` variable typing, and a few namespace-axis assertions on serialized output. `xslt-baseline.json` (core floor 4,815 → 4,919 passed of 6,010; combined 5,007 → 5,111) and `known-failures/xslt-g3.txt` are updated; the `unicode-90` figures and entries were not re-measured.
 
 ## P4-15 `xsl:attribute-set`, `use-attribute-sets`, `xsl:copy` attributes
 
